@@ -15,9 +15,8 @@ tools
 **/*.log
 .DS_Store
 
-# The API image only needs the other workspaces' manifests — pnpm reads every
-# package.json named in pnpm-workspace.yaml, but none of their source.
-apps/web
+# apps/web source is needed by apps/web/Dockerfile. apps/docs deploys to Cloudflare
+# and no image builds it — but pnpm reads every package.json named in
+# pnpm-workspace.yaml before it applies --filter, so its manifest has to stay.
 apps/docs
-!apps/web/package.json
 !apps/docs/package.json

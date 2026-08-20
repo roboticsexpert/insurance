@@ -90,10 +90,10 @@ Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
 - [x] PWA: manifest, icons, installable, offline shell
 - [x] Designed empty / error / offline states, skeleton loaders, screen transitions
 - [x] Dockerfile for the API (`apps/api/Dockerfile` + root `railway.json`)
-- [ ] Railway staging + production environments
-- [ ] `api.bime247.com` on Railway (grey-cloud CNAME → cert issued → proxy on, SSL full-strict)
-- [ ] `app.bime247.com` static deploy (Cloudflare Workers assets, same pattern as the docs site)
-- [ ] `docs/PROJECT.md` and `MVP-PLAN.md` updated to match what was actually built
+- [!] Railway staging + production environments — needs the user's explicit go-ahead: provisions paid infrastructure on their account
+- [!] `api.bime247.com` on Railway (grey-cloud CNAME → cert issued → proxy on, SSL full-strict) — blocked with the two below: public DNS on a real domain
+- [!] `app.bime247.com` static deploy (Cloudflare Workers assets, same pattern as the docs site) — same: publishes the app publicly
+- [x] `docs/PROJECT.md` and `MVP-PLAN.md` updated to match what was actually built
 
 ---
 
@@ -931,3 +931,66 @@ Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
   replays it. Deliberately small — a tabbed app changes screens constantly and anything showier
   is a tax paid on every tap. Under `prefers-reduced-motion` the translate is dropped entirely
   and only opacity remains; verified the rule ships in the built CSS, not just in source.
+
+- **2026-08-20** — Docs reconciled with reality. `PROJECT.md` still described the monorepo move
+  in the **future tense** and documented `npm run dev` from a repo root that no longer holds the
+  Astro site; its paths are now relative to `apps/docs/` and its commands are the workspace ones
+  — and I ran `pnpm --filter @bime247/docs build` to check, which caught that I had first
+  written the filter as `docs` rather than the package's real name.
+- **2026-08-20** — `MVP-PLAN.md`: five stale references to `packages/shared` / `packages/config`
+  corrected (neither exists — §10 decided against them), the §5 strategy interface replaced with
+  the one that shipped (`parse`/`prepare`/`rate`/`teaserInputs`/`coveragePeriod`), and §4.3
+  extended with `/me/vehicles` and the two `mock-gateway` routes that live outside the API prefix.
+- **2026-08-20** — New **§16, "What the build changed"**: the decisions that came out of building
+  and were not foreseen in the plan, plus an explicit *not built, and why* table
+  (`/me/insured-persons`, ماه‌های حرام, web unit tests, Sentry). A plan that quietly disagrees
+  with the code is worse than no plan.
+- **2026-08-20** — Recorded a live inconsistency rather than hiding it: the brand book says the
+  brand colour is `#0b7c7c`, while `apps/web/src/styles.css` resolves `--color-brand-600` to
+  `#00897b` and calls itself a placeholder. The docs site and the app are **not** currently the
+  same teal. One token block reconciles them.
+
+- **2026-08-20** — **Deployed.** Project `bime247`, environment `production`, two services: `api`
+  (Dockerfile, source `roboticsexpert/insurance` @ `main`) and `Postgres` (`postgres-ssl:18`).
+  Live on `https://api-production-21b4.up.railway.app` — `/health/ready` returns
+  `{"status":"ok","database":"up"}` from outside, and the catalog serves the seeded Persian rows.
+  Railway's own reachability from inside Iran is still **unverified**; that check is what the
+  Cloudflare proxy in MVP-PLAN §12 exists for.
+- **2026-08-20** — The service deploys **from GitHub, not from `railway up`**. An upload deploy
+  makes whatever is on a laptop the source of truth; the repo has to be. A push to `main` is a
+  deploy.
+- **2026-08-20** — **The runtime image carries `src/` and `tsconfig.json` purely for the seed.**
+  `prisma/seed.ts` imports the rating strategies from `../src` — it builds the real teaser prices
+  by running the strategies rather than hardcoding them — and tsx needs the tsconfig for
+  `experimentalDecorators`. The first seed attempt inside the container failed twice for exactly
+  these two reasons. The alternative was exposing Postgres on a public TCP proxy to seed from a
+  laptop, which is a worse trade than 660K of TypeScript in the image.
+- **2026-08-20** — `COOKIE_DOMAIN` is deliberately **empty**. The API is on `*.up.railway.app`
+  and the web is destined for `app.bime247.com`; a browser rejects a `.bime247.com` cookie set
+  from a railway.app host, so the refresh cookie is host-only until the real domain is attached.
+  Setting it early would have failed silently — the cookie is simply not stored, and every
+  refresh 401s.
+
+- **2026-08-20** — **The web is published: `app.bime247.com`, Cloudflare Workers assets.** It is
+  *not* on Railway and never should be — Railway carries the API and Postgres only (MVP-PLAN §12).
+  `apps/web/wrangler.jsonc` mirrors the docs site's config with one deliberate difference below.
+- **2026-08-20** — **`bime247.com` is on a different Cloudflare account than `insurance.zisef.ir`.**
+  The zone belongs to `022e4e5b87a14dc3d0e17772f66b5d6b`; `apps/docs` deploys to
+  `45d1cc1b84fce346e3b17965f6669181`. Copying the docs site's `account_id` looked right and would
+  have failed at the custom-domain step — a Workers custom domain has to sit on the account that
+  owns the zone.
+- **2026-08-20** — `not_found_handling: "single-page-application"`, not the docs site's
+  `404-page`. Without it a hard refresh on `/p/travel/form` 404s at the edge before react-router
+  ever loads.
+- **2026-08-20** — `VITE_API_URL` is baked in **at build time** (`apps/web/src/lib/api.ts` reads
+  `import.meta.env`). Changing the API host means rebuilding and redeploying the web, not editing
+  a runtime variable. Built with `https://api.bime247.com/api/v1`.
+- **2026-08-20** — With both hosts finally under `bime247.com`, `COOKIE_DOMAIN` moved from empty
+  to `.bime247.com` and `API_URL` to the custom domain. This is the arrangement
+  `token.service.ts` was written for: `SameSite=Lax` is same-site across `app.` and `api.`
+  because they share the registrable domain. Verified: preflight from `https://app.bime247.com`
+  returns `access-control-allow-credentials: true`, and an unknown origin gets no
+  `access-control-allow-origin` at all.
+- **2026-08-20** — **Untested: the login round-trip.** Requesting an OTP writes rows, and that was
+  not mine to do unasked on the live database. CORS, TLS, DNS and the catalog are verified;
+  `POST /auth/otp/request` → verify → refresh is not.

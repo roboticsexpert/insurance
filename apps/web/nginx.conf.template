@@ -1,0 +1,23 @@
+# Rendered by the nginx image's envsubst entrypoint — ${PORT} is injected by Railway.
+# Only real environment variables are substituted, so nginx's own $uri survives.
+server {
+  listen ${PORT};
+  server_name _;
+  root /usr/share/nginx/html;
+
+  # Vite fingerprints everything under /assets, so it can be cached forever.
+  location /assets/ {
+    try_files $uri =404;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+  }
+
+  # index.html and the service worker must never be cached, or a deploy leaves
+  # clients pinned to the previous bundle.
+  location = /index.html { add_header Cache-Control "no-cache"; }
+  location = /sw.js      { add_header Cache-Control "no-cache"; }
+
+  # react-router owns routing: any unknown path is the SPA, not a 404.
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}

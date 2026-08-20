@@ -15,6 +15,15 @@ export interface RatingLookups {
   cityQuakeZone(cityId: string): Promise<number | null>
   /** Every city's id and zone. Small reference table; used to build teaser baskets. */
   cityQuakeZones(): Promise<{ id: string; quakeZone: number }[]>
+  /**
+   * The group a vehicle model belongs to, or null when the id matches nothing.
+   *
+   * Motor TPL rates on the group, and the group spans a factor of 24 between a motorcycle and
+   * a truck — so it is the catalog's answer that prices the policy, never the client's claim.
+   */
+  vehicleModelGroup(vehicleModelId: string): Promise<string | null>
+  /** Every active model's id and group. Small reference table; used to build teaser baskets. */
+  vehicleModelGroups(): Promise<{ id: string; group: string }[]>
 }
 
 export interface RatingContext {

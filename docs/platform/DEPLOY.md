@@ -129,31 +129,52 @@ orange cloud means users connect to Cloudflare rather than to Railway directly.
 
 ---
 
-# Deploying the web to Cloudflare
+# Deploying the web to Railway
 
-`apps/web` is a Vite SPA served as Workers assets — the same shape as `apps/docs`, with two
-differences that matter.
+`apps/web` is a Vite SPA built by `apps/web/Dockerfile` and served by nginx. It moved off
+Cloudflare Workers — see PROGRESS for why that reverses MVP-PLAN §12.
 
-**The account is not the docs site's account.** `bime247.com` belongs to
-`022e4e5b87a14dc3d0e17772f66b5d6b`; `apps/docs` deploys to `45d1cc1b84fce346e3b17965f6669181`.
-A Workers custom domain must sit on the account that owns the zone.
+| | |
+|---|---|
+| Service | `web` — `1ef779be-40ce-459d-859f-983e4ecb775b` |
+| Test URL | `https://web-production-b407f.up.railway.app` |
+| Port | 8080 (`PORT`, substituted into the nginx template at boot) |
 
-**`not_found_handling` is `single-page-application`**, not `404-page`. Otherwise a hard refresh
-on `/p/travel/form` 404s at the edge before react-router loads.
-
-`VITE_API_URL` is read at **build time**, so the API host is baked into the bundle. Changing it
-means a rebuild, not a variable edit:
-
-```bash
-VITE_API_URL=https://api.bime247.com/api/v1 pnpm --filter @bime247/web build
-```
+**There is no root `railway.json` any more.** It applied to every service in the project, so the
+web service would have built the API's Dockerfile. Each service names its own file through a
+`RAILWAY_DOCKERFILE_PATH` variable instead:
 
 ```bash
-cd apps/web && npx wrangler deploy
+railway variable set --service web 'RAILWAY_DOCKERFILE_PATH=apps/web/Dockerfile'
 ```
 
-Wrangler creates the `app.bime247.com` DNS record itself as part of attaching the custom domain —
-no manual DNS step, unlike the Railway side.
+`VITE_API_URL` is inlined by Vite **at build time**, so it is a Dockerfile `ARG`, not a runtime
+setting. Changing the API host means rebuilding the image.
+
+nginx serves the SPA with `try_files $uri $uri/ /index.html` — without it a hard refresh on
+`/p/travel/form` 404s before react-router ever loads. `/assets/` is immutable-cached because Vite
+fingerprints it; `index.html` and `sw.js` are `no-cache`, or a deploy leaves clients pinned to the
+previous bundle.
+
+## Cutting app.bime247.com over from Cloudflare
+
+A Workers custom domain and a CNAME cannot both own the hostname, so the Cloudflare binding has
+to go first and the site is dark in between. Records Railway needs:
+
+| Type | Name | Value |
+|---|---|---|
+| CNAME | `app` | `4362o88f.up.railway.app` |
+| TXT | `_railway-verify.app` | `railway-verify=fda294eebf4bdd78b94e5f9de3ca6b550e8904896951969b2d868eab6ce5900e` |
+
+The TXT record has no conflict and can be added first. Then, in one go: delete the Workers
+binding, add the CNAME **DNS-only** (grey cloud), wait for Railway's certificate, then turn the
+proxy on with SSL **Full (strict)**.
+
+```bash
+wrangler triggers delete --name bime247-web
+```
+
+Once the cutover is verified, `apps/web/wrangler.jsonc` should be deleted too.
 
 ## The api.bime247.com records
 

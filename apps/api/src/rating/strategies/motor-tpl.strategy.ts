@@ -9,10 +9,11 @@ import {
   PROPERTY_TIER_PERCENT,
   VEHICLE_GROUP_FA,
   VEHICLE_USAGE_FA,
+  VehicleGroup,
   type MotorTplInput,
 } from '../../products/schemas/motor-tpl'
 import { ineligible, pickBand, PremiumBuilder } from '../pricing'
-import type { RatingContext, RatingStrategy } from '../rating-strategy'
+import type { RatingContext, RatingLookups, RatingStrategy } from '../rating-strategy'
 import type { CoverageItem, RatingResult } from '../rating.types'
 import { motorTplRateTableSchema, type MotorTplRateTable } from './motor-tpl.rate-table'
 
@@ -59,6 +60,45 @@ export class MotorTplRatingStrategy implements RatingStrategy<MotorTplInput> {
     }
 
     return result.data
+  }
+
+  /**
+   * Resolves the vehicle group from the **catalog**, not from what the client claimed.
+   *
+   * `vehicleGroup` is the single biggest price driver here — `groupFactors` spans 0.08 for a
+   * motorcycle to 1.9 for a truck, a factor of 24 — and nothing else in the request is checked
+   * against it. Before this, a Mercedes Actros submitted as `MOTORCYCLE` quoted, ordered, paid
+   * and issued at a twenty-fourth of its premium, because `vehicleModelId` was only ever
+   * `z.string().min(1)` and no one ever looked the model up. `vehicles.service.ts` already
+   * copies the group off the model row for saved vehicles; the quote path simply did not.
+   *
+   * A contradiction is refused rather than silently corrected: the real client fills
+   * `vehicleGroup` from the same `meta.group` this reads, so the two can only disagree if the
+   * client is stale or lying, and both deserve to be heard about.
+   */
+  async prepare(input: MotorTplInput, lookups: RatingLookups): Promise<MotorTplInput> {
+    const rawGroup = await lookups.vehicleModelGroup(input.vehicleModelId)
+    if (rawGroup === null) {
+      throw new AppException('VALIDATION_FAILED', {
+        fields: { vehicleModelId: 'خودروی انتخاب‌شده معتبر نیست' },
+      })
+    }
+
+    const group = VehicleGroup[rawGroup as keyof typeof VehicleGroup]
+    if (!group) {
+      // The catalog row itself is wrong; that is ours to fix, not something to price around.
+      throw new AppException('VALIDATION_FAILED', {
+        fields: { vehicleModelId: 'خودروی انتخاب‌شده معتبر نیست' },
+      })
+    }
+
+    if (group !== input.vehicleGroup) {
+      throw new AppException('VALIDATION_FAILED', {
+        fields: { vehicleGroup: 'نوع وسیله نقلیه با خودروی انتخاب‌شده هم‌خوانی ندارد' },
+      })
+    }
+
+    return { ...input, vehicleGroup: group }
   }
 
   rate(input: MotorTplInput, rawTable: unknown): RatingResult {
@@ -165,22 +205,36 @@ export class MotorTplRatingStrategy implements RatingStrategy<MotorTplInput> {
    * The engine prices every one and keeps the minimum, so «از … تومان» follows the rate tables
    * rather than a hardcoded assumption that a motorcycle is always cheapest.
    */
-  teaserInputs(ctx: RatingContext): unknown[] {
+  async teaserInputs(ctx: RatingContext, lookups: RatingLookups): Promise<unknown[]> {
     const startDate = new Date(ctx.now.getTime() + 86_400_000).toISOString().slice(0, 10)
     const productionYear = jalaliYear(ctx.now) - TEASER_VEHICLE_AGE_YEARS
 
-    return Object.keys(VEHICLE_GROUP_FA).map((vehicleGroup) => ({
-      vehicleUsage: 'PERSONAL',
-      vehicleGroup,
-      vehicleModelId: 'teaser',
-      productionYear,
-      plate: TEASER_PLATE,
-      startDate,
-      hasPreviousPolicy: false,
-      bodilyDiscountYears: 0,
-      propertyDiscountYears: 0,
-      propertyCoverageTier: 'P_2_5',
-    }))
+    /*
+     * A real model id per group, not the literal `'teaser'` this used to send. `prepare` now
+     * resolves the model against the catalog, so a made-up id makes every basket throw — and
+     * `cheapestTeaser` swallows the throw, which would have quietly emptied the «از … تومان»
+     * on the home screen rather than failing loudly.
+     */
+    const models = await lookups.vehicleModelGroups()
+    const oneModelPerGroup = new Map<string, string>()
+    for (const model of models) {
+      if (!oneModelPerGroup.has(model.group)) oneModelPerGroup.set(model.group, model.id)
+    }
+
+    return Object.keys(VEHICLE_GROUP_FA)
+      .filter((group) => oneModelPerGroup.has(group))
+      .map((vehicleGroup) => ({
+        vehicleUsage: 'PERSONAL',
+        vehicleGroup,
+        vehicleModelId: oneModelPerGroup.get(vehicleGroup),
+        productionYear,
+        plate: TEASER_PLATE,
+        startDate,
+        hasPreviousPolicy: false,
+        bodilyDiscountYears: 0,
+        propertyDiscountYears: 0,
+        propertyCoverageTier: 'P_2_5',
+      }))
   }
 
   /** Third-party cover is annual: a year from the start date, ending the day before it recurs. */

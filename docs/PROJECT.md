@@ -1,7 +1,12 @@
 # Insurance Docs — project notes
 
-A static documentation site holding research notes on the Iranian insurance industry.
-Designed to grow: each research topic is one Markdown file, and the homepage lists them.
+Notes on **`apps/docs`**, the static research site at `insurance.zisef.ir`. Each research topic
+is one Markdown file and the homepage lists them.
+
+This is one of three apps in the workspace — see *The two parts of the project* below. The
+platform being built lives in `apps/api` and `apps/web`; its own notes are
+[`docs/platform/MVP-PLAN.md`](platform/MVP-PLAN.md) and
+[`PROGRESS.md`](platform/PROGRESS.md).
 
 ## Decisions
 
@@ -14,6 +19,8 @@ Designed to grow: each research topic is one Markdown file, and the homepage lis
   a separate `docs/` copy. This file documents the project itself, not its subject matter.
 
 ## Structure
+
+Paths below are relative to **`apps/docs/`**.
 
 ```
 src/
@@ -51,10 +58,11 @@ Conventions used in the existing topic:
 
 ## Commands
 
+From the repo root:
+
 ```bash
-npm run dev      # http://localhost:4321
-npm run build    # → dist/
-npm run preview
+pnpm dev:docs                      # http://localhost:4321
+pnpm --filter @bime247/docs build  # → apps/docs/dist/
 ```
 
 ## Deployment
@@ -68,7 +76,7 @@ script), config in `wrangler.jsonc`.
 - `not_found_handling: "404-page"` is served by `src/pages/404.astro`.
 
 ```bash
-npm run build && npx wrangler deploy
+pnpm --filter @bime247/docs build && cd apps/docs && npx wrangler deploy
 ```
 
 **Verifying from inside Iran:** the Cloudflare edge is not reachable directly from the
@@ -100,8 +108,13 @@ curl -X POST "https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/browser
 2. **Online insurance purchase platform** — the product being built. Plan:
    [`docs/platform/MVP-PLAN.md`](platform/MVP-PLAN.md). MVP is a mobile-only React SPA +
    NestJS API, simple instant-buy products, mock payment and mock OTP, deployed on Railway.
-   When the code lands, this repo becomes a pnpm monorepo and the Astro site above moves to
-   `apps/docs/` — the deployment of `insurance.zisef.ir` is unaffected.
+   **This has happened**: the repo is now a pnpm workspace (`apps/api`, `apps/web`,
+   `apps/docs`), and the Astro site described above lives in `apps/docs/`. The deployment of
+   `insurance.zisef.ir` was unaffected, as planned. M0–M5 are built — all three products quote,
+   and **all three can be bought end to end against the mock gateway, over the API and through
+   the web app alike**. Progress and every decision made along the way:
+   [`docs/platform/PROGRESS.md`](platform/PROGRESS.md); the purchase-flow test run that found
+   this and 25 other defects: [`docs/platform/QA-FINDINGS.md`](platform/QA-FINDINGS.md).
 
 ## Plan
 
@@ -134,6 +147,10 @@ Decisions worth keeping:
 - **Colour: firouzeh `#0b7c7c` / `#3fd0d0`.** Persian turquoise, picked to sit clear of
   Azki's orange and Bimeh.com's blue. This replaced the old `#0f6b5c` teal as `--accent`
   in the docs site, so the two surfaces share one accent.
+  **The app does not use it yet.** `apps/web/src/styles.css` defines `--color-brand-*` as an
+  oklch ramp whose 600 resolves to `#00897b`, and its own comment marks it a placeholder until
+  the brand book settles. So the docs site and the app are currently *not* the same teal —
+  reconciling them is one edit to that token block, and nothing else follows the value.
 - **Wordmarks are outlined Vazirmatn Bold, not live text**, so the files carry no font
   dependency. `بیمه۲۴۷` must be shaped as two bidi runs (word RTL, numerals LTR) —
   HarfBuzz does not run the bidi algorithm, and shaping the whole string RTL silently

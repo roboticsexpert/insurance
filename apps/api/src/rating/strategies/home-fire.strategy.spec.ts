@@ -64,6 +64,9 @@ const lookups = (over: Partial<RatingLookups> = {}): RatingLookups => ({
     { id: 'yazd', quakeZone: 3 },
     { id: 'other', quakeZone: 2 },
   ]),
+  // Home fire never asks for these; they are here because the port is one interface.
+  vehicleModelGroup: jest.fn().mockResolvedValue(null),
+  vehicleModelGroups: jest.fn().mockResolvedValue([]),
   ...over,
 })
 

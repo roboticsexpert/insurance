@@ -67,7 +67,7 @@ Rate drivers: zone × duration band × age band × coverage limit. Age bands mat
 |---|---|---|
 | vehicleUsage | enum | `PERSONAL` / `COMMERCIAL` / `TAXI` |
 | vehicleGroup | enum | `SEDAN` / `PICKUP` / `MOTORCYCLE` / `VAN` / `TRUCK` |
-| vehicleBrandModelId | ref | from seeded reference data |
+| vehicleModelId | ref | from seeded reference data (115 models, 24 brands) |
 | productionYear | int | |
 | plate | object | `{ twoDigit, letter, threeDigit, iranCode }` — the standard Iranian plate |
 | bodilyDiscountYears | int 0–14 | تخفیف عدم خسارت جانی |
@@ -129,7 +129,8 @@ command becomes `pnpm --filter docs build && wrangler deploy` from `apps/docs`.
 `@nestjs/throttler` · `@nestjs/jwt` · pino · Jest.
 
 Prisma over TypeORM: the schema is the readable source of truth, migrations are
-deterministic, and the generated types feed `packages/shared` for free.
+deterministic, and the generated types are read directly by the API. (They do *not* feed a
+shared package — see §10, which decided against one.)
 
 ### 4.1 Modules
 
@@ -189,7 +190,9 @@ Design rules that matter:
 - **Snapshots everywhere.** `Order.insuredSnapshot` and `Policy.dataSnapshot` copy the data as
   it was at purchase. Editing a profile must never mutate an issued policy.
 - **All money in integer Rials.** No floats anywhere. The UI displays Tomans (÷10) and
-  formats with Persian digits. One shared `formatMoney` in `packages/shared`.
+  formats with Persian digits. The formatter is deliberately **duplicated**: `apps/web/src/lib/fa.ts`
+  for the UI and `apps/api/src/common/fa.ts` for SMS text and the e-policy document. Forty frozen
+  lines beat a cross-package build step (§10).
 - **`idempotencyKey` on Order**, sent by the client, so a double-tapped "buy" button cannot
   create two orders.
 
@@ -220,7 +223,18 @@ POST   /payments/verify         { authority, status }     → { orderId, policyI
 GET    /policies                                          → my policies (list)
 GET    /policies/:id                                      → e-policy detail
 GET    /policies/:id/document                             → HTML e-policy (PDF: fast-follow)
+
+GET    /me/vehicles                                       → saved vehicles          (built)
+POST   /me/vehicles       { vehicleModelId, plate, productionYear, usage }
+DELETE /me/vehicles/:id
+
+GET    /mock-gateway?Authority=…                          → the Shaparak-style mock bank page
+POST   /mock-gateway/settle  { authority, outcome }       → 302 back to the web callback
 ```
+
+The two `mock-gateway` routes sit **outside** the `/api/v1` prefix, because a bank redirects to
+a bare path; they 404 unless `PAYMENT_GATEWAY=mock`. `/me/insured-persons` was planned and not
+built — travel policies take the insured on the order, so nothing needed a saved-person list yet.
 
 Conventions: `/api/v1` prefix, envelope-free responses (data at the top level, errors via a
 consistent error shape), cursor-less pagination (`page`/`pageSize`) — the MVP has no list big
@@ -244,11 +258,20 @@ Persian error text** — one place to fix wording.
 The piece that decides whether this codebase is a toy or the seed of the core insurance
 engine. It gets its own module with no dependency on HTTP or Prisma models beyond a loader.
 
+As built (`apps/api/src/rating/rating-strategy.ts`) — the shape drifted from this sketch in two
+ways worth stating: `validate` became `parse` and takes the clock, and an optional `prepare`
+was added so a product can depend on reference data without `rate` losing its purity.
+
 ```ts
-interface RatingStrategy<TInput> {
+interface RatingStrategy<TInput, TPrepared = TInput> {
   productType: ProductType
-  validate(input: unknown): TInput                    // zod schema from packages/shared
-  rate(input: TInput, table: RateTable): RatingResult // pure function, fully unit-testable
+  parse(input: unknown, ctx: RatingContext): TInput   // zod, throws AppException; ctx carries `now`
+  prepare?(input: TInput, lookups: RatingLookups): Promise<TPrepared>
+                                                      // resolves DB reference data once per quote
+  rate(input: TPrepared, table: unknown, ctx: RatingContext): RatingResult
+                                                      // pure function, fully unit-testable
+  teaserInputs?(ctx, lookups): unknown[] | Promise<unknown[]>   // baskets for «از … تومان»
+  coveragePeriod(input: TInput): { startsAt: Date; endsAt: Date }
 }
 
 interface RatingResult {
@@ -399,7 +422,7 @@ TanStack Query 5 · Zustand (auth only) · Tailwind CSS 4 · react-hook-form + z
 /payment/callback         result screen (success / failure / pending)
 /policies                 my policies (active / expired tabs)
 /policies/:id             e-policy detail + share + download
-/profile, /profile/vehicles, /profile/insured-persons
+/profile, /profile/vehicles          (insured-persons not built — see §4.3)
 /support                  FAQ + contact
 ```
 
@@ -464,9 +487,9 @@ written). That is the cheaper side of the trade.
 | Logging | pino, JSON, request-id propagated end to end and returned in every error |
 | Observability | `/health`, `/health/ready`, Railway metrics; Sentry optional and off by default |
 | Migrations | Prisma Migrate, `migrate deploy` on release; no `db push` outside local dev |
-| Seeding | idempotent seed script: insurers, products, offerings, rate tables, vehicle brands, cities, travel zones |
+| Seeding | idempotent seed script: insurers, products, offerings, rate tables for all three products, 115 vehicle models, 40 cities with seismic zones. Teaser prices are **derived** from the tables afterwards, never authored |
 | Testing | Jest unit tests for every rating strategy against fixture tables (the critical path), plus supertest e2e for: OTP login, quote, order, mock pay, policy issued |
-| Lint/format | eslint + prettier shared from `packages/config`; strict TS, `noUncheckedIndexedAccess` |
+| Lint/format | prettier from the repo root (`.prettierrc.json`); strict TS, `noUncheckedIndexedAccess`. The API typechecks through `tsconfig.typecheck.json`, which covers `prisma/` and `test/` that the build's `rootDir` excludes |
 | CI | GitHub Actions: install → lint → typecheck → test → build on PR |
 | i18n | Persian only, hardcoded. No i18n library — it would be premature and adds a lookup layer to every string |
 | Shared code | None. The API validates authoritatively; the web keeps its own display helpers (§10) |
@@ -563,3 +586,60 @@ Every one of these has a seam left for it. None of them is stubbed with fake UI.
 
 *Kept in sync with `docs/PROJECT.md` (project structure) and `docs/PLAN.md` (go-to-market).
 When this plan changes, update those.*
+
+---
+
+## 16. What the build changed — read this before trusting the rest
+
+Written after M0–M5 shipped. Everything above is the plan *as designed*; the corrections are
+inline, but these are the decisions that came out of building it and were not foreseen here.
+`PROGRESS.md` carries the reasoning for each in full.
+
+**Rating**
+
+- **`RatingLookups` + `prepare()`.** Home fire rates on the seismic zone of the customer's
+  city, which lives in the database — but `rate()` must stay pure and the client must not be
+  able to send the zone (it would let them pick their own price band). `prepare()` resolves it
+  once per quote through a narrow port, so strategies never import Prisma.
+- **A price driver is never accepted from the client.** The motor `vehicleGroup` is read off
+  the catalog row, not the request, for the same reason.
+- **دیه is one number.** Both motor premiums and the property limit derive from `diyeAmount`,
+  so a new policy year is a one-line table change. The ماه‌های حرام uplift is **not** modelled —
+  a real rule sitting on invented numbers only looks authoritative.
+- **Premiums round before discounts come off**, so each discount line is exactly its stated
+  percentage of the line above it. Discounting the unrounded figure leaves an invoice whose own
+  arithmetic does not check out.
+- **Fire is rated on the sum insured, not floor area.** `areaSqm` is an eligibility limit only.
+
+**Checkout**
+
+- **A concurrent duplicate callback may legitimately answer `policyId: null`.** Three
+  simultaneous verifies produce exactly one policy and one SMS and all three report SUCCEEDED,
+  but a loser can reply before issuance commits. The invariant is *never two different policy
+  ids* — not that every caller sees one.
+
+**Web**
+
+- **`hasWizard()` gates the product card, not `fromAmount` alone.** Rate tables ship a release
+  before the wizard that feeds them, so a priceable product with no form would link to a 404.
+  The router builds its wizard routes from the same list, typed so the two cannot drift.
+- **`queryClient.clear()` on sign-out.** TanStack's `enabled: false` stops the fetch, not the
+  cache read — without it a signed-out phone showed the previous user's policies.
+- **The plate widget is LTR; a plate in prose is not.** The widget mimics a physical object read
+  left to right; running Persian text writes «۴۴ ص ۸۲۱ ایران ۱۱» and reads it right to left.
+- **The service worker never caches `/api/`.** A cached quote is a price the customer can no
+  longer buy at. Being offline has to read as offline.
+
+**Not built, and why**
+
+| Planned | Status |
+|---|---|
+| `/me/insured-persons`, `/profile/insured-persons` | Not needed yet — the insured travels on the order |
+| ماه‌های حرام دیه uplift | Deliberate; needs real rate tables first |
+| Web unit tests | Per §12 the web is verified in the browser; adding a runner was never in scope |
+| Sentry | Optional and still off |
+
+**Everything priced is a placeholder.** Every rate table carries `meta.source: "PLACEHOLDER"`
+and the UI shows the «نمونه» badge. Real insurer rates and the official استاندارد ۲۸۰۰ seismic
+zoning must both be sourced before this can be sold to anyone.
+

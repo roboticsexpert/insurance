@@ -203,5 +203,17 @@ export class RatingService {
     },
     cityQuakeZones: () =>
       this.prisma.city.findMany({ select: { id: true, quakeZone: true } }),
+    vehicleModelGroup: async (vehicleModelId) => {
+      const model = await this.prisma.vehicleModel.findFirst({
+        where: { id: vehicleModelId, isActive: true },
+        select: { group: true },
+      })
+      return model?.group ?? null
+    },
+    vehicleModelGroups: () =>
+      this.prisma.vehicleModel.findMany({
+        where: { isActive: true },
+        select: { id: true, group: true },
+      }),
   }
 }

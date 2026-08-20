@@ -70,7 +70,8 @@ export function QuotePage() {
         <header className="safe-top flex items-center gap-2 px-5 pb-3 pt-3">
           <button
             type="button"
-            onClick={() => navigate('/p/travel/form')}
+            // Back to this quote's own wizard; falls back to the product list before it loads.
+            onClick={() => navigate(quote.data ? `/p/${quote.data.productSlug}/form` : '/')}
             aria-label="بازگشت"
             className="-mr-2 grid h-11 w-11 place-items-center rounded-full text-muted"
           >

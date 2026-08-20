@@ -994,3 +994,59 @@ Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
 - **2026-08-20** — **Untested: the login round-trip.** Requesting an OTP writes rows, and that was
   not mine to do unasked on the live database. CORS, TLS, DNS and the catalog are verified;
   `POST /auth/otp/request` → verify → refresh is not.
+
+- **2026-08-20** — **The web moved from Cloudflare Workers to Railway**, on request, reversing
+  MVP-PLAN §12. Recorded because the plan's reasoning still stands and this is the trade being
+  accepted: Cloudflare's edge is *proven* reachable from inside Iran (`insurance.zisef.ir`),
+  Railway's is **unverified** — §12 calls that the single biggest deployment risk. Everything now
+  rides on one platform whose reachability has not been tested from the market being sold to.
+  `apps/web/wrangler.jsonc` is kept until the DNS cutover is verified, so the move is reversible
+  with one `wrangler deploy`.
+- **2026-08-20** — **The root `railway.json` had to go.** Railway reads it for *every* service in
+  the project, so the moment a second service existed the web would have built
+  `apps/api/Dockerfile`. Each service now names its own file through a `RAILWAY_DOCKERFILE_PATH`
+  variable. Casualty: the API's `/health/ready` healthcheck lived in that file and is currently
+  **unset** — `railway environment edit --service-config` returns "No changes to apply" for every
+  path on CLI 5.41.2, service name or ID alike, so it could not be moved to per-service config.
+  Until that is fixed in the dashboard, a deploy goes live when the container starts rather than
+  when the database is reachable.
+- **2026-08-20** — nginx over Railpack's static server, because the SPA fallback and the cache
+  headers both matter: `try_files $uri $uri/ /index.html` (a hard refresh on `/p/travel/form`
+  otherwise 404s at the edge), immutable caching on Vite's fingerprinted `/assets/`, and
+  `no-cache` on `index.html` and `sw.js` so a deploy does not leave clients on the old bundle.
+
+- **2026-08-20** — **The purchase flow was tested end to end for all three products**, in parallel,
+  against the local stack. All three buy successfully over the API and every issued policy's line
+  items sum to the paid amount exactly. Three critical defects came out of it, written up with the
+  other 23 in [`QA-FINDINGS.md`](QA-FINDINGS.md): **motor-tpl and home-fire cannot be bought in the
+  web app at all** (`CheckoutPage` is travel-only and throws `RangeError` on an input with no
+  `endDate`); **`vehicleGroup` is never checked against the chosen vehicle model**, so a truck buys
+  TPL at the motorcycle rate — 22.8× under-collection, and it survives to an issued policy; and a
+  **paid order that fails issuance is orphaned for good** — `order-status.ts` declares
+  `ISSUE_FAILED → ISSUING` legal so support can re-drive it, but `policies.service.ts:154` guards on
+  `PAID` and `payments.service.ts:96` short-circuits a settled payment, so nothing can.
+  The first of those makes `PROJECT.md`'s "travel and motor can be bought end to end" wrong for the
+  web app; that line has been corrected rather than left to be discovered again.
+
+- **2026-08-20** — **C1 and C2 fixed; C3 still open.**
+- **`prepare` is now motor-tpl's too.** `vehicleGroup` — a factor of 24 between a motorcycle and a
+  truck — was taken on the client's word because `vehicleModelId` was never looked up. It goes
+  through `RatingLookups.vehicleModelGroup` now, and a claim that contradicts the catalog is
+  **refused rather than silently corrected**: the real wizard fills that field from the same
+  `meta.group`, so the two can only disagree if the client is stale or lying. The catch was the
+  teaser — it passed the literal id `'teaser'`, which the new lookup rejects, and `cheapestTeaser`
+  swallows throws, so the fix would have quietly emptied «از … تومان» on the home screen instead of
+  failing. `teaserInputs` now names one real catalog model per group.
+- **Checkout stopped being travel-shaped.** The per-product differences live in
+  `apps/web/src/lib/checkout.ts` as data — who the policy names, whether their birth dates come
+  from the quote or have to be asked for, whether a passport is wanted, how the period reads — and
+  `CheckoutPage` renders what it is handed. The rule that matters: **it never formats a date it has
+  not first checked is one.** Two smaller things fell out: an empty `passportNo` was being sent as
+  `''` and the server's `.min(5)` rejects that, so it is omitted now; and the screen threw away the
+  API's per-field Persian errors in favour of the generic sentence.
+- **The app had no error boundary at all**, which is the only reason a single bad read during
+  render could take the whole screen white. `RouteErrorPage` is attached to every top-level route.
+  It says the money was not taken, because at that point in the flow that is the question.
+- Verified by buying **both** previously-unbuyable products through the UI end to end:
+  `DEY-TPL-0505-000013` and `PAS-FIR-0505-000004`. Travel checkout is untouched by eye and by
+  behaviour. 352 API unit tests pass, both typechecks pass, the web production build passes.

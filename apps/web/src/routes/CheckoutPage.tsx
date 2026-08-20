@@ -6,17 +6,16 @@ import { useAuth } from '../app/auth-context'
 import { ChevronIcon } from '../components/icons'
 import { Button } from '../components/ui/Button'
 import { ErrorNote } from '../components/ui/ErrorNote'
+import { JalaliDateField } from '../components/ui/JalaliDateField'
 import { TextField } from '../components/ui/TextField'
 import { ApiError } from '../lib/api'
+import { checkoutShape } from '../lib/checkout'
 import { formatJalali, formatToman, toLatinDigits, toPersianDigits } from '../lib/fa'
 import { createOrder, payOrder, type InsuredPerson } from '../lib/orders-api'
 import { getQuote } from '../lib/quotes-api'
 
-interface TravelInput {
-  travelers: { birthDate: string }[]
-}
-
-type Draft = InsuredPerson
+/** Birth date is null until collected, so it cannot be sent half-filled. */
+type Draft = Omit<InsuredPerson, 'birthDate'> & { birthDate: string | null }
 
 export function CheckoutPage() {
   const { quoteId = '', offerId = '' } = useParams()
@@ -34,19 +33,24 @@ export function CheckoutPage() {
 
   const [people, setPeople] = useState<Draft[] | null>(null)
 
-  // Birth dates come from the quote and are not editable: age set the price, so changing one
-  // here would be rejected by the server anyway. Prefilling the buyer saves the common case.
+  // What this product needs named, and how its cover period reads. Travel knows the birth dates
+  // already — age set the price, so they are shown and locked; motor and home have to ask.
+  const shape = useMemo(
+    () => (quote.data ? checkoutShape(quote.data.productType, quote.data.input) : null),
+    [quote.data],
+  )
+
   const initial = useMemo<Draft[] | null>(() => {
-    const input = quote.data?.input as TravelInput | undefined
-    if (!input?.travelers) return null
-    return input.travelers.map((traveler, index) => ({
+    if (!shape) return null
+    // Prefilling the buyer saves the common case: they are usually the first person named.
+    return shape.seeds.map((seed, index) => ({
       firstName: index === 0 ? (user?.firstName ?? '') : '',
       lastName: index === 0 ? (user?.lastName ?? '') : '',
       nationalCode: index === 0 ? (user?.nationalCode ?? '') : '',
-      birthDate: traveler.birthDate,
+      birthDate: seed.birthDate ?? (index === 0 ? (user?.birthDate ?? null) : null),
       passportNo: '',
     }))
-  }, [quote.data, user])
+  }, [shape, user])
 
   const drafts = people ?? initial ?? []
   const update = (index: number, patch: Partial<Draft>) =>
@@ -59,14 +63,23 @@ export function CheckoutPage() {
         p.firstName.trim().length >= 2 &&
         p.lastName.trim().length >= 2 &&
         p.nationalCode.length === 10 &&
-        (p.passportNo ?? '').length >= 5,
+        p.birthDate !== null &&
+        (!shape?.requiresPassport || (p.passportNo ?? '').length >= 5),
     )
 
   const purchase = useMutation({
     mutationFn: async () => {
       const order = await createOrder({
         quoteOfferId: offerId,
-        insured: drafts.map((p) => ({ ...p, firstName: p.firstName.trim(), lastName: p.lastName.trim() })),
+        insured: drafts.map(({ passportNo, ...p }) => ({
+          ...p,
+          firstName: p.firstName.trim(),
+          lastName: p.lastName.trim(),
+          // `birthDate` is non-null by the time the button enables; `complete` gates on it.
+          birthDate: p.birthDate as string,
+          // The server allows no passport but rejects an empty one, so omit rather than send ''.
+          ...(passportNo ? { passportNo } : {}),
+        })),
         idempotencyKey: idempotencyKey.current,
       })
       return payOrder(order.id)
@@ -88,9 +101,11 @@ export function CheckoutPage() {
       />
     )
   }
-  if (!offer || !quote.data) return <Missing message="این گزینه در استعلام پیدا نشد." />
+  if (!offer || !quote.data || !shape) return <Missing message="این گزینه در استعلام پیدا نشد." />
 
   const expired = quote.data.isExpired
+  // Back to the wizard this quote came from — not, as it was, always the travel one.
+  const requoteHref = `/p/${quote.data.productSlug}/form`
 
   return (
     <div className="min-h-dvh bg-sunken">
@@ -114,9 +129,8 @@ export function CheckoutPage() {
               <span className="text-sm text-muted">{offer.insurer.name}</span>
             </div>
             <p className="mt-1.5 text-xs text-muted">
-              {toPersianDigits(drafts.length)} بیمه‌شده ·{' '}
-              {formatJalali((quote.data.input as { startDate: string }).startDate)} تا{' '}
-              {formatJalali((quote.data.input as { endDate: string }).endDate)}
+              {toPersianDigits(drafts.length)} {shape.subjectFa}
+              {shape.periodFa ? ` · ${shape.periodFa}` : ''}
             </p>
           </section>
 
@@ -124,7 +138,7 @@ export function CheckoutPage() {
             <div role="alert" className="mt-4 rounded-2xl border border-line bg-card p-4 text-center">
               <p className="text-sm font-semibold text-strong">مهلت این قیمت تمام شد</p>
               <Link
-                to="/p/travel/form"
+                to={requoteHref}
                 className="mt-3 inline-flex min-h-[44px] items-center rounded-full bg-brand-600 px-6 text-sm font-semibold text-white"
               >
                 استعلام دوباره
@@ -132,21 +146,22 @@ export function CheckoutPage() {
             </div>
           ) : (
             <>
-              <h2 className="mb-2 mt-6 text-sm font-semibold text-strong">مشخصات بیمه‌شدگان</h2>
-              <p className="mb-3 text-xs leading-6 text-muted">
-                همان‌طور که در گذرنامه آمده وارد کنید؛ این اطلاعات روی بیمه‌نامه درج می‌شود.
-              </p>
+              <h2 className="mb-2 mt-6 text-sm font-semibold text-strong">{shape.headingFa}</h2>
+              <p className="mb-3 text-xs leading-6 text-muted">{shape.hintFa}</p>
 
               <div className="space-y-4">
                 {drafts.map((person, index) => (
                   <div key={index} className="space-y-4 rounded-[var(--radius-card)] border border-line bg-card p-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-strong">
-                        بیمه‌شده {toPersianDigits(index + 1)}
+                        {shape.subjectFa}
+                        {drafts.length > 1 ? ` ${toPersianDigits(index + 1)}` : ''}
                       </span>
-                      <span className="text-xs text-muted">
-                        متولد {formatJalali(person.birthDate)}
-                      </span>
+                      {shape.seeds[index]?.birthDateLocked && person.birthDate ? (
+                        <span className="text-xs text-muted">
+                          متولد {formatJalali(person.birthDate)}
+                        </span>
+                      ) : null}
                     </div>
 
                     <TextField
@@ -173,16 +188,26 @@ export function CheckoutPage() {
                         })
                       }
                     />
-                    <TextField
-                      label="شماره گذرنامه"
-                      dir="ltr"
-                      className="text-center uppercase"
-                      value={person.passportNo ?? ''}
-                      onChange={(e) =>
-                        update(index, { passportNo: e.target.value.toUpperCase().slice(0, 15) })
-                      }
-                      hint="روی صفحه اول گذرنامه"
-                    />
+                    {shape.seeds[index]?.birthDateLocked ? null : (
+                      <JalaliDateField
+                        label="تاریخ تولد"
+                        value={person.birthDate}
+                        onChange={(iso) => update(index, { birthDate: iso })}
+                      />
+                    )}
+
+                    {shape.requiresPassport ? (
+                      <TextField
+                        label="شماره گذرنامه"
+                        dir="ltr"
+                        className="text-center uppercase"
+                        value={person.passportNo ?? ''}
+                        onChange={(e) =>
+                          update(index, { passportNo: e.target.value.toUpperCase().slice(0, 15) })
+                        }
+                        hint="روی صفحه اول گذرنامه"
+                      />
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -203,7 +228,13 @@ export function CheckoutPage() {
             >
               پرداخت
             </Button>
-            {error ? <ErrorNote>{error.messageFa}</ErrorNote> : null}
+            {error ? (
+              <ErrorNote>
+                {/* The server says which person and which field; a generic sentence throws that
+                    away and leaves the buyer guessing which card to fix. */}
+                {Object.values(error.fields ?? {}).join(' · ') || error.messageFa}
+              </ErrorNote>
+            ) : null}
             <p className="mt-2 text-center text-xs text-muted">
               به درگاه بانکی منتقل می‌شوید.
             </p>
@@ -232,8 +263,10 @@ function Missing({ message }: { message: string }) {
     <div className="min-h-dvh bg-page">
       <div role="alert" className="mx-auto w-full max-w-[430px] px-5 pt-16 text-center">
         <p className="text-sm leading-7 text-strong">{message}</p>
+        {/* The quote is what names the product, and it is exactly what is missing here — so
+            this goes to the product list rather than guessing at a wizard. */}
         <Link
-          to="/p/travel/form"
+          to="/"
           className="mt-4 inline-flex min-h-[44px] items-center rounded-full bg-brand-600 px-6 text-sm font-semibold text-white"
         >
           استعلام جدید

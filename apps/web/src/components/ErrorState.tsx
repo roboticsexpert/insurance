@@ -16,11 +16,15 @@ export function ErrorState({
   message,
   onRetry,
   retrying,
+  actionLabel = 'تلاش دوباره',
 }: {
   title?: string
   message: string
   onRetry?: () => void
   retrying?: boolean
+  /** Override when the action is not a retry — a button that lies about where it goes is worse
+      than no button. */
+  actionLabel?: string
 }) {
   return (
     <div
@@ -37,7 +41,7 @@ export function ErrorState({
           disabled={retrying}
           className="mt-2 min-h-[44px] rounded-full bg-brand-600 px-6 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {retrying ? 'در حال تلاش…' : 'تلاش دوباره'}
+          {retrying ? 'در حال تلاش…' : actionLabel}
         </button>
       ) : null}
     </div>

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, type RouteObject } from 'react-router'
 import { AppShell } from '../components/AppShell'
 import { AuthPage } from '../routes/AuthPage'
 import { OtpPage } from '../routes/OtpPage'
@@ -15,6 +15,7 @@ import { WIZARD_SLUGS, type WizardSlug } from '../lib/wizards'
 import { RequireAuth } from '../components/RequireAuth'
 import { HomePage } from '../routes/HomePage'
 import { NotFoundPage } from '../routes/NotFoundPage'
+import { RouteErrorPage } from '../routes/RouteErrorPage'
 import { PoliciesPage } from '../routes/PoliciesPage'
 import { ProfilePage } from '../routes/ProfilePage'
 import { VehiclesPage } from '../routes/VehiclesPage'
@@ -27,7 +28,17 @@ const WIZARDS: Record<WizardSlug, React.ReactElement> = {
   'home-fire': <HomeFireWizardPage />,
 }
 
-export const router = createBrowserRouter([
+/*
+ * Every top-level route carries the same boundary. Without one, a throw during render unmounts
+ * the whole tree and leaves a white screen — which is exactly how a broken checkout screen
+ * looked to a customer with money in hand.
+ */
+const withBoundary = (route: RouteObject): RouteObject => ({
+  ...route,
+  errorElement: <RouteErrorPage />,
+})
+
+const routes: RouteObject[] = [
   // The auth flow sits outside the tabbed shell — it is a linear task, not a destination.
   // The wizard runs outside the tabbed shell: a linear task, no tabs inviting escape.
   ...WIZARD_SLUGS.map((slug) => ({
@@ -94,4 +105,6 @@ export const router = createBrowserRouter([
       { path: '*', element: <NotFoundPage /> },
     ],
   },
-])
+]
+
+export const router = createBrowserRouter(routes.map(withBoundary))

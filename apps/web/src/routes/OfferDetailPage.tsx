@@ -50,6 +50,7 @@ export function OfferDetailPage() {
             expiresAt={quote.data.expiresAt}
             isExpired={quote.data.isExpired}
             quoteId={id}
+            productSlug={quote.data.productSlug}
           />
         ) : null}
       </div>
@@ -62,11 +63,14 @@ function Body({
   expiresAt,
   isExpired,
   quoteId,
+  productSlug,
 }: {
   offer: QuoteOffer
   expiresAt: string
   isExpired: boolean
   quoteId: string
+  /** Re-quoting has to return to the wizard this offer came from, whichever product it is. */
+  productSlug: string
 }) {
   const remaining = useCountdown(expiresAt)
   const expired = isExpired || remaining === 0
@@ -160,7 +164,7 @@ function Body({
         {expired ? (
           <>
             <Link
-              to="/p/travel/form"
+              to={`/p/${productSlug}/form`}
               className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-brand-600 text-[0.95rem] font-semibold text-white"
             >
               استعلام دوباره
@@ -231,7 +235,7 @@ function Message({ text }: { text: string }) {
     <div role="alert" className="flex-1 px-5 pt-6 text-center">
       <p className="text-sm text-strong">{text}</p>
       <Link
-        to="/p/travel/form"
+        to="/"
         className="mt-4 inline-flex min-h-[44px] items-center rounded-full bg-brand-600 px-6 text-sm font-semibold text-white"
       >
         استعلام جدید

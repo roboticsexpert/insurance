@@ -1,6 +1,7 @@
 import { AppException } from '../../common/app.exception'
 import { LineItemKind } from '../../products/labels'
 import type { MotorTplInput } from '../../products/schemas/motor-tpl'
+import type { RatingLookups } from '../rating-strategy'
 import type { MotorTplRateTable } from './motor-tpl.rate-table'
 import { jalaliYear, MotorTplRatingStrategy } from './motor-tpl.strategy'
 
@@ -293,8 +294,23 @@ describe('MotorTplRatingStrategy.coveragePeriod', () => {
 })
 
 describe('MotorTplRatingStrategy.teaserInputs', () => {
-  it('offers one buyable basket per vehicle group', () => {
-    const baskets = strategy.teaserInputs(ctx) as MotorTplInput[]
+  /** One catalog model per group, which is what the real lookup returns. */
+  const teaserLookups = (): RatingLookups => ({
+    cityQuakeZone: jest.fn().mockResolvedValue(null),
+    cityQuakeZones: jest.fn().mockResolvedValue([]),
+    vehicleModelGroup: jest.fn().mockResolvedValue(null),
+    vehicleModelGroups: jest.fn().mockResolvedValue([
+      { id: 'm-sedan', group: 'SEDAN' },
+      { id: 'm-sedan-2', group: 'SEDAN' },
+      { id: 'm-pickup', group: 'PICKUP' },
+      { id: 'm-van', group: 'VAN' },
+      { id: 'm-truck', group: 'TRUCK' },
+      { id: 'm-moto', group: 'MOTORCYCLE' },
+    ]),
+  })
+
+  it('offers one buyable basket per vehicle group', async () => {
+    const baskets = (await strategy.teaserInputs(ctx, teaserLookups())) as MotorTplInput[]
 
     expect(baskets).toHaveLength(5)
     expect(new Set(baskets.map((b) => b.vehicleGroup)).size).toBe(5)
@@ -305,5 +321,60 @@ describe('MotorTplRatingStrategy.teaserInputs', () => {
       expect(basket.bodilyDiscountYears).toBe(0)
       expect(basket.propertyCoverageTier).toBe('P_2_5')
     }
+  })
+
+  /*
+   * The baskets now carry catalog ids, and `prepare` checks them. A teaser that cannot survive
+   * its own `prepare` prices nothing: `cheapestTeaser` swallows the throw and the home screen
+   * silently loses its «از … تومان».
+   */
+  it('names a real catalog model whose group matches the basket', async () => {
+    const lookups = teaserLookups()
+    const baskets = (await strategy.teaserInputs(ctx, lookups)) as MotorTplInput[]
+
+    for (const basket of baskets) {
+      const group = basket.vehicleGroup
+      const prepared = await strategy.prepare(basket, {
+        ...lookups,
+        vehicleModelGroup: jest.fn().mockResolvedValue(group),
+      })
+      expect(prepared.vehicleGroup).toBe(group)
+    }
+  })
+
+  it('skips a group the catalog has no model for', async () => {
+    const baskets = (await strategy.teaserInputs(ctx, {
+      ...teaserLookups(),
+      vehicleModelGroups: jest.fn().mockResolvedValue([{ id: 'm-moto', group: 'MOTORCYCLE' }]),
+    })) as MotorTplInput[]
+
+    expect(baskets.map((b) => b.vehicleGroup)).toEqual(['MOTORCYCLE'])
+  })
+})
+
+describe('MotorTplRatingStrategy.prepare', () => {
+  const withGroup = (group: string | null): RatingLookups => ({
+    cityQuakeZone: jest.fn().mockResolvedValue(null),
+    cityQuakeZones: jest.fn().mockResolvedValue([]),
+    vehicleModelGroup: jest.fn().mockResolvedValue(group),
+    vehicleModelGroups: jest.fn().mockResolvedValue([]),
+  })
+
+  it('refuses a vehicle group that contradicts the chosen model', async () => {
+    // A truck priced as a motorcycle is a 24× under-collection, and it used to reach issuance.
+    await expect(
+      strategy.prepare(input({ vehicleGroup: 'MOTORCYCLE' }), withGroup('TRUCK')),
+    ).rejects.toMatchObject({ fields: { vehicleGroup: expect.any(String) } })
+  })
+
+  it('refuses a model the catalog does not have', async () => {
+    await expect(strategy.prepare(input(), withGroup(null))).rejects.toMatchObject({
+      fields: { vehicleModelId: expect.any(String) },
+    })
+  })
+
+  it('takes the group from the catalog when the two agree', async () => {
+    const prepared = await strategy.prepare(input({ vehicleGroup: 'SEDAN' }), withGroup('SEDAN'))
+    expect(prepared.vehicleGroup).toBe('SEDAN')
   })
 })

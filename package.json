@@ -1,0 +1,29 @@
+{
+  "name": "bime247",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.11.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @bime247/api --filter @bime247/web dev",
+    "dev:api": "pnpm --filter @bime247/api dev",
+    "dev:web": "pnpm --filter @bime247/web dev",
+    "dev:docs": "pnpm --filter @bime247/docs dev",
+    "build": "pnpm --filter @bime247/api build && pnpm --filter @bime247/web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @bime247/api migrate:dev",
+    "db:seed": "pnpm --filter @bime247/api seed",
+    "db:studio": "pnpm --filter @bime247/api studio",
+    "db:reset": "pnpm --filter @bime247/api migrate:reset",
+    "test:e2e": "pnpm --filter @bime247/api test:e2e"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,55 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'مستندات و یادداشت‌های پژوهشی صنعت بیمه ایران' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+    <meta name="theme-color" content="#0b7c7c" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d2b2b" media="(prefers-color-scheme: dark)" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <svg class="mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <circle cx="32" cy="32" r="24.5" fill="none" stroke="currentColor" stroke-width="5.5" />
+            <path
+              d="M32 15.6 46.4 20.8v10.7c0 8.1-6.1 14.2-14.4 16.9-8.3-2.7-14.4-8.8-14.4-16.9V20.8z"
+              fill="currentColor"
+            />
+          </svg>
+          مستندات صنعت بیمه ایران
+        </a>
+        <nav>
+          <a href="/">موضوع‌ها</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        یادداشت‌های داخلی پژوهش. هر موضوع تاریخ آخرین به‌روزرسانی و منابع خودش را دارد.
+      </div>
+    </footer>
+  </body>
+</html>

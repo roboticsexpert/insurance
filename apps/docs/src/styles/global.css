@@ -1,0 +1,233 @@
+@import '@fontsource-variable/vazirmatn';
+
+:root {
+  --bg: #fbfaf8;
+  --bg-soft: #ffffff;
+  --border: #e6e1d8;
+  --text: #1c1a17;
+  --text-soft: #5d574d;
+  --accent: #0b7c7c;
+  --accent-soft: #e2f2f2;
+  --code-bg: #f2efe9;
+  --radius: 14px;
+  --maxw: 46rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --bg-soft: #1b1e24;
+    --border: #2c313a;
+    --text: #eceef2;
+    --text-soft: #a3aab6;
+    --accent: #3fd0d0;
+    --accent-soft: #0d2b2b;
+    --code-bg: #21262e;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html {
+  font-family: 'Vazirmatn Variable', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  line-height: 1.9;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* ---------- سربرگ ---------- */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+}
+.site-header .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.9rem;
+}
+.brand {
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--text);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.brand .mark {
+  width: 26px; height: 26px;
+  color: var(--accent);
+  flex: none;
+}
+.site-header nav a {
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 0.92rem;
+  margin-inline-start: 1rem;
+}
+.site-header nav a:hover { color: var(--accent); }
+
+/* ---------- صفحه اصلی ---------- */
+.hero { padding: 3.5rem 0 2rem; }
+.hero h1 {
+  font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+  line-height: 1.5;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.01em;
+}
+.hero p {
+  color: var(--text-soft);
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.section-title {
+  font-size: 0.82rem;
+  color: var(--text-soft);
+  letter-spacing: 0.08em;
+  margin: 2.5rem 0 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-list { display: grid; gap: 0.9rem; padding: 0; margin: 0; list-style: none; }
+
+.card {
+  display: block;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.card h3 { margin: 0 0 0.4rem; font-size: 1.12rem; }
+.card p { margin: 0; color: var(--text-soft); font-size: 0.95rem; line-height: 1.8; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+.tag {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.75rem;
+}
+.status { border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.65rem; }
+
+.empty {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  color: var(--text-soft);
+  font-size: 0.93rem;
+}
+
+/* ---------- مقاله ---------- */
+.article { padding: 2.5rem 0 1rem; }
+.article h1 {
+  font-size: clamp(1.55rem, 4vw, 2.1rem);
+  line-height: 1.55;
+  margin: 0 0 0.6rem;
+}
+.article .lead { color: var(--text-soft); margin: 0; }
+
+.prose { padding-bottom: 4rem; }
+.prose h2 {
+  margin: 2.6rem 0 0.9rem;
+  font-size: 1.32rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.prose h3 { margin: 1.9rem 0 0.6rem; font-size: 1.08rem; }
+.prose p { margin: 0 0 1.1rem; }
+.prose ul, .prose ol { padding-inline-start: 1.4rem; margin: 0 0 1.1rem; }
+.prose li { margin-bottom: 0.5rem; }
+.prose a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.prose strong { font-weight: 700; }
+.prose hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+
+.prose blockquote {
+  margin: 0 0 1.2rem;
+  padding: 0.9rem 1.1rem;
+  border-inline-start: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text);
+}
+.prose blockquote p:last-child { margin-bottom: 0; }
+
+.prose code {
+  background: var(--code-bg);
+  padding: 0.12em 0.4em;
+  border-radius: 6px;
+  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  direction: ltr;
+  display: inline-block;
+}
+.prose pre {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  direction: ltr;
+  text-align: left;
+}
+.prose pre code { background: none; padding: 0; }
+
+/* جدول‌ها در موبایل باید خودشان اسکرول شوند، نه کل صفحه */
+.table-scroll { overflow-x: auto; margin: 0 0 1.3rem; }
+.prose table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 30rem;
+  font-size: 0.92rem;
+}
+.prose th, .prose td {
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.85rem;
+  text-align: right;
+  vertical-align: top;
+}
+.prose th { background: var(--bg-soft); font-weight: 700; }
+
+/* اعداد و نشانی‌های لاتین داخل متن فارسی */
+.ltr { direction: ltr; display: inline-block; unicode-bidi: isolate; }
+
+/* ---------- پاورقی ---------- */
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem 0 3rem;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+.site-footer a { color: var(--accent); }

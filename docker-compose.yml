@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bime247-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bime247
+      POSTGRES_PASSWORD: bime247
+      POSTGRES_DB: bime247
+    ports:
+      - '5433:5432'
+    volumes:
+      - bime247-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bime247 -d bime247']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bime247-pgdata:

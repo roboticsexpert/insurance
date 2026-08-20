@@ -1,0 +1,48 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const topics = (await getCollection('topics')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+const statusLabel: Record<string, string> = {
+  draft: 'پیش‌نویس',
+  'in-progress': 'در حال تکمیل',
+  reviewed: 'بازبینی‌شده',
+};
+---
+
+<BaseLayout title="مستندات صنعت بیمه ایران">
+  <div class="wrap">
+    <section class="hero">
+      <h1>مستندات صنعت بیمه ایران</h1>
+      <p>
+        مجموعه‌ای از یادداشت‌های پژوهشی درباره سامانه‌ها، بازیگران و ساختار فنی صنعت بیمه در ایران.
+        هر موضوع به‌صورت مستقل نگهداری و به‌مرور به‌روزرسانی می‌شود.
+      </p>
+    </section>
+
+    <h2 class="section-title">موضوع‌ها</h2>
+
+    {topics.length === 0 ? (
+      <p class="empty">هنوز موضوعی ثبت نشده است.</p>
+    ) : (
+      <ul class="card-list">
+        {topics.map((topic) => (
+          <li>
+            <a class="card" href={`/topics/${topic.id}/`}>
+              <h3>{topic.data.title}</h3>
+              <p>{topic.data.summary}</p>
+              <div class="meta">
+                <span class="status">{statusLabel[topic.data.status]}</span>
+                {topic.data.tags.map((tag) => <span class="tag">{tag}</span>)}
+                <span>به‌روزرسانی: {topic.data.updated}</span>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</BaseLayout>

@@ -1,0 +1,376 @@
+// Bime247 — data model.
+//
+// Three rules this schema enforces on purpose:
+//   1. Money is always Int, in RIAL. No Decimal, no Float, no String.
+//   2. A price, once quoted, is frozen on QuoteOffer. Orders reference it, never recompute.
+//   3. Issued artefacts carry snapshots. Editing a profile must never mutate a live policy.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* ================================ identity ================================= */
+
+model User {
+  id                String   @id @default(cuid())
+  mobile            String   @unique // canonical 9XXXXXXXXX
+  firstName         String?
+  lastName          String?
+  nationalCode      String?
+  birthDate         DateTime? @db.Date
+  email             String?
+  isProfileComplete Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  refreshTokens  RefreshToken[]
+  vehicles       Vehicle[]
+  insuredPersons InsuredPerson[]
+  quotes         Quote[]
+  orders         Order[]
+
+  @@index([mobile])
+}
+
+model OtpChallenge {
+  id         String    @id @default(cuid())
+  mobile     String
+  codeHash   String
+  purpose    String    @default("LOGIN")
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([mobile, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  // Rotation family. Reuse of an already-rotated token revokes the entire family.
+  family    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+}
+
+/* ================================= catalog ================================= */
+
+enum ProductType {
+  TRAVEL
+  MOTOR_TPL
+  HOME_FIRE
+}
+
+enum Fulfillment {
+  INSTANT
+  MANUAL_QUOTE
+}
+
+model Insurer {
+  id                String  @id @default(cuid())
+  slug              String  @unique
+  name              String
+  logoUrl           String?
+  // سطح توانگری مالی — 1 (strongest) to 5.
+  solvencyLevel     Int?
+  claimSatisfaction Int?
+  branchCount       Int?
+  isActive          Boolean @default(true)
+  sortWeight        Int     @default(0)
+
+  offerings   Offering[]
+  quoteOffers QuoteOffer[]
+  policies    Policy[]
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  slug          String      @unique
+  type          ProductType @unique
+  titleFa       String
+  subtitleFa    String
+  descriptionFa String      @default("")
+  highlightsFa  String[]    @default([])
+  faq           Json        @default("[]")
+  iconKey       String      @default("shield")
+  fulfillment   Fulfillment @default(INSTANT)
+  isActive      Boolean     @default(true)
+  sortWeight    Int         @default(0)
+  /// Cheapest published premium, in Rial — the «از … تومان» teaser on the home screen.
+  /// Denormalised on purpose: rating every product against every insurer just to draw a card
+  /// would be absurd. Refreshed whenever rate tables are seeded or changed.
+  fromAmount    Int?
+  /// Whether `fromAmount` came from placeholder tables. Stored beside the number it describes,
+  /// so a teaser can never be shown as real after the rates behind it were swapped.
+  fromAmountIsSample Boolean @default(false)
+
+  offerings Offering[]
+  quotes    Quote[]
+}
+
+/// One insurer selling one product. Its rate tables hang off this.
+model Offering {
+  id         String   @id @default(cuid())
+  productId  String
+  insurerId  String
+  isActive   Boolean  @default(true)
+  sortWeight Int      @default(0)
+  featuresFa String[] @default([])
+
+  product    Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  insurer    Insurer      @relation(fields: [insurerId], references: [id], onDelete: Cascade)
+  rateTables RateTable[]
+  quoteOffers QuoteOffer[]
+
+  @@unique([productId, insurerId])
+}
+
+/// The entire pricing structure, versioned. Changing a price is a data change with an
+/// audit trail — never a deploy. `data.meta.source` marks PLACEHOLDER vs real rates.
+model RateTable {
+  id            String    @id @default(cuid())
+  offeringId    String
+  version       Int
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  data          Json
+  note          String?
+  createdAt     DateTime  @default(now())
+
+  offering Offering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@unique([offeringId, version])
+  @@index([offeringId, effectiveFrom])
+}
+
+/* ============================== reference data ============================= */
+
+model VehicleModel {
+  id       String  @id @default(cuid())
+  brandFa  String
+  modelFa  String
+  group    String // VehicleGroup
+  isActive Boolean @default(true)
+
+  vehicles Vehicle[]
+
+  @@unique([brandFa, modelFa])
+}
+
+model City {
+  id         String  @id @default(cuid())
+  provinceFa String
+  nameFa     String
+  // Seismic zone 1..4, drives the earthquake add-on rate.
+  quakeZone  Int     @default(2)
+
+  @@unique([provinceFa, nameFa])
+}
+
+/* ============================== saved entities ============================= */
+
+model Vehicle {
+  id             String @id @default(cuid())
+  userId         String
+  vehicleModelId String
+  plate          Json
+  productionYear Int
+  usage          String
+  group          String
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleModel VehicleModel @relation(fields: [vehicleModelId], references: [id])
+
+  @@index([userId])
+}
+
+model InsuredPerson {
+  id           String    @id @default(cuid())
+  userId       String
+  firstName    String
+  lastName     String
+  nationalCode String
+  birthDate    DateTime  @db.Date
+  passportNo   String?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, nationalCode])
+  @@index([userId])
+}
+
+/* ================================= quoting ================================= */
+
+enum QuoteStatus {
+  ACTIVE
+  EXPIRED
+  CONVERTED
+}
+
+model Quote {
+  id        String      @id @default(cuid())
+  // Nullable on purpose: quoting works before login. The OTP wall is at checkout.
+  userId    String?
+  productId String
+  input     Json
+  status    QuoteStatus @default(ACTIVE)
+  expiresAt DateTime
+  /// Whether the prices below came from placeholder rate tables. Frozen with the quote rather
+  /// than looked up later, because the tables can change after the customer saw the price.
+  isSampleRates Boolean @default(false)
+  createdAt DateTime    @default(now())
+
+  user    User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  product Product      @relation(fields: [productId], references: [id])
+  offers  QuoteOffer[]
+
+  @@index([userId])
+  @@index([status, expiresAt])
+}
+
+/// A frozen price. Whatever happens to rate tables afterwards, this is what gets charged.
+model QuoteOffer {
+  id                 String  @id @default(cuid())
+  quoteId            String
+  offeringId         String
+  insurerId          String
+  netPremium         Int
+  totalAmount        Int
+  lineItems          Json
+  coverages          Json
+  breakdown          Json // the rating engine's explain[] trace
+  isEligible         Boolean @default(true)
+  ineligibleReasonFa String?
+  rateTableVersion   Int
+
+  quote    Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  offering Offering @relation(fields: [offeringId], references: [id])
+  insurer  Insurer  @relation(fields: [insurerId], references: [id])
+  orders   Order[]
+
+  @@index([quoteId])
+}
+
+/* ============================== order & payment ============================ */
+
+enum OrderStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAYMENT_FAILED
+  PAID
+  ISSUING
+  ISSUED
+  ISSUE_FAILED
+  CANCELLED
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  quoteOfferId    String
+  status          OrderStatus @default(DRAFT)
+  amount          Int
+  insuredSnapshot Json
+  idempotencyKey  String      @unique
+  expiresAt       DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id])
+  quoteOffer QuoteOffer @relation(fields: [quoteOfferId], references: [id])
+  payments   Payment[]
+  policy     Policy?
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+enum PaymentStatus {
+  CREATED
+  REDIRECTED
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  gateway     String        @default("mock")
+  authority   String        @unique
+  refId       String?
+  cardMask    String?
+  amount      Int
+  status      PaymentStatus @default(CREATED)
+  requestedAt DateTime      @default(now())
+  verifiedAt  DateTime?
+  rawCallback Json?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+/* ================================= policy ================================== */
+
+model Policy {
+  id           String   @id @default(cuid())
+  orderId      String   @unique
+  insurerId    String
+  policyNumber String   @unique
+  startsAt     DateTime
+  endsAt       DateTime
+  issuedAt     DateTime @default(now())
+  documentUrl  String?
+  // Everything needed to render this policy forever, independent of current data.
+  dataSnapshot Json
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  insurer Insurer @relation(fields: [insurerId], references: [id])
+
+  @@index([insurerId])
+}
+
+/// Per-insurer, per-period policy numbering. A counter row incremented atomically by
+/// `INSERT … ON CONFLICT DO UPDATE … RETURNING`, so two concurrent issuances can never be
+/// handed the same number — which a read-then-write would eventually do.
+model PolicyCounter {
+  insurerId  String
+  /// Jalali yymm, e.g. `0505` for Mordad 1405.
+  period     String
+  lastNumber Int    @default(0)
+
+  @@id([insurerId, period])
+}
+
+/* ================================ messaging ================================ */
+
+model SmsLog {
+  id          String   @id @default(cuid())
+  mobile      String
+  template    String
+  body        String
+  status      String   @default("SENT")
+  providerRef String?
+  createdAt   DateTime @default(now())
+
+  @@index([mobile, createdAt])
+}

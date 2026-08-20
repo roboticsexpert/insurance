@@ -1,0 +1,23 @@
+node_modules
+**/node_modules
+**/dist
+**/build
+**/.astro
+**/.wrangler
+**/.turbo
+.git
+.claude
+docs
+tools
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+.DS_Store
+
+# The API image only needs the other workspaces' manifests — pnpm reads every
+# package.json named in pnpm-workspace.yaml, but none of their source.
+apps/web
+apps/docs
+!apps/web/package.json
+!apps/docs/package.json

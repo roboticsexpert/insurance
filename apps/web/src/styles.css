@@ -1,0 +1,138 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/vazirmatn';
+
+/*
+ * Design tokens. The brand colour is a PLACEHOLDER until the brand book settles it —
+ * change `--color-brand-*` here and the whole app follows.
+ */
+@theme {
+  --font-sans: 'Vazirmatn Variable', system-ui, sans-serif;
+
+  --color-brand-50: oklch(0.97 0.02 185);
+  --color-brand-100: oklch(0.94 0.04 185);
+  --color-brand-200: oklch(0.88 0.07 185);
+  --color-brand-300: oklch(0.8 0.1 185);
+  --color-brand-400: oklch(0.72 0.13 185);
+  --color-brand-500: oklch(0.64 0.14 185);
+  --color-brand-600: oklch(0.55 0.13 185);
+  --color-brand-700: oklch(0.46 0.11 185);
+  --color-brand-800: oklch(0.38 0.09 185);
+  --color-brand-900: oklch(0.3 0.07 185);
+
+  --radius-card: 1rem;
+  --radius-sheet: 1.5rem;
+}
+
+/*
+ * Semantic surfaces, defined light-first then overridden for dark. Every colour has a value
+ * on bare `:root`, so nothing depends on a media query having matched.
+ */
+:root {
+  --surface-page: oklch(0.97 0.003 260);
+  --surface-card: oklch(1 0 0);
+  --surface-sunken: oklch(0.94 0.005 260);
+  --surface-border: oklch(0.9 0.006 260);
+  --text-strong: oklch(0.22 0.01 260);
+  --text-muted: oklch(0.52 0.012 260);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.05), 0 8px 24px oklch(0 0 0 / 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-page: oklch(0.18 0.01 260);
+    --surface-card: oklch(0.23 0.012 260);
+    --surface-sunken: oklch(0.15 0.01 260);
+    --surface-border: oklch(0.31 0.014 260);
+    --text-strong: oklch(0.96 0.004 260);
+    --text-muted: oklch(0.68 0.012 260);
+    --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px oklch(0 0 0 / 0.25);
+  }
+}
+
+@theme inline {
+  --color-page: var(--surface-page);
+  --color-card: var(--surface-card);
+  --color-sunken: var(--surface-sunken);
+  --color-line: var(--surface-border);
+  --color-strong: var(--text-strong);
+  --color-muted: var(--text-muted);
+}
+
+@layer base {
+  html {
+    /* Persian numerals everywhere they are not already formatted by hand. */
+    font-feature-settings: 'ss02';
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--surface-page);
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    /* The phone frame sits on a neutral backdrop, so a laptop sees a deliberate layout. */
+    overscroll-behavior-y: none;
+  }
+
+  /* No hover-dependent affordances on a touch-only app. */
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Every tap target clears 44px. */
+  button,
+  a[role='button'] {
+    min-height: 44px;
+  }
+}
+
+/*
+ * The screen entrance. Deliberately small — 8px and 180ms — because a tabbed app changes
+ * screens constantly and anything showier becomes a tax paid on every single tap.
+ */
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-screen-in {
+  animation: screen-in 180ms ease-out both;
+}
+
+/*
+ * Honour the OS setting. For someone with vestibular sensitivity a translate on every
+ * navigation is not decoration, it is a symptom trigger — so movement goes away entirely and
+ * only the opacity remains.
+ */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes screen-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@utility safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+@utility safe-top {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+}

@@ -1,0 +1,13 @@
+{
+  // The build's tsconfig pins `rootDir` to src so `dist/main.js` lands where the start script
+  // expects it. That also puts the seed data and the e2e specs out of reach of `tsc`, which is
+  // how `test/*.e2e-spec.ts` went uncompiled until ts-jest got to it at run time. This config
+  // checks everything and emits nothing.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src/**/*", "prisma/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,33 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const topics = await getCollection('topics');
+  return topics.map((topic) => ({
+    params: { slug: topic.id },
+    props: { topic },
+  }));
+}
+
+const { topic } = Astro.props;
+const { Content } = await render(topic);
+---
+
+<BaseLayout title={`${topic.data.title} — مستندات صنعت بیمه ایران`} description={topic.data.summary}>
+  <div class="wrap">
+    <article>
+      <header class="article">
+        <h1>{topic.data.title}</h1>
+        <p class="lead">{topic.data.summary}</p>
+        <div class="meta">
+          {topic.data.tags.map((tag: string) => <span class="tag">{tag}</span>)}
+          <span>آخرین به‌روزرسانی: {topic.data.updated}</span>
+        </div>
+      </header>
+      <div class="prose">
+        <Content />
+      </div>
+    </article>
+  </div>
+</BaseLayout>

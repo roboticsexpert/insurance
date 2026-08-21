@@ -35,8 +35,13 @@ every one is rendered from the SVG above it, so they cannot disagree.
 Keep free space equal to **22 % of the lockup height** on all four sides — roughly the
 height of the gold tittle. Nothing else enters that band.
 
-The horizontal lockup stays legible down to **16 px tall**. Below that, switch to the
-`bi` monogram.
+The horizontal lockup stays legible down to **16 px tall** — at that height it is still
+53 px wide, which is the space it needs. Below that, switch to the `bi` monogram.
+
+Square slots are a different question, because the constraint is width, not height. In a
+square the stacked lockup holds to about **48 px**; at 32 it is soft and at 16 it is a
+smudge. So every app icon uses the full lockup and only the browser tab falls back to the
+monogram.
 
 ### Misuse
 
@@ -47,12 +52,17 @@ light-background version on a dark field. Use the file for the background you ha
 ## 2. The mark
 
 `bi` — the first two letters of the wordmark with the gold tittle — is the reduced form.
-It carries the brand where the full lockup will not fit: favicons, app icons, the app's
-own header, avatars.
+**Use it only where the full lockup cannot be read**, which in practice means the 16 and
+32 px browser-tab icon. Everywhere with room for the name — app icons, the app header, the
+auth screen, avatars — takes the full lockup.
 
 The letterforms take the surrounding text colour; **the tittle is always `#D4AF37`**.
-In the web app this is the generated `BrandMark` component
-(`apps/web/src/components/BrandMark.tsx`), whose letterforms are `currentColor`.
+
+In the web app both are generated React components with `currentColor` letterforms:
+`BrandLogo` (`apps/web/src/components/BrandLogo.tsx`) is the default,
+`BrandMark` is the reduced form. Size them with a height and `w-auto`. Inside a flex
+column add `self-start` — as a flex item the `<svg>` stretches to full width and
+`preserveAspectRatio` then centres the artwork inside it, which reads as a centring bug.
 
 ## 3. Colour
 
@@ -91,14 +101,18 @@ artwork. Never substitute it for the logo.
 
 ## 5. Application
 
-Generated icon set, all built from the monogram on the navy field:
+Generated icon set:
 
-| File | Size | Where |
-|---|---|---|
-| `traced/svg/favicon.svg` · `traced/favicon.ico` | 16–48 | Browser tab |
-| `traced/png/apple-touch-icon-180.png` | 180 | iOS home screen |
-| `traced/png/icon-192.png` · `icon-512.png` | 192 / 512 | PWA manifest |
-| `traced/png/icon-maskable-512.png` | 512 | Android adaptive (40 % safe zone) |
+| File | Size | Artwork | Where |
+|---|---|---|---|
+| `traced/svg/favicon.svg` | 16–32 | `bi` monogram | Browser tab |
+| `traced/favicon.ico` | 16 / 32 / 48 | monogram at 16 and 32, **stacked lockup at 48** | Browser tab, bookmarks |
+| `traced/png/apple-touch-icon-180.png` | 180 | stacked lockup | iOS home screen |
+| `traced/png/icon-192.png` · `icon-512.png` | 192 / 512 | stacked lockup | PWA manifest |
+| `traced/png/icon-maskable-512.png` | 512 | stacked lockup | Android adaptive (48 % safe zone) |
+
+All on the navy field. The `.ico` carries different artwork per size on purpose — it is
+the one format that can, and 48 px is where the full name becomes readable.
 
 `tools/brand-gold/sync.sh` copies this package into `apps/web/public/brand/` and
 `apps/docs/public/brand/` and regenerates `BrandMark.tsx`. **Those folders are generated —

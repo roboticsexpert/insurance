@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { BrandMark } from './BrandMark'
+import { BrandLogo } from './BrandLogo'
 
 /**
  * The auth flow deliberately has no bottom tab bar: it is a linear task, and the tabs would
@@ -20,7 +20,9 @@ export function AuthLayout({
     <div className="min-h-dvh bg-sunken">
       <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-page">
         <div className="safe-top flex flex-1 flex-col px-6 pt-10">
-          <BrandMark className="h-11 w-auto text-strong" />
+          {/* self-start: as a flex item the svg would stretch, and preserveAspectRatio
+              would then centre the artwork inside it instead of leaving it at the margin. */}
+          <BrandLogo className="h-8 w-auto self-start text-strong" />
           <h1 className="mt-6 text-2xl font-bold text-strong">{title}</h1>
           <div className="mt-2 text-sm leading-7 text-muted">{subtitle}</div>
           <div className="mt-8 flex-1">{children}</div>

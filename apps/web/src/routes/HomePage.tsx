@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ActivePolicyStrip } from '../components/ActivePolicyStrip'
 import { ErrorState } from '../components/ErrorState'
 import { ProductCard } from '../components/ProductCard'
-import { BrandMark } from '../components/BrandMark'
+import { BrandLogo } from '../components/BrandLogo'
 import { Skeleton, SkeletonScreen } from '../components/ui/Skeleton'
 import { ApiError } from '../lib/api'
 import { getProducts } from '../lib/catalog-api'
@@ -12,12 +12,10 @@ export function HomePage() {
 
   return (
     <div>
-      <header className="safe-top flex items-center gap-3 px-5 pb-5 pt-4">
-        <BrandMark className="h-9 w-auto text-strong" />
-        <div>
-          <p className="text-lg font-bold leading-tight text-strong">بیمه گلد</p>
-          <p className="text-xs text-muted">خرید آنلاین بیمه، بدون رفت‌وآمد</p>
-        </div>
+      {/* The lockup carries the name, so the Persian one beside it would only repeat it. */}
+      <header className="safe-top px-5 pb-5 pt-4">
+        <BrandLogo className="h-7 w-auto text-strong" />
+        <p className="mt-1.5 text-xs text-muted">خرید آنلاین بیمه، بدون رفت‌وآمد</p>
       </header>
 
       <ActivePolicyStrip />

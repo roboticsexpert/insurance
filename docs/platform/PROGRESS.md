@@ -99,6 +99,19 @@ Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
 
 ## Notes & decisions made during the build
 
+- **2026-08-21 — the `bi` monogram was pulled back to just the browser tab.** It had been
+  used for every icon and for the app header, which meant the product introduced itself as
+  «bi». The full lockup goes everywhere it can be read. Where that line falls was measured,
+  not guessed: the *horizontal* lockup holds to 16px tall because it is allowed to be 53px
+  wide, but a square icon constrains width instead, and there the *stacked* lockup holds to
+  about 48px, is soft at 32 and unreadable at 16. So app icons, apple-touch and maskable all
+  carry the stacked lockup, `favicon.ico` carries the monogram at 16/32 and the stacked
+  lockup at 48 — `.ico` is the one format that can hold different artwork per size — and
+  only `favicon.svg` is monogram-only. `BrandLogo` joins `BrandMark` as a generated
+  component; inlining both costs +3.7kB gzip and buys `currentColor` letterforms.
+  One trap on the way in: an `<svg>` that is a flex item stretches to full width, and
+  `preserveAspectRatio` then centres the artwork inside it — the auth screen's logo looked
+  centred for no visible reason until `self-start` went on.
 - **2026-08-21 — `bimegold.com` is live; the cutover broke once, on ordering.** `app.` and
   `api.bimegold.com` are Railway custom domains, `docs.bimegold.com` is a Cloudflare Worker.
   The app came up branded and *empty*: «ارتباط با سرور برقرار نشد» on every product. The

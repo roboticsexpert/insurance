@@ -2,9 +2,9 @@
 // Source: brand/bime-gold/traced/svg/mark.svg. Re-run tools/brand-gold/build.sh.
 
 /**
- * The Bime Gold mark: lowercase `bi` lifted from the wordmark, with the gold tittle.
- * The letterforms are `currentColor`, so set the colour with a text utility.
- * Aspect ratio is taller than wide — size it with a height, e.g. `h-9 w-auto`.
+ * The lockup reduced to `bi` plus the gold tittle. Only for places the full lockup
+ * cannot be read — favicons and anything under about 48px. Prefer {@link BrandLogo}.
+ * Taller than wide — size it with a height, e.g. `h-9 w-auto`.
  */
 export const BrandMark = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 190 265" className={className} role="img" aria-label="بیمه گلد">

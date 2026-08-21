@@ -215,15 +215,14 @@ def main():
     dy2 = line1[3] - line1[1] + gap - word.box[1]
     sh = dy2 + word.box[3]
 
-    def stacked(dark=CHARCOAL):
-        return svg(sw, sh,
-                   f'<g transform="translate({g(dx1)} {g(-line1[1])})">'
-                   f"{bime.draw(dark)}{dot.draw(GOLD)}</g>"
-                   f'<g transform="translate({g(dx2)} {g(dy2)})">{word.draw(GOLD)}</g>',
-                   "bime gold")
+    def stacked_body(dark=CHARCOAL):
+        return (f'<g transform="translate({g(dx1)} {g(-line1[1])})">'
+                f"{bime.draw(dark)}{dot.draw(GOLD)}</g>"
+                f'<g transform="translate({g(dx2)} {g(dy2)})">{word.draw(GOLD)}</g>')
 
-    files["logo-stacked.svg"] = stacked()
-    files["logo-stacked-on-dark.svg"] = stacked(dark=ON_DARK)
+    stacked_box = (0, 0, sw, sh)
+    files["logo-stacked.svg"] = svg(sw, sh, stacked_body(), "bime gold")
+    files["logo-stacked-on-dark.svg"] = svg(sw, sh, stacked_body(ON_DARK), "bime gold")
 
     # ---- monogram + icons ---------------------------------------------------
     mono_box = union_box(mono.box, dot.box)
@@ -239,18 +238,25 @@ def main():
                                     f'<g transform="translate({g(-mono_box[0])} {g(-mono_box[1])})">'
                                     f"{monogram(ON_DARK)}</g>", "Bime Gold mark")
 
-    def tile(size, cover, radius=None, bg=NAVY):
-        """Monogram on a brand field. `cover` is the fraction of the tile it fills."""
-        scale = size * cover / mh
+    def tile(size, cover, radius=None, bg=NAVY, art="stacked"):
+        """Artwork on a brand field. `cover` is the fraction of the tile height it fills.
+
+        The full lockup is used wherever it can be read. Measured on the traced
+        outlines: stacked stays legible down to about 48px and turns to mush at 16,
+        where the `bi` monogram is still crisp -- so only the browser tab gets `bi`.
+        """
+        body, box = ((stacked_body(ON_DARK), stacked_box) if art == "stacked"
+                     else (monogram(ON_DARK), mono_box))
+        scale = size * cover / (box[3] - box[1])
         rect = (f'<rect width="{size}" height="{size}" fill="{bg}"'
                 + (f' rx="{g(radius)}"' if radius else "") + "/>")
-        return svg(size, size, rect + place(monogram(ON_DARK), mono_box, size, size, scale),
-                   "Bime Gold")
+        return svg(size, size, rect + place(body, box, size, size, scale), "Bime Gold")
 
-    files["icon-tile.svg"] = tile(512, 0.52, radius=96)
-    files["icon-maskable.svg"] = tile(512, 0.40)          # 40% keeps it inside the safe zone
-    files["icon-apple.svg"] = tile(180, 0.52)
-    files["favicon.svg"] = tile(64, 0.62, radius=12)
+    files["icon-tile.svg"] = tile(512, 0.62, radius=96)
+    files["icon-maskable.svg"] = tile(512, 0.48)          # 48% keeps it inside the safe zone
+    files["icon-apple.svg"] = tile(180, 0.62)
+    files["favicon-48.svg"] = tile(48, 0.66, radius=9)
+    files["favicon.svg"] = tile(64, 0.62, radius=12, art="mono")
 
     for name, body in files.items():
         open(os.path.join(SVG, name), "w").write(body)
@@ -272,8 +278,8 @@ def main():
     png("icon-apple.svg", "apple-touch-icon-180.png", w=180, h=180)
 
     ico = []
-    for s in (16, 32, 48):
-        png("favicon.svg", f".ico-{s}.png", w=s, h=s)
+    for s, src in ((16, "favicon.svg"), (32, "favicon.svg"), (48, "favicon-48.svg")):
+        png(src, f".ico-{s}.png", w=s, h=s)
         ico.append(os.path.join(PNG, f".ico-{s}.png"))
     subprocess.run(["magick", *ico, os.path.join(OUT, "favicon.ico")], check=True)
     for f in ico:

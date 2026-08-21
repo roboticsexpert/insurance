@@ -108,7 +108,13 @@ Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
   web image at build time while `CORS_ORIGINS` is read by the API at run time, so pushing the
   Dockerfile change before setting the variables left the new bundle calling a host the API
   would not answer for. Fixed by setting `WEB_URL`/`API_URL`/`CORS_ORIGINS`/`COOKIE_DOMAIN`
-  and redeploying the API. `COOKIE_DOMAIN` is the same trap one step later: a value that does
+  and redeploying the API. It then broke a **second** time on the same symptom for a
+  different reason: the `web` service carries its own `VITE_API_URL` Railway variable, and
+  Railway feeds service variables into the Docker build as build args, so it silently beat
+  the `ARG VITE_API_URL=…` default in `apps/web/Dockerfile`. Editing the Dockerfile did
+  nothing; the bundle kept calling `api.bime247.com`, which had just been detached. Read
+  the deployed bundle, not the deploy status: `curl` the `/assets/index-*.js` the live HTML
+  names and grep it for the API host. `COOKIE_DOMAIN` is the same trap one step later: a value that does
   not match the host is dropped silently, so the login succeeds and the session dies on the
   first refresh — verified instead by reading `Set-Cookie` off a real mock login
   (`bimegold_rt=…; Domain=.bimegold.com`). Old hostnames detached. The `app`/`api` records on

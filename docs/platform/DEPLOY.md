@@ -185,19 +185,28 @@ route in `apps/docs/wrangler.jsonc`, and `wrangler deploy` creates the DNS recor
 
 Kept because the failure mode it describes will recur on the next domain move.
 
-`apps/web/Dockerfile` bakes `VITE_API_URL` at **build** time and the `web` service sets no
-override, so a push to `main` rebuilds the app against whatever the Dockerfile says. The
-env vars on the API are read at **run** time. Change the Dockerfile without changing the
+`VITE_API_URL` is baked into the web bundle at **build** time; the API's env vars are read
+at **run** time. Worse, the Dockerfile's `ARG VITE_API_URL=…` default is **not** what gets
+used: the `web` service sets `VITE_API_URL` as a Railway variable, and Railway passes
+service variables into the Docker build as build args, so the service variable wins. The
+Dockerfile default only applies to a plain `docker build` with no `--build-arg`.
+
+    railway variables --service web --kv | grep VITE_API_URL
+
+Check that before assuming a push moved the API host. It did not here. Change the Dockerfile without changing the
 API's `CORS_ORIGINS` in the same window and you get an app that renders perfectly and
 cannot fetch anything: the preflight returns `204` with no `access-control-allow-origin`,
-and the UI shows «ارتباط با سرور برقرار نشد». That is exactly what happened here — the
-push landed before the variables did.
+and the UI shows «ارتباط با سرور برقرار نشد». That is exactly what happened here, twice:
+first because the push landed before `CORS_ORIGINS` moved, and then again because the
+`web` service's `VITE_API_URL` variable still named `api.bime247.com`, so the bundle went
+on calling a hostname that had just been detached.
 
 The order that avoids it:
 
 1. Add the four records above; wait for `railway domain status --service api <domain>` to
    report `Certificate status: …_VALID`.
-2. Point the API at the new host **before** the web image is rebuilt:
+2. Point **both** services at the new host — the API at run time, the web bundle at build
+   time. Do the API first, so it already accepts the new origin when the new bundle ships:
 
    ```bash
    railway variables --service api --skip-deploys \
@@ -206,9 +215,18 @@ The order that avoids it:
      --set 'CORS_ORIGINS=https://app.bimegold.com' \
      --set 'COOKIE_DOMAIN=.bimegold.com'
    railway redeploy --service api --yes
+
+   railway variables --service web --set 'VITE_API_URL=https://api.bimegold.com/api/v1'
    ```
 
-3. Push `main`. Both services rebuild; the web bundle picks up `api.bimegold.com`.
+3. Push `main`. Both services rebuild; the web bundle picks up the new `VITE_API_URL`.
+   Confirm it actually did, rather than trusting the deploy status — the bundle is the
+   only evidence that counts:
+
+   ```bash
+   curl -s https://app.bimegold.com/ | grep -o '/assets/index-[^"]*\.js'
+   curl -s https://app.bimegold.com/assets/index-XXXX.js | grep -o 'https://api\.[a-z0-9.]*/api/v1'
+   ```
 4. Verify the two things the variables actually control — CORS and the cookie scope:
 
    ```bash

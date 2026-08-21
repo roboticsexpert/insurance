@@ -20,5 +20,8 @@ apps/api/generated/
 apps/web/dist/
 apps/web/.vite/
 
+# TypeScript incremental build artifacts (apps/web builds with `tsc -b`)
+*.tsbuildinfo
+
 # python bytecode from tools/
 __pycache__/

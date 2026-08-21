@@ -159,8 +159,9 @@ previous bundle.
 ## Domains
 
 Both public hostnames are Railway custom domains on the `bimegold.com` zone
-(Cloudflare account `022e4e5b87a14dc3d0e17772f66b5d6b`). **The Railway CLI cannot create
-the DNS records** — they go in by hand, or through a Cloudflare token with `DNS:Edit`.
+(Cloudflare account `022e4e5b87a14dc3d0e17772f66b5d6b`), live since 2026-08-21.
+**The Railway CLI cannot create the DNS records** — they go in by hand, or through a
+Cloudflare token with `DNS:Edit`. The wrangler OAuth token only has `zone:read`.
 
 | Type | Name | Value |
 |---|---|---|
@@ -180,14 +181,23 @@ railway domain status --service api
 The docs site is different: it is a Cloudflare Worker, its custom domain is declared as a
 route in `apps/docs/wrangler.jsonc`, and `wrangler deploy` creates the DNS record itself.
 
-### Order of the bime247.com → bimegold.com cutover
+### The bime247.com → bimegold.com cutover — done 2026-08-21
 
-`apps/web/Dockerfile` bakes `VITE_API_URL` at build time and the `web` service sets no
-override, so **a push to `main` rebuilds the app against whatever the Dockerfile says**.
-That makes the order matter:
+Kept because the failure mode it describes will recur on the next domain move.
 
-1. Add the four records above; wait for `railway domain status` to report the certificate.
-2. Point the API at the new host — this is also what stops CORS rejecting the new origin:
+`apps/web/Dockerfile` bakes `VITE_API_URL` at **build** time and the `web` service sets no
+override, so a push to `main` rebuilds the app against whatever the Dockerfile says. The
+env vars on the API are read at **run** time. Change the Dockerfile without changing the
+API's `CORS_ORIGINS` in the same window and you get an app that renders perfectly and
+cannot fetch anything: the preflight returns `204` with no `access-control-allow-origin`,
+and the UI shows «ارتباط با سرور برقرار نشد». That is exactly what happened here — the
+push landed before the variables did.
+
+The order that avoids it:
+
+1. Add the four records above; wait for `railway domain status --service api <domain>` to
+   report `Certificate status: …_VALID`.
+2. Point the API at the new host **before** the web image is rebuilt:
 
    ```bash
    railway variables --service api --skip-deploys \
@@ -195,18 +205,35 @@ That makes the order matter:
      --set 'API_URL=https://api.bimegold.com' \
      --set 'CORS_ORIGINS=https://app.bimegold.com' \
      --set 'COOKIE_DOMAIN=.bimegold.com'
+   railway redeploy --service api --yes
    ```
 
 3. Push `main`. Both services rebuild; the web bundle picks up `api.bimegold.com`.
-4. Verify, then drop the old hostnames:
+4. Verify the two things the variables actually control — CORS and the cookie scope:
 
    ```bash
-   railway domain delete app.bime247.com --service web
-   railway domain delete api.bime247.com --service api
+   curl -sI -X OPTIONS https://api.bimegold.com/api/v1/catalog/products \
+     -H 'Origin: https://app.bimegold.com' -H 'Access-Control-Request-Method: GET' \
+     | grep -i access-control-allow-origin
    ```
 
-Renaming the refresh cookie to `bimegold_rt` signs every existing session out once. With
-mock OTP that costs nothing.
+   Then a mock login, checking the `Set-Cookie` reads
+   `bimegold_rt=…; Domain=.bimegold.com; HttpOnly; Secure; SameSite=Lax`. A
+   `COOKIE_DOMAIN` that does not match the host is dropped silently — the login looks
+   fine and the session dies on the first refresh.
+
+5. Drop the old hostnames:
+
+   ```bash
+   railway domain delete --service web --yes app.bime247.com
+   railway domain delete --service api --yes api.bime247.com
+   ```
+
+The `app` and `api` records still exist on the **bime247.com** zone and now point at a
+Railway service that no longer answers for them. Delete them there when convenient.
+
+Renaming the refresh cookie to `bimegold_rt` signed every existing session out once. With
+mock OTP that cost nothing.
 
 ## Historical: the original Cloudflare → Railway move
 

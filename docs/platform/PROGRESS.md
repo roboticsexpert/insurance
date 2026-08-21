@@ -99,6 +99,20 @@ Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
 
 ## Notes & decisions made during the build
 
+- **2026-08-21 — `bimegold.com` is live; the cutover broke once, on ordering.** `app.` and
+  `api.bimegold.com` are Railway custom domains, `docs.bimegold.com` is a Cloudflare Worker.
+  The app came up branded and *empty*: «ارتباط با سرور برقرار نشد» on every product. The
+  cause is worth remembering because nothing about it looks like a CORS bug from the outside
+  — the preflight answers `204`, it just omits `access-control-allow-origin`, so the browser
+  drops the response and the app reports a network failure. `VITE_API_URL` is baked into the
+  web image at build time while `CORS_ORIGINS` is read by the API at run time, so pushing the
+  Dockerfile change before setting the variables left the new bundle calling a host the API
+  would not answer for. Fixed by setting `WEB_URL`/`API_URL`/`CORS_ORIGINS`/`COOKIE_DOMAIN`
+  and redeploying the API. `COOKIE_DOMAIN` is the same trap one step later: a value that does
+  not match the host is dropped silently, so the login succeeds and the session dies on the
+  first refresh — verified instead by reading `Set-Cookie` off a real mock login
+  (`bimegold_rt=…; Domain=.bimegold.com`). Old hostnames detached. The `app`/`api` records on
+  the `bime247.com` zone are now dangling and should be deleted there.
 - **2026-08-21 — the brand became «Bime Gold» and the domain became `bimegold.com`.**
   The approved artwork is a raster render; `tools/brand-gold/trace.py` knocks its white
   background out to real alpha, trims the margin, and traces it to vector, then builds every

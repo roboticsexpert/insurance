@@ -7,6 +7,7 @@ Monorepo for the **Bime Gold** («بیمه گلد») insurance business.
 | [`apps/web`](apps/web) | Customer app — React SPA, Persian, RTL, **mobile only** | app.bimegold.com |
 | [`apps/api`](apps/api) | NestJS + PostgreSQL — catalog, rating engine, orders, policies | api.bimegold.com |
 | [`apps/docs`](apps/docs) | Astro research site on the Iranian insurance industry | docs.bimegold.com |
+| [`apps/brand`](apps/brand) | The brand book — Persian/English, generated from `brand/bime-gold/` | brand.bimegold.com |
 
 ## Getting started
 

@@ -27,6 +27,17 @@
       ],
       "port": 4321,
       "autoPort": true
+    },
+    {
+      "name": "brand",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@bimegold/brand",
+        "dev"
+      ],
+      "port": 8788,
+      "autoPort": false
     }
   ]
 }

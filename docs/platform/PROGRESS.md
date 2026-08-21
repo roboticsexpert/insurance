@@ -99,6 +99,18 @@ Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
 
 ## Notes & decisions made during the build
 
+- **2026-08-21 — the brand book is published at `brand.bimegold.com`**, Persian with an
+  English toggle, as its own Cloudflare Worker (`apps/brand`). It is *generated* from
+  `brand/bime-gold/` by `tools/brand-gold/site.py` rather than written as a page, so it
+  cannot drift from the package: the logos it displays and the archive it offers are the
+  same files. Copy is in `site_copy.py`, both languages beside each other.
+  Two things worth remembering. **Inlining the wordmark at every call site cost 327 KB of
+  HTML** — sixteen copies of the same 19 KB outline; one `<symbol>` plus `<use>` took it to
+  82 KB (13 KB gzipped). And **RTL silently reverses Latin technical strings**: `#D4AF37`
+  rendered as `D4AF37#`, `4.9 : 1` as `1 : 4.9`, `--color-brand-600` backwards. The bidi
+  algorithm is doing exactly what it should with a paragraph marked Persian; the fix is
+  `direction:ltr; unicode-bidi:isolate` on hex codes, tokens, ratios and sizes. Anything
+  Latin-and-technical inside Persian copy needs it.
 - **2026-08-21 — the `bi` monogram was pulled back to just the browser tab.** It had been
   used for every icon and for the app header, which meant the product introduced itself as
   «bi». The full lockup goes everywhere it can be read. Where that line falls was measured,

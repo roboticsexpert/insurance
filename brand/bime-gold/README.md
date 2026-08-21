@@ -11,6 +11,7 @@ identity uses **no gradients**.
 | Domain | `bimegold.com` |
 | Source artwork | `reference/bime-gold-type-10-compact.png` |
 | Rebuild everything | `tools/brand-gold/build.sh` |
+| Published at | **https://brand.bimegold.com** — this document, as a site |
 
 ## 1. Logo
 
@@ -115,8 +116,14 @@ All on the navy field. The `.ico` carries different artwork per size on purpose 
 the one format that can, and 48 px is where the full name becomes readable.
 
 `tools/brand-gold/sync.sh` copies this package into `apps/web/public/brand/` and
-`apps/docs/public/brand/` and regenerates `BrandMark.tsx`. **Those folders are generated —
-do not hand-edit them.** Change the artwork here, run `tools/brand-gold/build.sh`, commit.
+`apps/docs/public/brand/` and regenerates `BrandLogo.tsx` / `BrandMark.tsx`.
+`tools/brand-gold/site.py` builds the public brand book into `apps/brand/dist/`.
+**All three are generated — do not hand-edit them.** Change the artwork here, run
+`tools/brand-gold/build.sh`, commit.
+
+The published site renders its logos from this package and serves the download archive
+built from it, so it cannot show something the package does not contain. Copy for it lives
+in `tools/brand-gold/site_copy.py`, Persian and English side by side.
 
 ## 6. Open
 

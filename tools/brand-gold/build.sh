@@ -37,5 +37,8 @@ cp "$OUT/traced/favicon.ico"                "$OUT/favicon.ico"
 
 "$ROOT/tools/brand-gold/sync.sh"
 
+# the public brand book at brand.bimegold.com is another consumer of this package
+"$PY" "$ROOT/tools/brand-gold/site.py"
+
 echo "Bime Gold brand package written to $OUT"
 find "$OUT" -type f -not -path "*/.tmp/*" | sort

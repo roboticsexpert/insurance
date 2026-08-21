@@ -6,8 +6,11 @@
   --border: #e6e1d8;
   --text: #1c1a17;
   --text-soft: #5d574d;
-  --accent: #0b7c7c;
-  --accent-soft: #e2f2f2;
+  /* Brand gold darkened to #8a6d1f for text: pure #D4AF37 is 2.1:1 on this page and
+     fails AA. The pure token stays available as --gold for non-text use. */
+  --accent: #8a6d1f;
+  --accent-soft: #f7f0dc;
+  --gold: #d4af37;
   --code-bg: #f2efe9;
   --radius: 14px;
   --maxw: 46rem;
@@ -20,8 +23,9 @@
     --border: #2c313a;
     --text: #eceef2;
     --text-soft: #a3aab6;
-    --accent: #3fd0d0;
-    --accent-soft: #0d2b2b;
+    --accent: #e5c158;
+    --accent-soft: #2a2413;
+    --gold: #d4af37;
     --code-bg: #21262e;
   }
 }
@@ -73,10 +77,22 @@ body {
   align-items: center;
   gap: 0.55rem;
 }
-.brand .mark {
-  width: 26px; height: 26px;
-  color: var(--accent);
+.brand .logo {
+  height: 22px;
+  width: auto;
+  display: block;
   flex: none;
+}
+.brand-label {
+  padding-inline-start: 0.7rem;
+  border-inline-start: 1px solid var(--border);
+  color: var(--text-soft);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+@media (max-width: 30rem) {
+  /* The lockup alone carries the brand on a phone; the descriptor wraps badly. */
+  .brand-label { display: none; }
 }
 .site-header nav a {
   color: var(--text-soft);

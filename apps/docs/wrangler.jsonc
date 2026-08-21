@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "insurance-docs",
-  "account_id": "45d1cc1b84fce346e3b17965f6669181",
+  "name": "bimegold-docs",
+  // bimegold.com is on this account, the same one apps/web used to deploy to.
+  // Moved here from the account that owns zisef.ir: a Workers custom domain has to
+  // sit on the same account as its zone.
+  "account_id": "022e4e5b87a14dc3d0e17772f66b5d6b",
   "compatibility_date": "2026-08-19",
   // Static site — no Worker script, the built Astro output is served directly.
   "assets": {
@@ -10,7 +13,7 @@
     "not_found_handling": "404-page"
   },
   "routes": [
-    { "pattern": "insurance.zisef.ir", "custom_domain": true }
+    { "pattern": "docs.bimegold.com", "custom_domain": true }
   ],
   "observability": { "enabled": true }
 }

@@ -63,7 +63,7 @@ describe('PoliciesService.issueForOrder', () => {
         { provide: OrdersService, useValue: { transition } },
         { provide: RatingRegistry, useValue: { get: () => strategy } },
         { provide: NotificationsService, useValue: { send } },
-        { provide: ENV, useValue: { WEB_URL: 'https://app.bime247.com' } },
+        { provide: ENV, useValue: { WEB_URL: 'https://app.bimegold.com' } },
       ],
     })
       .setLogger({ log() {}, error() {}, warn() {}, debug() {}, verbose() {} })

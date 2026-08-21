@@ -25,3 +25,8 @@ apps/web/.vite/
 
 # python bytecode from tools/
 __pycache__/
+
+# brand — generated scratch and the distributable archive
+brand/bime-gold/traced/.tmp/
+brand/*.zip
+tools/brand-gold/.venv/

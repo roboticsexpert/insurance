@@ -1,12 +1,12 @@
-# bime247
+# Bime Gold
 
-Monorepo for the **bime247** insurance business.
+Monorepo for the **Bime Gold** («بیمه گلد») insurance business.
 
 | App | What | Where |
 |---|---|---|
-| [`apps/web`](apps/web) | Customer app — React SPA, Persian, RTL, **mobile only** | app.bime247.com |
-| [`apps/api`](apps/api) | NestJS + PostgreSQL — catalog, rating engine, orders, policies | api.bime247.com |
-| [`apps/docs`](apps/docs) | Astro research site on the Iranian insurance industry | insurance.zisef.ir |
+| [`apps/web`](apps/web) | Customer app — React SPA, Persian, RTL, **mobile only** | app.bimegold.com |
+| [`apps/api`](apps/api) | NestJS + PostgreSQL — catalog, rating engine, orders, policies | api.bimegold.com |
+| [`apps/docs`](apps/docs) | Astro research site on the Iranian insurance industry | docs.bimegold.com |
 
 ## Getting started
 

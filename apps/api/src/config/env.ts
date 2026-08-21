@@ -33,7 +33,7 @@ export const envSchema = z
     SMS_PROVIDER: z.enum(['console']).default('console'),
 
     CORS_ORIGINS: csv,
-    /** `.bime247.com` in production, so app and api share the refresh cookie. */
+    /** `.bimegold.com` in production, so app and api share the refresh cookie. */
     COOKIE_DOMAIN: z.string().default(''),
   })
   .superRefine((env, ctx) => {

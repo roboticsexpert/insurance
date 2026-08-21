@@ -99,6 +99,36 @@ Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
 
 ## Notes & decisions made during the build
 
+- **2026-08-21 — the brand became «Bime Gold» and the domain became `bimegold.com`.**
+  The approved artwork is a raster render; `tools/brand-gold/trace.py` knocks its white
+  background out to real alpha, trims the margin, and traces it to vector, then builds every
+  lockup and icon from those outlines and renders each PNG *from* the SVG so raster and vector
+  cannot drift. `sync.sh` copies the package into both apps' `public/brand/` and regenerates
+  `apps/web/src/components/BrandMark.tsx`; those are generated, do not hand-edit them.
+  Decisions worth keeping:
+  - **No gradient.** The render carries a faint metallic sheen; the identity is flat `#D4AF37`.
+    Reproducing the sheen was tried first and is what the de-matte maths originally broke on —
+    a fixed reference ink colour makes α < 1 inside a shaded stroke, which punched holes in the
+    trace. The fix was to estimate the ink colour *locally* from each glyph's interior.
+  - **Gold is not a text colour.** `#D4AF37` on white is 2.1:1. The docs site's `--accent` is
+    `#8A6D1F` in light and `#E5C158` in dark; the app's `--color-brand-*` ramp holds the logo's
+    hue at 90 and walks lightness so `bg-brand-600` + white stays at 4.87:1. `--color-gold` is
+    the exact logo gold, for marks only. This *raised* the old teal's contrast, it did not
+    trade it away.
+  - **The mark is `bi`** — the first two letters plus the gold tittle, split out of the traced
+    wordmark by connected component. The full lockup dies below 16px; the monogram is legible
+    at 16.
+  - **The docs Worker changed Cloudflare accounts.** A Workers custom domain must sit on the
+    same account as its zone, and `bimegold.com` is on `022e4e5b…` while the old
+    `insurance.zisef.ir` was on `45d1cc1b…`. So `docs.bimegold.com` is a new Worker
+    (`bimegold-docs`), not a re-routed one. The old Worker still answers the old hostname.
+  - **`bime247` → `bimegold` everywhere except the local Postgres**, which keeps its old user
+    and database name so existing dev volumes still mount. The refresh cookie is now
+    `bimegold_rt`, which signs every session out once.
+  - **Railway DNS is the manual step.** The CLI attaches a custom domain but will not write the
+    CNAME/TXT, and the deploy token only has Cloudflare `zone:read`. Records are in
+    [`DEPLOY.md`](DEPLOY.md); the cutover order matters because `VITE_API_URL` is baked at
+    image build time.
 - **2026-08-20** — `packages/shared` removed. Persian/money formatting is web-only, `roundPremium`
   is API-only, and product validation belongs to the API as the authority. The web does light
   client-side checks and renders the API's field errors. No cross-package build ordering.

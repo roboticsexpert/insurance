@@ -13,8 +13,8 @@ You are building the **Bime247** online insurance platform in this monorepo.
    split it into smaller `[ ]` lines in place and do the first one.
 3. Implement it completely — no TODOs, no stubbed functions, no placeholder UI standing in for
    real behaviour.
-4. **Verify before ticking.** At minimum `pnpm --filter @bime247/api typecheck` (and `test` when
-   you touched the API) or `pnpm --filter @bime247/web typecheck && build` for web work. For a
+4. **Verify before ticking.** At minimum `pnpm --filter @bimegold/api typecheck` (and `test` when
+   you touched the API) or `pnpm --filter @bimegold/web typecheck && build` for web work. For a
    UI task, run the dev server through the Browser pane and look at it on a mobile viewport
    (375×812) — screenshot it. A task is not done because the code compiles.
 5. Change `[ ]` to `[x]` on that line, and append anything future-you would want to know to the
@@ -48,6 +48,6 @@ pnpm db:migrate                         # prisma migrate dev
 pnpm db:seed
 pnpm dev:api                            # :3000
 pnpm dev:web                            # :5173
-pnpm --filter @bime247/api typecheck
-pnpm --filter @bime247/api test
+pnpm --filter @bimegold/api typecheck
+pnpm --filter @bimegold/api test
 ```

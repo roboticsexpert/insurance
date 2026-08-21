@@ -66,7 +66,7 @@ describe('PoliciesService listing', () => {
         { provide: OrdersService, useValue: {} },
         { provide: RatingRegistry, useValue: {} },
         { provide: NotificationsService, useValue: {} },
-        { provide: ENV, useValue: { WEB_URL: 'https://app.bime247.com' } },
+        { provide: ENV, useValue: { WEB_URL: 'https://app.bimegold.com' } },
       ],
     }).compile()
     service = moduleRef.get(PoliciesService)

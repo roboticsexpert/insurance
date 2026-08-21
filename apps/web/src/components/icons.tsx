@@ -52,22 +52,6 @@ export const ProfileIcon = ({ className, filled }: IconProps) => (
   </svg>
 )
 
-export const BrandMark = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 64 64" className={className} role="img" aria-label="بیمه ۲۴۷">
-    <path
-      d="M42.8 11.7A23 23 0 1 1 21.2 11.7"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="7"
-      strokeLinecap="round"
-    />
-    <path
-      d="M32 18.9 43.5 23v8.6c0 6.5-4.9 11.3-11.5 13.6-6.6-2.3-11.5-7.1-11.5-13.6V23z"
-      fill="currentColor"
-    />
-  </svg>
-)
-
 export const PlaneIcon = ({ className }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
     <path

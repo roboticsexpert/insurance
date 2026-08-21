@@ -41,7 +41,7 @@ async function bootstrap(): Promise<void> {
 
   const logger = app.get(Logger)
   logger.log(
-    `bime247 api listening on :${env.PORT} [${env.NODE_ENV}] · mock OTP ${env.AUTH_MOCK_OTP || 'disabled'}`,
+    `bimegold api listening on :${env.PORT} [${env.NODE_ENV}] · mock OTP ${env.AUTH_MOCK_OTP || 'disabled'}`,
   )
 }
 

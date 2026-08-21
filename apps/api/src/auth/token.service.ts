@@ -151,8 +151,8 @@ export class TokenService {
       httpOnly: true,
       secure: isProd,
       /*
-       * `lax` rather than `none`: app.bime247.com and api.bime247.com share the registrable
-       * domain bime247.com, so this is same-site despite being a different origin. That keeps
+       * `lax` rather than `none`: app.bimegold.com and api.bimegold.com share the registrable
+       * domain bimegold.com, so this is same-site despite being a different origin. That keeps
        * the cookie working as browsers tighten third-party cookie rules.
        */
       sameSite: 'lax',

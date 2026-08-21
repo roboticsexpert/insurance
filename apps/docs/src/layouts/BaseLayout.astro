@@ -19,22 +19,21 @@ const { title, description = 'مستندات و یادداشت‌های پژوه
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
-    <meta name="theme-color" content="#0b7c7c" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0d2b2b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)" />
     <title>{title}</title>
   </head>
   <body>
     <header class="site-header">
       <div class="wrap">
         <a class="brand" href="/">
-          <svg class="mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-            <circle cx="32" cy="32" r="24.5" fill="none" stroke="currentColor" stroke-width="5.5" />
-            <path
-              d="M32 15.6 46.4 20.8v10.7c0 8.1-6.1 14.2-14.4 16.9-8.3-2.7-14.4-8.8-14.4-16.9V20.8z"
-              fill="currentColor"
-            />
-          </svg>
-          مستندات صنعت بیمه ایران
+          {/* Two files rather than one recoloured by CSS: the lockup is charcoal + gold,
+              so there is no single currentColor to swap. */}
+          <picture>
+            <source srcset="/brand/logo-on-dark.svg" media="(prefers-color-scheme: dark)" />
+            <img class="logo" src="/brand/logo.svg" alt="Bime Gold" width="1093" height="328" />
+          </picture>
+          <span class="brand-label">مستندات صنعت بیمه ایران</span>
         </a>
         <nav>
           <a href="/">موضوع‌ها</a>

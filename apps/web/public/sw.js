@@ -17,8 +17,8 @@
  */
 
 const VERSION = 'v1'
-const SHELL_CACHE = `bime247-shell-${VERSION}`
-const ASSET_CACHE = `bime247-assets-${VERSION}`
+const SHELL_CACHE = `bimegold-shell-${VERSION}`
+const ASSET_CACHE = `bimegold-assets-${VERSION}`
 
 /** The document itself. Hashed bundles are picked up at runtime — their names change per build. */
 const SHELL_URLS = ['/', '/brand/mark.svg', '/brand/icon-192.png', '/site.webmanifest']
@@ -40,7 +40,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key.startsWith('bime247-') && !key.endsWith(VERSION))
+            .filter((key) => key.startsWith('bimegold-') && !key.endsWith(VERSION))
             .map((key) => caches.delete(key)),
         ),
       )

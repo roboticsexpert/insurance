@@ -24,7 +24,7 @@ Status: plan approved at the high level (2026-08-20), not yet implemented.
 | 7 | Design | **Mobile only.** No desktop layout until explicitly requested |
 | 8 | Payment | **Mock gateway**, shaped exactly like a real Iranian IPG |
 | 9 | Auth | **Mobile number + OTP**, mock code `1234` always accepted |
-| 10 | Domains | **app.bime247.com** (web) · **api.bime247.com** (API) — zone already active on Cloudflare |
+| 10 | Domains | **app.bimegold.com** (web) · **api.bimegold.com** (API) — zone already active on Cloudflare |
 | 11 | Shared code | **None.** No shared package; see §10 |
 
 ### The one strategic note
@@ -118,7 +118,7 @@ insurance/
 There is deliberately **no `packages/` directory**. See §10.
 
 Moving the Astro site is a `git mv` plus a path fix in `wrangler.jsonc` and
-`astro.config.mjs`. `insurance.zisef.ir` keeps deploying exactly as it does now — the deploy
+`astro.config.mjs`. `docs.bimegold.com` keeps deploying exactly as it does now — the deploy
 command becomes `pnpm --filter docs build && wrangler deploy` from `apps/docs`.
 
 ---
@@ -500,21 +500,21 @@ written). That is the cheaper side of the trade.
 
 | Host | Service |
 |---|---|
-| **api.bime247.com** | NestJS on Railway, `prisma migrate deploy && node dist/main.js` |
+| **api.bimegold.com** | NestJS on Railway, `prisma migrate deploy && node dist/main.js` |
 | — | Postgres, Railway plugin, `DATABASE_URL` injected |
-| **app.bime247.com** | Vite static build on Cloudflare Workers assets — the same pattern that already serves `insurance.zisef.ir`, which is proven to work from inside Iran |
+| **app.bimegold.com** | Vite static build on Cloudflare Workers assets — the same pattern that already serves `docs.bimegold.com`, which is proven to work from inside Iran |
 
-`bime247.com` is already an active zone on the Cloudflare account
+`bimegold.com` is already an active zone on the Cloudflare account
 (`b9ce446f3cf5fbe49db85ce94e284a8f`), so no domain setup is pending.
 
 **Two consequences of putting both hosts under one registrable domain**, both good:
 
-- The refresh cookie can be `Domain=.bime247.com; SameSite=Lax; Secure` instead of
+- The refresh cookie can be `Domain=.bimegold.com; SameSite=Lax; Secure` instead of
   `SameSite=None`. Same-site, different origin — stricter, and it survives browsers tightening
   third-party cookie rules.
 - CORS stays a simple allowlist of exactly one origin.
 
-**Railway TLS for `api.bime247.com`** has an ordering trap: Railway issues its own certificate
+**Railway TLS for `api.bimegold.com`** has an ordering trap: Railway issues its own certificate
 and cannot do so through a proxied (orange-cloud) Cloudflare record. Sequence: create the CNAME
 **DNS-only** → let Railway issue → then turn the proxy on with SSL mode **Full (strict)**.
 
@@ -571,9 +571,11 @@ Every one of these has a seam left for it. None of them is stubbed with fake UI.
 
 ## 15. Open questions (not blocking M0–M1)
 
-1. **Brand**: the name is settled (**bime247 / بیمه ۲۴۷**) and a working mark exists at
-   `apps/web/public/brand/mark.svg`. Still open: the brand colour, which the design system
-   needs — a placeholder is in use until it is chosen.
+1. **Brand**: renamed to **Bime Gold** on 2026-08-21 (was bimegold / بیمه ۲۴۷). The logo
+   is final and lives in `brand/bime-gold/traced/`; colours are charcoal `#2B2B2B` and
+   flat gold `#D4AF37`, no gradient. Still open: what replaces the turquoise `--accent`
+   and the placeholder `--color-brand-*` ramp in `apps/web/src/styles.css`, and when the
+   old `apps/web/public/brand/` assets get swapped out. Persian wordmark not designed yet.
 2. **Which insurers to show** as the seeded comparison set — real names (Iran, Pasargad,
    Saman, Karafarin, Dey, Alborz…) with a clear "نمونه" badge, or invented names? Real names
    make demos land better but imply relationships that do not exist yet.

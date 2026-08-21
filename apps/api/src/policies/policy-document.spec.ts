@@ -5,7 +5,7 @@ const base: PolicyDocumentInput = {
   startsAt: new Date('2026-10-02T00:00:00Z'),
   endsAt: new Date('2026-10-12T23:59:59Z'),
   issuedAt: new Date('2026-08-20T10:00:00Z'),
-  verifyUrl: 'https://app.bime247.com/policies/pol1',
+  verifyUrl: 'https://app.bimegold.com/policies/pol1',
   snapshot: {
     productTitleFa: 'بیمه مسافرتی',
     insurerName: 'بیمه دی',
@@ -74,7 +74,7 @@ describe('renderPolicyDocument', () => {
   })
 
   it('includes a verification address', () => {
-    expect(html).toContain('https://app.bime247.com/policies/pol1')
+    expect(html).toContain('https://app.bimegold.com/policies/pol1')
   })
 
   /*

@@ -156,14 +156,14 @@ describe('TokenService refresh rotation', () => {
     })
 
     it('is Secure and domain-scoped in production', async () => {
-      const prod = await build('production', '.bime247.com')
+      const prod = await build('production', '.bimegold.com')
       const { res, cookie } = capture()
       prod.setRefreshCookie(res, 'tok', new Date())
       expect(cookie.mock.calls[0][2]).toMatchObject({
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        domain: '.bime247.com',
+        domain: '.bimegold.com',
       })
     })
   })

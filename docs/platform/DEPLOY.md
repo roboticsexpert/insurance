@@ -1,4 +1,4 @@
-# Deploying bime247
+# Deploying Bime Gold
 
 The design lives in [`MVP-PLAN.md` §12](MVP-PLAN.md); this is the runbook. Decisions made while
 building it are recorded in [`PROGRESS.md`](PROGRESS.md).
@@ -14,14 +14,14 @@ building it are recorded in [`PROGRESS.md`](PROGRESS.md).
 Verify the image without Railway at all:
 
 ```bash
-docker build -f apps/api/Dockerfile -t bime247-api:local .
+docker build -f apps/api/Dockerfile -t bimegold-api:local .
 ```
 
 ## What is provisioned
 
 | | |
 |---|---|
-| Project | `bime247` — `24480e21-2aa9-401f-9f9f-561135f02e12` |
+| Project | `bime247` — `24480e21-2aa9-401f-9f9f-561135f02e12` (Railway project still carries the old name) |
 | Environment | `production` — `12a54ba8-1f6a-4381-9009-88f9999df531` |
 | Services | `api` (Dockerfile, GitHub source) · `Postgres` (`postgres-ssl:18`) |
 | Public URL | `https://api-production-21b4.up.railway.app` |
@@ -35,7 +35,7 @@ and shadow the repo as the source of truth.
 From the repo root:
 
 ```bash
-railway init --name bime247
+railway init --name bimegold
 ```
 
 ```bash
@@ -54,8 +54,8 @@ railway variable set --service api --skip-deploys \
   'DATABASE_URL=${{Postgres.DATABASE_URL}}' \
   'NODE_ENV=production' \
   'PORT=3000' \
-  'WEB_URL=https://app.bime247.com' \
-  'API_URL=https://api.bime247.com' \
+  'WEB_URL=https://app.bimegold.com' \
+  'API_URL=https://api.bimegold.com' \
   "JWT_ACCESS_SECRET=$(openssl rand -base64 48 | tr -d '\n')" \
   "JWT_REFRESH_SECRET=$(openssl rand -base64 48 | tr -d '\n')" \
   'AUTH_MOCK_OTP=1234' \
@@ -63,8 +63,8 @@ railway variable set --service api --skip-deploys \
   'ALLOW_MOCK_PAYMENT_IN_PROD=true' \
   'PAYMENT_GATEWAY=mock' \
   'SMS_PROVIDER=console' \
-  'CORS_ORIGINS=https://app.bime247.com' \
-  'COOKIE_DOMAIN=.bime247.com'
+  'CORS_ORIGINS=https://app.bimegold.com' \
+  'COOKIE_DOMAIN=.bimegold.com'
 ```
 
 `WEB_URL`, `API_URL`, `CORS_ORIGINS` and `COOKIE_DOMAIN` above assume the final domains. Until
@@ -113,7 +113,7 @@ railway logs --service api --lines 200
 refuses to boot otherwise and the `PAYMENT_GATEWAY` enum admits no real gateway yet. The
 deployed API therefore has **OTP `1234` logging in as any mobile number**, and a mock bank page
 that issues policies without taking money. Keep it on the generated `*.up.railway.app` host and
-do not attach `api.bime247.com` until a real gateway and SMS provider land.
+do not attach `api.bimegold.com` until a real gateway and SMS provider land.
 
 ## Custom domain, when that time comes
 
@@ -156,35 +156,64 @@ nginx serves the SPA with `try_files $uri $uri/ /index.html` — without it a ha
 fingerprints it; `index.html` and `sw.js` are `no-cache`, or a deploy leaves clients pinned to the
 previous bundle.
 
-## Cutting app.bime247.com over from Cloudflare
+## Domains
 
-A Workers custom domain and a CNAME cannot both own the hostname, so the Cloudflare binding has
-to go first and the site is dark in between. Records Railway needs:
+Both public hostnames are Railway custom domains on the `bimegold.com` zone
+(Cloudflare account `022e4e5b87a14dc3d0e17772f66b5d6b`). **The Railway CLI cannot create
+the DNS records** — they go in by hand, or through a Cloudflare token with `DNS:Edit`.
 
 | Type | Name | Value |
 |---|---|---|
-| CNAME | `app` | `4362o88f.up.railway.app` |
-| TXT | `_railway-verify.app` | `railway-verify=fda294eebf4bdd78b94e5f9de3ca6b550e8904896951969b2d868eab6ce5900e` |
+| CNAME | `api` | `0jb0nr94.up.railway.app` |
+| TXT | `_railway-verify.api` | `railway-verify=f70ce4a02f2d3b050e6c2ca485ea488a6a180679d9b33573cf7b7c4385bad324` |
+| CNAME | `app` | `qn6ipqxk.up.railway.app` |
+| TXT | `_railway-verify.app` | `railway-verify=e4f9c3b12de3213fa9b1f542418bb00b3237968b2367cad538b258e6fe307f07` |
 
-The TXT record has no conflict and can be added first. Then, in one go: delete the Workers
-binding, add the CNAME **DNS-only** (grey cloud), wait for Railway's certificate, then turn the
-proxy on with SSL **Full (strict)**.
+Railway cannot issue its certificate through a proxied record, so each CNAME starts
+**DNS-only** (grey cloud) and only goes orange once the certificate is issued — then set
+the zone's SSL mode to **Full (strict)**. Check with:
 
 ```bash
-wrangler triggers delete --name bime247-web
+railway domain status --service api
 ```
 
-Once the cutover is verified, `apps/web/wrangler.jsonc` should be deleted too.
+The docs site is different: it is a Cloudflare Worker, its custom domain is declared as a
+route in `apps/docs/wrangler.jsonc`, and `wrangler deploy` creates the DNS record itself.
 
-## The api.bime247.com records
+### Order of the bime247.com → bimegold.com cutover
 
-Railway needs two records on the zone, and the Railway CLI will not create them:
+`apps/web/Dockerfile` bakes `VITE_API_URL` at build time and the `web` service sets no
+override, so **a push to `main` rebuilds the app against whatever the Dockerfile says**.
+That makes the order matter:
 
-| Type | Name | Value |
-|---|---|---|
-| CNAME | `api` | `2bvl8ct4.up.railway.app` |
-| TXT | `_railway-verify.api` | `railway-verify=4cadf53bff5878ecc18ba62583871b4816435b21ef379eddcdcd48c817fb5ba7` |
+1. Add the four records above; wait for `railway domain status` to report the certificate.
+2. Point the API at the new host — this is also what stops CORS rejecting the new origin:
 
-Railway cannot issue its certificate through a proxied record, so the CNAME starts **DNS-only**
-(grey cloud) and only goes orange once the certificate is issued — then set SSL mode to
-**Full (strict)**.
+   ```bash
+   railway variables --service api --skip-deploys \
+     --set 'WEB_URL=https://app.bimegold.com' \
+     --set 'API_URL=https://api.bimegold.com' \
+     --set 'CORS_ORIGINS=https://app.bimegold.com' \
+     --set 'COOKIE_DOMAIN=.bimegold.com'
+   ```
+
+3. Push `main`. Both services rebuild; the web bundle picks up `api.bimegold.com`.
+4. Verify, then drop the old hostnames:
+
+   ```bash
+   railway domain delete app.bime247.com --service web
+   railway domain delete api.bime247.com --service api
+   ```
+
+Renaming the refresh cookie to `bimegold_rt` signs every existing session out once. With
+mock OTP that costs nothing.
+
+## Historical: the original Cloudflare → Railway move
+
+`apps/web` used to deploy to Cloudflare Workers; `apps/web/wrangler.jsonc` is the leftover
+config and can be deleted. A Workers custom domain and a CNAME cannot both own a hostname,
+so that cutover needed the Workers binding removed first:
+
+```bash
+wrangler triggers delete --name bimegold-web
+```

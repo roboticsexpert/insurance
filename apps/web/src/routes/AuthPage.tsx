@@ -58,7 +58,7 @@ export function AuthPage() {
             ادامه
           </Button>
           <p className="mt-3 text-center text-xs leading-6 text-muted">
-            با ادامه، <span className="text-strong">قوانین و شرایط</span> بیمه ۲۴۷ را می‌پذیرید.
+            با ادامه، <span className="text-strong">قوانین و شرایط</span> بیمه گلد را می‌پذیرید.
           </p>
         </>
       }

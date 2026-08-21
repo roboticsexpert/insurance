@@ -1,5 +1,5 @@
 {
-  "name": "bime247",
+  "name": "bimegold",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.11.1",
@@ -7,20 +7,20 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @bime247/api --filter @bime247/web dev",
-    "dev:api": "pnpm --filter @bime247/api dev",
-    "dev:web": "pnpm --filter @bime247/web dev",
-    "dev:docs": "pnpm --filter @bime247/docs dev",
-    "build": "pnpm --filter @bime247/api build && pnpm --filter @bime247/web build",
+    "dev": "pnpm --parallel --filter @bimegold/api --filter @bimegold/web dev",
+    "dev:api": "pnpm --filter @bimegold/api dev",
+    "dev:web": "pnpm --filter @bimegold/web dev",
+    "dev:docs": "pnpm --filter @bimegold/docs dev",
+    "build": "pnpm --filter @bimegold/api build && pnpm --filter @bimegold/web build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "db:migrate": "pnpm --filter @bime247/api migrate:dev",
-    "db:seed": "pnpm --filter @bime247/api seed",
-    "db:studio": "pnpm --filter @bime247/api studio",
-    "db:reset": "pnpm --filter @bime247/api migrate:reset",
-    "test:e2e": "pnpm --filter @bime247/api test:e2e"
+    "db:migrate": "pnpm --filter @bimegold/api migrate:dev",
+    "db:seed": "pnpm --filter @bimegold/api seed",
+    "db:studio": "pnpm --filter @bimegold/api studio",
+    "db:reset": "pnpm --filter @bimegold/api migrate:reset",
+    "test:e2e": "pnpm --filter @bimegold/api test:e2e"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

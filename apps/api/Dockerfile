@@ -1,4 +1,4 @@
-# bime247 API — built from the repo root, not from apps/api.
+# bimegold API — built from the repo root, not from apps/api.
 # The pnpm lockfile and workspace manifest live at the root, so the build context
 # must be the monorepo root: `docker build -f apps/api/Dockerfile .`
 # Railway does this via the root railway.json, which sets dockerfilePath.
@@ -24,13 +24,13 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY apps/docs/package.json apps/docs/
-RUN pnpm install --frozen-lockfile --filter @bime247/api...
+RUN pnpm install --frozen-lockfile --filter @bimegold/api...
 
 # ----------------------------------------------------------------------- build
 FROM deps AS build
 COPY apps/api apps/api
-RUN pnpm --filter @bime247/api exec prisma generate \
- && pnpm --filter @bime247/api build
+RUN pnpm --filter @bimegold/api exec prisma generate \
+ && pnpm --filter @bimegold/api build
 
 # ---------------------------------------------------------------------- runtime
 # node_modules is carried over whole rather than pruned: the start command runs

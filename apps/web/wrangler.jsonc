@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "bime247-web",
-  // bime247.com lives on this account, NOT the one apps/docs deploys to. A Workers
+  "name": "bimegold-web",
+  // bimegold.com lives on this account, NOT the one apps/docs deploys to. A Workers
   // custom domain has to sit on the same account as its zone.
   "account_id": "022e4e5b87a14dc3d0e17772f66b5d6b",
   "compatibility_date": "2026-08-19",
@@ -13,7 +13,7 @@
     "not_found_handling": "single-page-application"
   },
   "routes": [
-    { "pattern": "app.bime247.com", "custom_domain": true }
+    { "pattern": "app.bimegold.com", "custom_domain": true }
   ],
   "observability": { "enabled": true }
 }

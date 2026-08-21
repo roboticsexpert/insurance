@@ -51,7 +51,7 @@ export function ProfilePage() {
       <PageHeader title="پروفایل" />
       <div className="space-y-4 px-5">
         <div className="rounded-[var(--radius-card)] border border-line bg-card p-5 shadow-[var(--shadow-card)]">
-          <p className="text-base font-semibold text-strong">{fullName || 'کاربر بیمه ۲۴۷'}</p>
+          <p className="text-base font-semibold text-strong">{fullName || 'کاربر بیمه گلد'}</p>
           <p className="mt-1 text-sm text-muted" dir="ltr">
             {formatMobile(user.mobile)}
           </p>

@@ -2,22 +2,27 @@
 @import '@fontsource-variable/vazirmatn';
 
 /*
- * Design tokens. The brand colour is a PLACEHOLDER until the brand book settles it —
- * change `--color-brand-*` here and the whole app follows.
+ * Design tokens. The brand colour is Bime Gold — see brand/bime-gold/README.md.
+ * `--color-gold` is the exact logo gold; the `--color-brand-*` ramp keeps the logo's
+ * hue but walks the lightness so UI pairings stay legible (white on brand-600 is
+ * 4.87:1, brand-600 as text on the page is 4.55:1 — pure #D4AF37 would be 2.1:1).
  */
 @theme {
   --font-sans: 'Vazirmatn Variable', system-ui, sans-serif;
 
-  --color-brand-50: oklch(0.97 0.02 185);
-  --color-brand-100: oklch(0.94 0.04 185);
-  --color-brand-200: oklch(0.88 0.07 185);
-  --color-brand-300: oklch(0.8 0.1 185);
-  --color-brand-400: oklch(0.72 0.13 185);
-  --color-brand-500: oklch(0.64 0.14 185);
-  --color-brand-600: oklch(0.55 0.13 185);
-  --color-brand-700: oklch(0.46 0.11 185);
-  --color-brand-800: oklch(0.38 0.09 185);
-  --color-brand-900: oklch(0.3 0.07 185);
+  --color-brand-50: oklch(0.97 0.022 90);
+  --color-brand-100: oklch(0.94 0.045 90);
+  --color-brand-200: oklch(0.88 0.078 90);
+  --color-brand-300: oklch(0.8 0.108 90);
+  --color-brand-400: oklch(0.72 0.128 90);
+  --color-brand-500: oklch(0.64 0.118 90);
+  --color-brand-600: oklch(0.55 0.102 90);
+  --color-brand-700: oklch(0.46 0.086 90);
+  --color-brand-800: oklch(0.38 0.07 90);
+  --color-brand-900: oklch(0.3 0.055 90);
+
+  /* The logo gold, exact. Use for brand marks, not for text on light surfaces. */
+  --color-gold: #d4af37;
 
   --radius-card: 1rem;
   --radius-sheet: 1.5rem;

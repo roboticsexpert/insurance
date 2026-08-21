@@ -1,0 +1,29 @@
+{
+  "name": "Bime Gold",
+  "wordmark": "bimegold",
+  "source_reference": "reference/bime-gold-type-10-compact.png",
+  "variant": "type-10-compact",
+  "typography": {
+    "family": "Plus Jakarta Sans",
+    "weight": 700,
+    "case": "lowercase",
+    "feature": "gold dot on letter i"
+  },
+  "colors": {
+    "charcoal": "#2B2B2B",
+    "charcoal_on_dark": "#F0F0F0",
+    "gold": "#D4AF37",
+    "navy": "#0F172A",
+    "navy_soft": "#1E293B"
+  },
+  "domain": "bimegold.com",
+  "wordmark_fa": "\u0628\u06cc\u0645\u0647 \u06af\u0644\u062f",
+  "files": {
+    "primary": "traced/svg/logo.svg",
+    "dark": "traced/svg/logo-on-dark.svg",
+    "stacked": "traced/svg/logo-stacked.svg",
+    "mark": "traced/svg/mark.svg",
+    "favicon": "traced/svg/favicon.svg",
+    "typeset_alternative": "svg/logo-en.svg"
+  }
+}

@@ -98,6 +98,16 @@ export class PaymentsService {
 
     // Already settled: report the original decision rather than asking the gateway again.
     if (payment.status !== PaymentStatus.CREATED && payment.status !== PaymentStatus.REDIRECTED) {
+      /*
+       * ...but a settled payment with no policy behind it is not a finished story. Issuance can
+       * fail after the money moved, and this is the one path the customer (or a reconciliation
+       * job) can drive without a session, so it is where the retry belongs. `issueForOrder` is
+       * idempotent and refuses anything but PAID / ISSUE_FAILED, so calling it here is safe on
+       * every replay — including the ordinary one, where it short-circuits on the existing policy.
+       */
+      if (payment.status === PaymentStatus.SUCCEEDED && !payment.order.policy) {
+        await this.reissue(payment.orderId)
+      }
       return this.describe(payment.orderId, payment.status, payment.refId)
     }
 
@@ -136,13 +146,25 @@ export class PaymentsService {
      * customer otherwise would be a lie that also loses their receipt. `issueForOrder` parks
      * the order in ISSUE_FAILED for support; `describe` then reports the real state.
      */
-    await this.policies
-      .issueForOrder(payment.orderId)
-      .catch((error: unknown) =>
-        this.logger.error({ err: error, orderId: payment.orderId }, 'Issuance after payment failed'),
-      )
+    await this.reissue(payment.orderId)
 
     return this.describe(payment.orderId, PaymentStatus.SUCCEEDED, result.refId ?? null)
+  }
+
+  /**
+   * Drives issuance for an order whose money is already in.
+   *
+   * Never rethrows. The payment succeeded, and reporting a failure would be a lie that also
+   * loses the customer their receipt — `issueForOrder` parks the order in `ISSUE_FAILED` and
+   * `describe` then reports the real state. A concurrent caller losing the transition race is
+   * the ordinary case, not an error.
+   */
+  private async reissue(orderId: string): Promise<void> {
+    await this.policies
+      .issueForOrder(orderId)
+      .catch((error: unknown) =>
+        this.logger.error({ err: error, orderId }, 'Issuance after payment failed'),
+      )
   }
 
   private async settleFailure(

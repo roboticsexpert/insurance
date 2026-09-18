@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SRC="$ROOT/brand/bime-gold/traced"
 
-for app in web docs; do
+for app in web docs site; do
   DEST="$ROOT/apps/$app/public/brand"
   rm -rf "$DEST"
   mkdir -p "$DEST"
@@ -24,10 +24,10 @@ for app in web docs; do
   cp "$SRC"/png/icon-512.png              "$DEST/icon-512.png"
   cp "$SRC"/png/icon-maskable-512.png     "$DEST/icon-maskable-512.png"
   cat > "$DEST/README.md" <<MD
-# Generated — do not edit
+# تولیدشده — ویرایش نکنید
 
-Copied from \`brand/bime-gold/traced/\` by \`tools/brand-gold/sync.sh\`.
-Change the artwork there and re-run \`tools/brand-gold/build.sh\`.
+از \`brand/bime-gold/traced/\` توسط \`tools/brand-gold/sync.sh\` کپی شده است.
+اثر را همان‌جا عوض کنید و \`tools/brand-gold/build.sh\` را دوباره اجرا کنید.
 MD
   echo "synced -> apps/$app/public/brand"
 done

@@ -12,6 +12,12 @@ build/
 .env.*
 !.env.example
 
+# site (Payload CMS + Next.js). `importMap.js` تولیدشده است اما کامیت می‌شود —
+# بیلد به آن نیاز دارد. با `pnpm --filter @bimegold/site generate:importmap` ساخته می‌شود.
+apps/site/.next/
+apps/site/next-env.d.ts
+apps/site/public/media/
+
 # api
 apps/api/dist/
 apps/api/generated/

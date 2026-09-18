@@ -18,7 +18,7 @@ You are building the **Bime247** online insurance platform in this monorepo.
    UI task, run the dev server through the Browser pane and look at it on a mobile viewport
    (375×812) — screenshot it. A task is not done because the code compiles.
 5. Change `[ ]` to `[x]` on that line, and append anything future-you would want to know to the
-   **Notes & decisions** section at the bottom of `PROGRESS.md`.
+   **«یادداشت‌ها و تصمیم‌هایی که در حین ساخت گرفته شد»** section at the bottom of `PROGRESS.md` (the notes are written in Persian, like the rest of `docs/`).
 6. Stop. Report in a few lines: what you built, how you verified it, what is next.
 
 If the task turns out to be blocked, mark it `[!]` with the reason on the same line, then move

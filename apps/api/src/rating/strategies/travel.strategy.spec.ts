@@ -92,6 +92,85 @@ describe('TravelRatingStrategy.parse', () => {
   it('accepts a departure later today', () => {
     expect(strategy.parse(input({ startDate: '2026-08-20', endDate: '2026-08-27' }), ctx)).toBeTruthy()
   })
+
+  /*
+   * M1. Only the past was guarded, so `startDate: '9999-12-31'` quoted and ordered normally —
+   * selling next decade's cover at this year's rates, which every one of these tables resets
+   * annually.
+   */
+  it('refuses a departure beyond the forward window', () => {
+    const error = (() => {
+      try {
+        strategy.parse(input({ startDate: '2027-06-01', endDate: '2027-06-08' }), ctx)
+        return null
+      } catch (e) {
+        return e as AppException
+      }
+    })()
+
+    expect(error?.code).toBe('VALIDATION_FAILED')
+    expect(error?.fields?.startDate).toContain('۹۰ روز')
+  })
+
+  it('accepts a departure just inside the window', () => {
+    // NOW is 2026-08-20; ninety days later is 2026-11-18.
+    expect(
+      strategy.parse(input({ startDate: '2026-11-18', endDate: '2026-11-25' }), ctx),
+    ).toBeTruthy()
+  })
+
+  /*
+   * M2. `isoDate` regex-matched then `Date.parse`d, and V8 rolls `2027-02-30` forward to
+   * `2027-03-02`. The quote echoed the impossible date back while the policy was issued from
+   * the rolled one — the customer saw one start date and was covered from another.
+   */
+  it('refuses a date the calendar does not have', () => {
+    expect(() =>
+      strategy.parse(input({ startDate: '2026-09-31', endDate: '2026-10-05' }), ctx),
+    ).toThrow(AppException)
+  })
+
+  it('still accepts a real leap day', () => {
+    const leap = { now: new Date('2028-02-01T09:00:00Z') }
+    expect(
+      strategy.parse(input({ startDate: '2028-02-29', endDate: '2028-03-05' }), leap),
+    ).toBeTruthy()
+  })
+
+  /*
+   * M7. `NOW` here is 21:00 UTC on the 20th, which is 00:30 on the **21st** in Tehran. Compared
+   * as UTC instants the 20th still looked like today, so for the first 3½ hours of every Tehran
+   * day the guard sold cover starting yesterday.
+   */
+  it('reads today from the Tehran clock, not the UTC one', () => {
+    const justAfterLocalMidnight = { now: new Date('2026-08-20T21:00:00Z') }
+
+    expect(() =>
+      strategy.parse(input({ startDate: '2026-08-20', endDate: '2026-08-27' }), justAfterLocalMidnight),
+    ).toThrow(AppException)
+
+    expect(
+      strategy.parse(input({ startDate: '2026-08-21', endDate: '2026-08-28' }), justAfterLocalMidnight),
+    ).toBeTruthy()
+  })
+
+  /*
+   * M4. `ageOnDeparture` goes negative for a future birth date, and `pickBand` puts a negative
+   * age in the `max: 12` band — so a traveler born in 2028 was priced at the child factor.
+   */
+  it('refuses a traveler born in the future', () => {
+    const error = (() => {
+      try {
+        strategy.parse(input({ travelers: [traveler('2028-01-01')] }), ctx)
+        return null
+      } catch (e) {
+        return e as AppException
+      }
+    })()
+
+    expect(error?.code).toBe('VALIDATION_FAILED')
+    expect(error?.fields?.['travelers.0.birthDate']).toBeDefined()
+  })
 })
 
 describe('TravelRatingStrategy.rate', () => {

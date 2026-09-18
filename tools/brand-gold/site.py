@@ -22,10 +22,9 @@ PKG = os.path.join(ROOT, "brand", "bime-gold")
 TRACED = os.path.join(PKG, "traced")
 DIST = os.path.join(ROOT, "apps", "brand", "dist")
 JAKARTA = os.path.join(os.path.dirname(__file__), "fonts", "PlusJakartaSans.ttf")
-VAZIR = os.path.join(
-    ROOT, "node_modules", ".pnpm", "@fontsource-variable+vazirmatn@5.3.0",
-    "node_modules", "@fontsource-variable", "vazirmatn", "files",
-)
+# Peyda Pro, the house typeface: the variable webfont from the Peyda Pro v4 package, kept beside
+# Jakarta. Deliberately not under brand/bime-gold/ — that folder is zipped into a public download.
+PEYDA = os.path.join(os.path.dirname(__file__), "fonts", "PeydaWebVF.woff2")
 
 COLOURS = json.load(open(os.path.join(PKG, "colors.json")))["colors"]
 
@@ -101,9 +100,8 @@ def build_assets():
     shutil.copy(os.path.join(TRACED, "png", "apple-touch-icon-180.png"),
                 os.path.join(DIST, "apple-touch-icon.png"))
 
-    # Persian: the two ranges the page actually uses.
-    for f in ("vazirmatn-arabic-wght-normal.woff2", "vazirmatn-latin-wght-normal.woff2"):
-        shutil.copy(os.path.join(VAZIR, f), os.path.join(a, "fonts", f))
+    # Persian: one variable file, all weights.
+    shutil.copy(PEYDA, os.path.join(a, "fonts", "PeydaWebVF.woff2"))
 
     # Latin: the wordmark's own typeface, subset to Latin + punctuation.
     subprocess.run([
@@ -127,8 +125,7 @@ def build_assets():
 
 # ---------------------------------------------------------------- page
 CSS = """
-@font-face{font-family:Vazirmatn;src:url(/assets/fonts/vazirmatn-arabic-wght-normal.woff2) format('woff2-variations');font-weight:200 900;font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF,U+200C}
-@font-face{font-family:Vazirmatn;src:url(/assets/fonts/vazirmatn-latin-wght-normal.woff2) format('woff2-variations');font-weight:200 900;font-display:swap;unicode-range:U+0000-00FF,U+2000-206F}
+@font-face{font-family:PeydaWebVF;src:url(/assets/fonts/PeydaWebVF.woff2) format('woff2-variations');font-weight:100 950;font-display:swap}
 @font-face{font-family:Jakarta;src:url(/assets/fonts/jakarta.woff2) format('woff2-variations');font-weight:200 800;font-display:swap}
 
 :root{
@@ -144,7 +141,7 @@ CSS = """
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--text);
-  font-family:Vazirmatn,system-ui,sans-serif;font-size:16px;line-height:1.85;
+  font-family:PeydaWebVF,system-ui,sans-serif;font-size:16px;line-height:1.85;
   font-feature-settings:'ss02'}
 html.en body{font-family:Jakarta,system-ui,sans-serif;line-height:1.7;font-feature-settings:normal}
 html.fa .l-en,html.en .l-fa{display:none}
@@ -237,7 +234,7 @@ td:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
   padding:1.6rem 1.8rem;margin-bottom:1rem}
 .spec .sample{font-family:Jakarta,sans-serif;font-weight:700;font-size:2.4rem;
   line-height:1.15;letter-spacing:-.02em;margin-bottom:.6rem;direction:ltr;text-align:start}
-.spec .sample.fa{font-family:Vazirmatn,sans-serif;direction:rtl}
+.spec .sample.fa{font-family:PeydaWebVF,sans-serif;direction:rtl}
 
 /* icons */
 .icons{display:flex;flex-wrap:wrap;gap:1.6rem;align-items:flex-end}
@@ -431,8 +428,8 @@ def build_page(zip_mb):
   {bi('type_h', 'h2')}{bi('type_body', 'p', 'lede')}
   <div class="spec"><div class="sample">bimegold — Plus Jakarta Sans</div>
     {bi('type_jakarta', 'p', 'note')}</div>
-  <div class="spec"><div class="sample fa">بیمه گلد — وزیرمتن</div>
-    {bi('type_vazir', 'p', 'note')}</div>
+  <div class="spec"><div class="sample fa">بیمه گلد — پیدا</div>
+    {bi('type_peyda', 'p', 'note')}</div>
 </section>
 
 <section>

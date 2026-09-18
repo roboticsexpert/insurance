@@ -1,158 +1,157 @@
-# Online insurance platform — MVP plan
+# پلتفرم آنلاین بیمه — برنامه MVP
 
-Working plan for the **customer-facing online insurance purchase platform** (the second of the
-two parts of this project; the first is the core insurance engine, researched in
-`src/content/topics/anatomy-of-core-insurance.md`).
+برنامه کاری برای **پلتفرم خرید آنلاین بیمه در سمت مشتری** (بخش دوم از دو بخش این پروژه؛ بخش اول
+هسته بیمه‌گری است که در `src/content/topics/anatomy-of-core-insurance.md` پژوهش شده).
 
-Written in English to match the rest of `docs/`. **All product UI is Persian, RTL** — the
-customers are Iranian.
+به فارسی نوشته شده، مثل بقیه `docs/`. **تمام رابط کاربری محصول فارسی و راست‌به‌چپ است** — مشتری‌ها
+ایرانی‌اند.
 
-Status: plan approved at the high level (2026-08-20), not yet implemented.
+وضعیت: برنامه در سطح کلان تأیید شده (۲۹ مرداد ۱۴۰۵)، هنوز پیاده نشده.
 
 ---
 
-## 1. Locked decisions
+## ۱. تصمیم‌های قطعی‌شده
 
-| # | Decision | Value |
+| # | تصمیم | مقدار |
 |---|---|---|
-| 1 | MVP product line | **Simple products, instant buy** (level A: pick → price → pay → e-policy) |
-| 2 | Repo | **Monorepo in this repo**, pnpm workspaces; the Astro research site becomes `apps/docs` |
-| 3 | Hosting | **Railway** (API + Postgres; web served from Railway static or Cloudflare) |
-| 4 | Back office | **None in MVP** — customer app only |
-| 5 | Backend | **NestJS** (TypeScript, Node 22) |
-| 6 | Frontend | **React SPA, no SSR** (Vite) |
-| 7 | Design | **Mobile only.** No desktop layout until explicitly requested |
-| 8 | Payment | **Mock gateway**, shaped exactly like a real Iranian IPG |
-| 9 | Auth | **Mobile number + OTP**, mock code `1234` always accepted |
-| 10 | Domains | **app.bimegold.com** (web) · **api.bimegold.com** (API) — zone already active on Cloudflare |
-| 11 | Shared code | **None.** No shared package; see §10 |
+| ۱ | خط محصول MVP | **محصولات ساده، خرید فوری** (سطح A: انتخاب ← قیمت ← پرداخت ← بیمه‌نامه الکترونیک) |
+| ۲ | مخزن | **مونوریپو در همین مخزن**، pnpm workspaces؛ سایت پژوهشی Astro می‌شود `apps/docs` |
+| ۳ | میزبانی | **Railway** (API + Postgres؛ وب از فایل‌های ایستای Railway یا Cloudflare) |
+| ۴ | بک‌آفیس | **در MVP نداریم** — فقط اپ مشتری |
+| ۵ | بک‌اند | **NestJS** (تایپ‌اسکریپت، Node 22) |
+| ۶ | فرانت‌اند | **React SPA، بدون SSR** (Vite) |
+| ۷ | طراحی | **فقط موبایل.** تا وقتی صریحاً خواسته نشود، چیدمان دسکتاپ نداریم |
+| ۸ | پرداخت | **درگاه ماک**، دقیقاً به شکل یک IPG واقعی ایرانی |
+| ۹ | احراز هویت | **شماره موبایل + کد یک‌بارمصرف**، کد ماک `1234` همیشه پذیرفته می‌شود |
+| ۱۰ | دامنه‌ها | **app.bimegold.com** (وب) · **api.bimegold.com** (API) — زون از قبل روی Cloudflare فعال است |
+| ۱۱ | کد مشترک | **هیچ.** هیچ پکیج مشترکی؛ §۱۰ را ببینید |
 
-### The one strategic note
+### یک نکته راهبردی
 
-`docs/PLAN.md` argues *against* entering on the simple products — Azki, Bimeh.com and
-BimeBazar own that space and compete on price. This MVP goes there anyway, by decision.
+`docs/PLAN.md` استدلال می‌کند که *نباید* از محصولات ساده وارد شد — ازکی، Bimeh.com و بیمه‌بازار
+صاحب این فضا هستند و سر قیمت رقابت می‌کنند. این MVP با وجود آن، به‌عنوان یک تصمیم، همان‌جا می‌رود.
 
-Mitigation baked into the architecture, at zero extra cost today:
+کاهش ریسکی که همین امروز و بدون هزینه اضافه در معماری تعبیه شده:
 
-- Products are **data, not code**. A product = a JSON field schema + a rate table + a set of
-  insurer offerings. Adding a product means seeding a row, not writing a module.
-- The quote pipeline has an explicit `fulfillment` mode on each product:
-  `INSTANT` (MVP) or `MANUAL_QUOTE` (Layer 3). Only the second one is unimplemented — the
-  data model, the order, the payment and the policy stages are shared.
+- محصولات **داده‌اند، نه کد**. یک محصول = یک اسکیمای فیلد JSON + یک جدول نرخ + مجموعه‌ای از
+  عرضه‌های شرکت‌های بیمه. افزودن محصول یعنی seed کردن یک ردیف، نه نوشتن یک ماژول.
+- خط لوله استعلام روی هر محصول یک حالت `fulfillment` صریح دارد:
+  `INSTANT` (همین MVP) یا `MANUAL_QUOTE` (لایه ۳). فقط دومی پیاده نشده — مدل داده، سفارش،
+  پرداخت و مرحله بیمه‌نامه مشترک‌اند.
 
-So the beachhead pivot stays one sprint away instead of a rewrite.
+پس چرخش به سرپل واقعی، به‌جای بازنویسی، یک اسپرینت فاصله دارد.
 
 ---
 
-## 2. Product scope
+## ۲. دامنه محصول
 
-Three products, built in this order. Travel first because it exercises the entire pipeline
-with the simplest inputs; third-party motor second because its input model is the hardest.
+سه محصول، به این ترتیب ساخته می‌شوند. مسافرتی اول، چون کل خط لوله را با ساده‌ترین ورودی‌ها تمرین
+می‌دهد؛ شخص ثالث خودرو دوم، چون مدل ورودی‌اش سخت‌ترین است.
 
-### 2.1 بیمه مسافرتی (travel) — build first
+### ۲.۱ بیمه مسافرتی (travel) — اول ساخته می‌شود
 
-| Field | Type | Notes |
+| فیلد | نوع | توضیح |
 |---|---|---|
 | destinationZone | enum | `SCHENGEN` / `ASIA` / `AMERICAS` / `WORLDWIDE` / `HAJJ_OMRAH` |
-| startDate / endDate | jalali date | duration in days is the main rate driver |
-| travelers[] | array | each: firstName, lastName, nationalCode, birthDate, passportNo |
+| startDate / endDate | تاریخ شمسی | مدت به روز، محرک اصلی نرخ است |
+| travelers[] | آرایه | هر کدام: firstName, lastName, nationalCode, birthDate, passportNo |
 | coverageLimit | enum | `EUR_15K` / `EUR_30K` / `EUR_50K` / `EUR_100K` |
 
-Rate drivers: zone × duration band × age band × coverage limit. Age bands matter a lot
-(0–12, 13–65, 66–75, 76+ with heavy loading).
+محرک‌های نرخ: منطقه × باند مدت × باند سنی × سقف پوشش. باندهای سنی خیلی مهم‌اند
+(۰ تا ۱۲، ۱۳ تا ۶۵، ۶۶ تا ۷۵، ۷۶ به بالا با بارگذاری سنگین).
 
-### 2.2 بیمه شخص ثالث خودرو (motor third-party liability) — build second
+### ۲.۲ بیمه شخص ثالث خودرو (motor third-party liability) — دوم ساخته می‌شود
 
-| Field | Type | Notes |
+| فیلد | نوع | توضیح |
 |---|---|---|
 | vehicleUsage | enum | `PERSONAL` / `COMMERCIAL` / `TAXI` |
 | vehicleGroup | enum | `SEDAN` / `PICKUP` / `MOTORCYCLE` / `VAN` / `TRUCK` |
-| vehicleModelId | ref | from seeded reference data (115 models, 24 brands) |
-| productionYear | int | |
-| plate | object | `{ twoDigit, letter, threeDigit, iranCode }` — the standard Iranian plate |
-| bodilyDiscountYears | int 0–14 | تخفیف عدم خسارت جانی |
-| propertyDiscountYears | int 0–8 | تخفیف عدم خسارت مالی |
-| propertyCoverageTier | enum | تعهد مالی: 2.5% / 4% / 5.5% / 7% / 8% of the bodily limit |
-| startDate | jalali date | policies are annual |
-| hasPreviousPolicy | bool | drives the discount fields |
+| vehicleModelId | ارجاع | از داده مرجع seed شده (۱۱۵ مدل، ۲۴ برند) |
+| productionYear | عدد صحیح | |
+| plate | آبجکت | `{ twoDigit, letter, threeDigit, iranCode }` — پلاک استاندارد ایرانی |
+| bodilyDiscountYears | عدد صحیح ۰ تا ۱۴ | تخفیف عدم خسارت جانی |
+| propertyDiscountYears | عدد صحیح ۰ تا ۸ | تخفیف عدم خسارت مالی |
+| propertyCoverageTier | enum | تعهد مالی: ۲٫۵٪ / ۴٪ / ۵٫۵٪ / ۷٪ / ۸٪ از سقف جانی |
+| startDate | تاریخ شمسی | بیمه‌نامه‌ها سالانه‌اند |
+| hasPreviousPolicy | بولین | فیلدهای تخفیف را فعال می‌کند |
 
-Rate drivers: base bodily limit (دیه, a national figure updated yearly) × vehicle group ×
-usage × property tier, then discount ladder, then 10% VAT + fixed legal fees
-(عوارض راهنمایی و رانندگی, صندوق تأمین خسارت‌های بدنی). **These fixed levies must be modelled
-as separate line items**, not folded into the premium — a real invoice shows them separately.
+محرک‌های نرخ: سقف پایه جانی (دیه، یک عدد ملی که سالانه به‌روز می‌شود) × گروه خودرو ×
+کاربری × تعهد مالی، بعد نردبان تخفیف، بعد ۱۰٪ مالیات بر ارزش افزوده به‌علاوه عوارض ثابت قانونی
+(عوارض راهنمایی و رانندگی، صندوق تأمین خسارت‌های بدنی). **این عوارض ثابت باید ردیف‌های جدا مدل
+شوند**، نه اینکه داخل حق بیمه تا بخورند — یک صورت‌حساب واقعی آن‌ها را جداگانه نشان می‌دهد.
 
-### 2.3 بیمه آتش‌سوزی منزل (home fire) — build third
+### ۲.۳ بیمه آتش‌سوزی منزل (home fire) — سوم ساخته می‌شود
 
-| Field | Type | Notes |
+| فیلد | نوع | توضیح |
 |---|---|---|
 | propertyType | enum | `APARTMENT` / `VILLA` |
-| province / city | ref | earthquake zone factor comes from here |
-| areaSqm | int | |
-| buildingValue | int (rial) | |
-| contentsValue | int (rial) | |
-| extraPerils | multi | `EARTHQUAKE` / `FLOOD` / `THEFT` / `WATER_DAMAGE` — each a rate add-on |
-| durationMonths | enum | 12 (MVP) |
+| province / city | ارجاع | ضریب منطقه زلزله از اینجا می‌آید |
+| areaSqm | عدد صحیح | |
+| buildingValue | عدد صحیح (ریال) | |
+| contentsValue | عدد صحیح (ریال) | |
+| extraPerils | چندانتخابی | `EARTHQUAKE` / `FLOOD` / `THEFT` / `WATER_DAMAGE` — هر کدام یک افزوده نرخ |
+| durationMonths | enum | ۱۲ (در MVP) |
 
-### Explicitly out of MVP
+### آنچه صریحاً بیرون از MVP است
 
-بدنه (own-damage: needs vehicle valuation tables), عمر و سرمایه‌گذاری (life: needs a health
-questionnaire and underwriting), درمان تکمیلی (supplementary health: group product),
-مسئولیت‌ها (all liability lines — that's the Layer-3 pivot), renewals, claims, refunds.
+بدنه (نیاز به جدول ارزش‌گذاری خودرو دارد)، عمر و سرمایه‌گذاری (نیاز به پرسشنامه سلامت و
+ارزیابی ریسک دارد)، درمان تکمیلی (محصول گروهی)، مسئولیت‌ها (همه رشته‌های مسئولیت — همان چرخش به
+لایه ۳)، تمدید، خسارت، و بازگشت وجه.
 
 ---
 
-## 3. Monorepo layout
+## ۳. چیدمان مونوریپو
 
 ```
 insurance/
-  package.json                # pnpm workspace root + all dev scripts
-  pnpm-workspace.yaml         # apps/* only
-  docker-compose.yml          # local postgres on :5433
-  docs/                       # research + this plan + PROGRESS.md
+  package.json                # ریشه workspace در pnpm + همه اسکریپت‌های توسعه
+  pnpm-workspace.yaml         # فقط apps/*
+  docker-compose.yml          # postgres محلی روی :5433
+  docs/                       # پژوهش + همین برنامه + PROGRESS.md
   apps/
-    docs/                     # ← the existing Astro site, moved as-is
-    api/                      # NestJS — owns the data model and all validation
-    web/                      # React SPA — owns everything the user sees
+    docs/                     # ← همان سایت Astro موجود، بدون تغییر منتقل شده
+    api/                      # NestJS — صاحب مدل داده و تمام اعتبارسنجی‌ها
+    web/                      # React SPA — صاحب هرچه کاربر می‌بیند
 ```
 
-There is deliberately **no `packages/` directory**. See §10.
+عمداً **هیچ پوشه `packages/` وجود ندارد**. §۱۰ را ببینید.
 
-Moving the Astro site is a `git mv` plus a path fix in `wrangler.jsonc` and
-`astro.config.mjs`. `docs.bimegold.com` keeps deploying exactly as it does now — the deploy
-command becomes `pnpm --filter docs build && wrangler deploy` from `apps/docs`.
+جابه‌جا کردن سایت Astro یعنی یک `git mv` به‌علاوه اصلاح مسیر در `wrangler.jsonc` و
+`astro.config.mjs`. `docs.bimegold.com` دقیقاً مثل الان مستقر می‌شود — دستور استقرار می‌شود
+`pnpm --filter docs build && wrangler deploy` از داخل `apps/docs`.
 
 ---
 
-## 4. Backend — NestJS
+## ۴. بک‌اند — NestJS
 
-**Stack:** NestJS 11 · Node 22 · PostgreSQL 16 · Prisma · zod (via `nestjs-zod`) ·
+**پشته:** NestJS 11 · Node 22 · PostgreSQL 16 · Prisma · zod (از راه `nestjs-zod`) ·
 `@nestjs/throttler` · `@nestjs/jwt` · pino · Jest.
 
-Prisma over TypeORM: the schema is the readable source of truth, migrations are
-deterministic, and the generated types are read directly by the API. (They do *not* feed a
-shared package — see §10, which decided against one.)
+Prisma به‌جای TypeORM: اسکیما همان منبع حقیقتِ خواندنی است، مهاجرت‌ها قطعی‌اند و تایپ‌های
+تولیدشده مستقیم توسط API خوانده می‌شوند. (این تایپ‌ها به هیچ پکیج مشترکی خورانده *نمی‌شوند* —
+§۱۰ را ببینید که علیه آن تصمیم گرفت.)
 
-### 4.1 Modules
+### ۴.۱ ماژول‌ها
 
 ```
 src/
   main.ts, app.module.ts
-  common/            filters, interceptors (request-id, logging), guards, pipes, decorators
-  config/            typed env config (zod-validated at boot — fail fast on missing vars)
-  prisma/            PrismaService + module
-  auth/              OTP request/verify, JWT issue/refresh, JwtAuthGuard, CurrentUser
-  users/             profile, national code, saved vehicles, saved insured persons
-  catalog/           products, insurers, offerings, reference data (brands, cities, zones)
-  rating/            the rating engine — one strategy per product type
-  quotes/            create quote → returns priced offers, quote expiry
-  orders/            order lifecycle state machine
-  payments/          PaymentGateway interface + MockGateway + callback verification
-  policies/          issuance, policy numbering, e-policy document
-  notifications/     SmsSender interface + ConsoleSmsSender (mock) + templates
-  health/            /health (liveness), /health/ready (db check)
+  common/            فیلترها، اینترسپتورها (request-id، لاگ)، گاردها، پایپ‌ها، دکوراتورها
+  config/            پیکربندی تایپ‌دار محیط (اعتبارسنجی zod موقع بوت — نبود متغیر یعنی توقف فوری)
+  prisma/            PrismaService و ماژولش
+  auth/              درخواست/تأیید کد یک‌بارمصرف، صدور/تازه‌سازی JWT، JwtAuthGuard، CurrentUser
+  users/             پروفایل، کد ملی، خودروهای ذخیره‌شده، بیمه‌شدگان ذخیره‌شده
+  catalog/           محصولات، شرکت‌ها، عرضه‌ها، داده مرجع (برندها، شهرها، مناطق)
+  rating/            موتور نرخ‌دهی — برای هر نوع محصول یک استراتژی
+  quotes/            ساخت استعلام ← برگرداندن پیشنهادهای قیمت‌خورده، انقضای استعلام
+  orders/            ماشین حالت چرخه عمر سفارش
+  payments/          اینترفیس PaymentGateway + MockGateway + تأیید بازگشت
+  policies/          صدور، شماره‌گذاری بیمه‌نامه، سند بیمه‌نامه الکترونیک
+  notifications/     اینترفیس SmsSender + ConsoleSmsSender (ماک) + قالب‌ها
+  health/            ‏/health (زنده بودن)، /health/ready (بررسی دیتابیس)
 ```
 
-### 4.2 Data model (Prisma, abbreviated)
+### ۴.۲ مدل داده (Prisma، خلاصه‌شده)
 
 ```
 User            id, mobile(unique), firstName, lastName, nationalCode, birthDate,
@@ -164,9 +163,9 @@ Insurer         id, slug, name, logoUrl, solvencyLevel(توانگری ۱..۵),
                 claimSatisfaction, branchCount, isActive
 Product         id, slug, type(TRAVEL|MOTOR_TPL|HOME_FIRE), titleFa, subtitleFa,
                 iconKey, fulfillment(INSTANT|MANUAL_QUOTE), fieldSchemaVersion, isActive
-Offering        id, productId, insurerId, isActive, sortWeight, featuresFa[]  -- insurer × product
+Offering        id, productId, insurerId, isActive, sortWeight, featuresFa[]  -- شرکت × محصول
 RateTable       id, offeringId, version, effectiveFrom, effectiveTo, data(jsonb)
-                -- the whole rate structure lives here; engine reads, never hardcodes
+                -- کل ساختار نرخ اینجاست؛ موتور می‌خواندش و هرگز هاردکد نمی‌کند
 
 Vehicle         id, userId, plate(json), brandModelId, productionYear, usage, group
 InsuredPerson   id, userId, firstName, lastName, nationalCode, birthDate, passportNo
@@ -183,64 +182,64 @@ Policy          id, orderId, policyNumber(unique), insurerId, startsAt, endsAt,
 SmsLog          id, mobile, template, body, status, providerRef, createdAt
 ```
 
-Design rules that matter:
+قواعد طراحی که اهمیت دارند:
 
-- **`QuoteOffer` stores the frozen price.** An order always references a stored offer, never a
-  recomputation. Rates change; a quoted price must not.
-- **Snapshots everywhere.** `Order.insuredSnapshot` and `Policy.dataSnapshot` copy the data as
-  it was at purchase. Editing a profile must never mutate an issued policy.
-- **All money in integer Rials.** No floats anywhere. The UI displays Tomans (÷10) and
-  formats with Persian digits. The formatter is deliberately **duplicated**: `apps/web/src/lib/fa.ts`
-  for the UI and `apps/api/src/common/fa.ts` for SMS text and the e-policy document. Forty frozen
-  lines beat a cross-package build step (§10).
-- **`idempotencyKey` on Order**, sent by the client, so a double-tapped "buy" button cannot
-  create two orders.
+- **`QuoteOffer` قیمت قفل‌شده را نگه می‌دارد.** سفارش همیشه به یک پیشنهاد ذخیره‌شده ارجاع
+  می‌دهد، نه به یک محاسبه دوباره. نرخ‌ها عوض می‌شوند؛ قیمت استعلام‌شده نباید عوض شود.
+- **همه‌جا اسنپ‌شات.** `Order.insuredSnapshot` و `Policy.dataSnapshot` داده را همان‌طور که موقع
+  خرید بوده کپی می‌کنند. ویرایش پروفایل هرگز نباید بیمه‌نامه صادرشده را تغییر دهد.
+- **تمام پول‌ها ریال صحیح.** هیچ‌جا اعشاری نداریم. رابط کاربری تومان نشان می‌دهد (تقسیم بر ۱۰) و
+  با ارقام فارسی قالب‌بندی می‌کند. قالب‌بند عمداً **تکرار شده است**: `apps/web/src/lib/fa.ts`
+  برای رابط کاربری و `apps/api/src/common/fa.ts` برای متن پیامک و سند بیمه‌نامه. چهل خط ثابت
+  بهتر از یک گام بیلد بین پکیجی است (§۱۰).
+- **`idempotencyKey` روی Order**، که کلاینت می‌فرستد، تا دکمه خریدی که دوبار زده شود نتواند دو
+  سفارش بسازد.
 
-### 4.3 API surface
+### ۴.۳ سطح API
 
 ```
 POST   /auth/otp/request        { mobile }                → { expiresIn, retryAfter }
-POST   /auth/otp/verify         { mobile, code }          → { accessToken, user } + refresh cookie
+POST   /auth/otp/verify         { mobile, code }          → { accessToken, user } + کوکی refresh
 POST   /auth/refresh                                      → { accessToken }
 POST   /auth/logout
-GET    /me                                                → user profile
+GET    /me                                                → پروفایل کاربر
 PATCH  /me                      { firstName, lastName, nationalCode, birthDate, email }
 
-GET    /catalog/products                                  → cards for the home screen
-GET    /catalog/products/:slug                            → product + field schema + options
+GET    /catalog/products                                  → کارت‌های صفحه اصلی
+GET    /catalog/products/:slug                            → محصول + اسکیمای فیلد + گزینه‌ها
 GET    /catalog/reference/:key                            → vehicle-brands | cities | zones …
 GET    /catalog/insurers
 
 POST   /quotes                  { productSlug, input }    → { quoteId, expiresAt, offers[] }
-GET    /quotes/:id                                        → same, re-read
+GET    /quotes/:id                                        → همان، خوانده‌شده دوباره
 
 POST   /orders                  { quoteOfferId, insured, idempotencyKey } → { orderId }
 GET    /orders/:id
-POST   /orders/:id/pay                                    → { redirectUrl }   (mock gateway)
-GET    /payments/callback                                 → 302 to web callback route
+POST   /orders/:id/pay                                    → { redirectUrl }   (درگاه ماک)
+GET    /payments/callback                                 → ۳۰۲ به مسیر بازگشت وب
 POST   /payments/verify         { authority, status }     → { orderId, policyId? }
 
-GET    /policies                                          → my policies (list)
-GET    /policies/:id                                      → e-policy detail
-GET    /policies/:id/document                             → HTML e-policy (PDF: fast-follow)
+GET    /policies                                          → بیمه‌نامه‌های من (فهرست)
+GET    /policies/:id                                      → جزئیات بیمه‌نامه الکترونیک
+GET    /policies/:id/document                             → بیمه‌نامه HTML (PDF: بلافاصله بعد)
 
-GET    /me/vehicles                                       → saved vehicles          (built)
+GET    /me/vehicles                                       → خودروهای ذخیره‌شده        (ساخته شد)
 POST   /me/vehicles       { vehicleModelId, plate, productionYear, usage }
 DELETE /me/vehicles/:id
 
-GET    /mock-gateway?Authority=…                          → the Shaparak-style mock bank page
-POST   /mock-gateway/settle  { authority, outcome }       → 302 back to the web callback
+GET    /mock-gateway?Authority=…                          → صفحه بانک ماک به سبک شاپرک
+POST   /mock-gateway/settle  { authority, outcome }       → ۳۰۲ به مسیر بازگشت وب
 ```
 
-The two `mock-gateway` routes sit **outside** the `/api/v1` prefix, because a bank redirects to
-a bare path; they 404 unless `PAYMENT_GATEWAY=mock`. `/me/insured-persons` was planned and not
-built — travel policies take the insured on the order, so nothing needed a saved-person list yet.
+آن دو مسیر `mock-gateway` **بیرون** از پیشوند `/api/v1` می‌نشینند، چون بانک به یک مسیر خالی
+ریدایرکت می‌کند؛ و اگر `PAYMENT_GATEWAY=mock` نباشد ۴۰۴ می‌دهند. `/me/insured-persons` برنامه‌ریزی
+شده بود اما ساخته نشد — بیمه‌نامه مسافرتی بیمه‌شده را روی خود سفارش می‌گیرد، پس هنوز هیچ‌چیز به
+فهرست اشخاص ذخیره‌شده نیاز نداشت.
 
-Conventions: `/api/v1` prefix, envelope-free responses (data at the top level, errors via a
-consistent error shape), cursor-less pagination (`page`/`pageSize`) — the MVP has no list big
-enough to need cursors.
+قراردادها: پیشوند `/api/v1`، پاسخ بدون پاکت (داده در سطح بالا، خطاها با یک شکل ثابت)،
+صفحه‌بندی بدون cursor (`page`/`pageSize`) — در MVP هیچ فهرستی آن‌قدر بزرگ نیست که cursor بخواهد.
 
-Error shape, used by every failure:
+شکل خطا، که هر شکست از آن استفاده می‌کند:
 
 ```json
 { "statusCode": 422, "code": "QUOTE_EXPIRED",
@@ -248,92 +247,91 @@ Error shape, used by every failure:
   "requestId": "01J…" }
 ```
 
-`code` is for the client to branch on, `messageFa` is what the user sees. **The API owns the
-Persian error text** — one place to fix wording.
+`code` برای شاخه‌زدن کلاینت است و `messageFa` چیزی است که کاربر می‌بیند. **متن فارسی خطا در
+مالکیت API است** — یک جا برای اصلاح جمله‌بندی.
 
 ---
 
-## 5. Rating engine
+## ۵. موتور نرخ‌دهی
 
-The piece that decides whether this codebase is a toy or the seed of the core insurance
-engine. It gets its own module with no dependency on HTTP or Prisma models beyond a loader.
+همان قطعه‌ای که تعیین می‌کند این کدبیس یک اسباب‌بازی است یا بذر هسته بیمه‌گری. ماژول مستقل خودش
+را دارد و جز یک لودر، هیچ وابستگی‌ای به HTTP یا مدل‌های Prisma ندارد.
 
-As built (`apps/api/src/rating/rating-strategy.ts`) — the shape drifted from this sketch in two
-ways worth stating: `validate` became `parse` and takes the clock, and an optional `prepare`
-was added so a product can depend on reference data without `rate` losing its purity.
+آن‌طور که ساخته شد (`apps/api/src/rating/rating-strategy.ts`) — شکلش از این طرح اولیه در دو
+مورد فاصله گرفت که گفتنشان می‌ارزد: `validate` شد `parse` و ساعت را می‌گیرد، و یک `prepare`
+اختیاری اضافه شد تا محصول بتواند به داده مرجع وابسته باشد بدون آنکه `rate` خلوصش را از دست بدهد.
 
 ```ts
 interface RatingStrategy<TInput, TPrepared = TInput> {
   productType: ProductType
-  parse(input: unknown, ctx: RatingContext): TInput   // zod, throws AppException; ctx carries `now`
+  parse(input: unknown, ctx: RatingContext): TInput   // zod، AppException پرتاب می‌کند؛ ctx حامل `now` است
   prepare?(input: TInput, lookups: RatingLookups): Promise<TPrepared>
-                                                      // resolves DB reference data once per quote
+                                                      // داده مرجع دیتابیس را یک‌بار در هر استعلام resolve می‌کند
   rate(input: TPrepared, table: unknown, ctx: RatingContext): RatingResult
-                                                      // pure function, fully unit-testable
-  teaserInputs?(ctx, lookups): unknown[] | Promise<unknown[]>   // baskets for «از … تومان»
+                                                      // تابع خالص، کاملاً قابل تست واحد
+  teaserInputs?(ctx, lookups): unknown[] | Promise<unknown[]>   // سبدها برای «از … تومان»
   coveragePeriod(input: TInput): { startsAt: Date; endsAt: Date }
 }
 
 interface RatingResult {
   eligible: boolean
   ineligibleReasonFa?: string
-  netPremium: number                 // rial
+  netPremium: number                 // ریال
   lineItems: { key: string; labelFa: string; amount: number; kind: 'PREMIUM'|'DISCOUNT'|'TAX'|'FEE' }[]
   totalAmount: number
   coverages: { key: string; labelFa: string; valueFa: string }[]
-  explain: string[]                  // human-readable trace of every factor applied
+  explain: string[]                  // ردّ خواندنیِ هر ضریبی که اعمال شده
 }
 ```
 
-Rules:
+قواعد:
 
-- `rate()` is **pure**: `(input, table) → result`. No I/O, no clock (the date comes in the
-  input), no randomness. This makes the entire pricing surface testable with fixture tables.
-- Rate tables are **versioned rows in Postgres**, selected by `effectiveFrom/effectiveTo`.
-  Changing a price is a data change with an audit trail, never a deploy.
-- `explain[]` is populated on every run and stored on `QuoteOffer.breakdownJson`. When a
-  customer asks "why is this 4.2 million?", the answer is retrievable a year later.
-- Quoting all insurers for a product runs the same input through each active offering's table
-  and returns the array sorted by `totalAmount` — with a "cheapest" and "most recommended"
-  badge computed server-side.
+- `rate()` **خالص است**: `(input, table) → result`. بدون I/O، بدون ساعت (تاریخ از ورودی
+  می‌آید)، بدون تصادف. همین باعث می‌شود کل سطح قیمت‌گذاری با جدول‌های آزمایشی قابل تست باشد.
+- جدول‌های نرخ **ردیف‌های نسخه‌دار در Postgres** هستند که با `effectiveFrom/effectiveTo` انتخاب
+  می‌شوند. تغییر قیمت یک تغییر داده با ردّ حسابرسی است، نه یک استقرار.
+- `explain[]` در هر اجرا پر می‌شود و روی `QuoteOffer.breakdownJson` ذخیره می‌شود. وقتی مشتری
+  می‌پرسد «چرا این ۴٫۲ میلیون شد؟»، پاسخ یک سال بعد هم قابل بازیابی است.
+- استعلام از همه شرکت‌ها برای یک محصول، همان ورودی را از جدول هر عرضه فعال می‌گذراند و آرایه
+  مرتب‌شده بر اساس `totalAmount` را برمی‌گرداند — با نشان «ارزان‌ترین» و «پیشنهاد ما» که سمت سرور
+  حساب می‌شوند.
 
-**Rate data honesty:** MVP tables are *placeholder numbers shaped like the real thing* — the
-motor third-party table follows the real structure (دیه base, vehicle group multipliers, the
-statutory discount ladder, separate levies), with values that are plausible but not sourced.
-Every seeded table carries `data.meta.source: "PLACEHOLDER"` and the UI shows a clear
-"نمونه/آزمایشی" badge until real insurer rates replace them. Shipping fake prices as if they
-were real is the one thing that would kill this project's credibility with insurers.
-
----
-
-## 6. Auth — mobile + OTP
-
-Flow: `mobile → OTP → (first time) complete profile → home`.
-
-- Mobile normalized to `9XXXXXXXXX` (strip `+98`, `0098`, leading `0`); validated against
-  Iranian operator prefixes.
-- `POST /auth/otp/request` creates an `OtpChallenge` with a **hashed** code, 2-minute TTL,
-  and sends via `SmsSender`. In mock mode `ConsoleSmsSender` logs it and the response
-  includes `devCode` **only when `NODE_ENV !== 'production'`**.
-- `POST /auth/otp/verify` accepts the real code, and — while `AUTH_MOCK_OTP=1234` is set —
-  also accepts `1234` for any mobile. This env var is the single switch to turn the mock off;
-  the app **refuses to boot in production with it set** unless `ALLOW_MOCK_AUTH_IN_PROD=true`
-  is also explicitly present. A leftover universal OTP in production is a total account
-  takeover, so it needs two deliberate mistakes, not one.
-- Rate limits: 1 request per mobile per 60s, 5 per mobile per hour, 20 per IP per hour,
-  5 wrong verify attempts then the challenge is burned.
-- Tokens: access JWT 15 min (in memory on the client), refresh token 30 days in an
-  `httpOnly; Secure; SameSite=None` cookie, **rotated on every use with family-reuse
-  detection** (reuse of a rotated token revokes the whole family).
-- No password anywhere. No email login. No social login.
+**صداقت درباره داده نرخ:** جدول‌های MVP *عددهای موقت‌اند که شکلشان مثل واقعی است* — جدول شخص ثالث
+خودرو ساختار واقعی را دنبال می‌کند (پایه دیه، ضریب‌های گروه خودرو، نردبان قانونی تخفیف، عوارض
+جداگانه)، با مقادیری که محتمل‌اند اما منبع ندارند. هر جدول seed شده `data.meta.source:
+"PLACEHOLDER"` را با خود دارد و رابط کاربری تا وقتی نرخ واقعی شرکت‌ها جایشان را نگیرد، نشان
+روشن «نمونه/آزمایشی» را نمایش می‌دهد. عرضه قیمت جعلی به‌جای واقعی، تنها کاری است که اعتبار این
+پروژه را نزد شرکت‌های بیمه نابود می‌کند.
 
 ---
 
-## 7. Payment — mock gateway with a real gateway's shape
+## ۶. احراز هویت — موبایل + کد یک‌بارمصرف
 
-`PaymentGateway` is an interface. `MockGateway` implements it with the exact ZarinPal /
-Saman two-step choreography, so swapping in the real one later touches one provider file and
-one env var.
+جریان: `موبایل ← کد یک‌بارمصرف ← (بار اول) تکمیل پروفایل ← خانه`.
+
+- شماره موبایل به `9XXXXXXXXX` نرمال می‌شود (حذف `+98`، `0098`، صفر ابتدایی)؛ در برابر پیش‌شماره
+  اپراتورهای ایرانی اعتبارسنجی می‌شود.
+- `POST /auth/otp/request` یک `OtpChallenge` با کد **هش‌شده** و TTL دو دقیقه‌ای می‌سازد و از راه
+  `SmsSender` می‌فرستد. در حالت ماک، `ConsoleSmsSender` لاگش می‌کند و پاسخ **فقط وقتی
+  `NODE_ENV !== 'production'` باشد** شامل `devCode` است.
+- `POST /auth/otp/verify` کد واقعی را می‌پذیرد و — تا وقتی `AUTH_MOCK_OTP=1234` تنظیم باشد —
+  کد `1234` را هم برای هر شماره‌ای می‌پذیرد. این متغیر محیطی تنها کلید خاموش کردن ماک است؛ و
+  اپلیکیشن **در محیط عملیاتی با این متغیر بالا نمی‌آید** مگر آنکه `ALLOW_MOCK_AUTH_IN_PROD=true`
+  هم صریحاً حاضر باشد. یک کد یک‌بارمصرف سراسریِ جامانده در محیط عملیاتی یعنی تصاحب کامل حساب‌ها،
+  پس باید دو اشتباه عمدی رخ بدهد، نه یکی.
+- محدودیت نرخ: هر شماره ۱ درخواست در ۶۰ ثانیه، ۵ درخواست در ساعت، هر IP‏ ۲۰ درخواست در ساعت، و
+  پس از ۵ تلاش ناموفق تأیید، چالش می‌سوزد.
+- توکن‌ها: JWT دسترسی ۱۵ دقیقه (در حافظه کلاینت)، توکن refresh ۳۰ روزه در کوکی
+  `httpOnly; Secure; SameSite=None`، که **در هر استفاده چرخانده می‌شود و استفاده مجدد در خانواده
+  تشخیص داده می‌شود** (استفاده دوباره از توکن چرخانده‌شده، کل خانواده را باطل می‌کند).
+- هیچ‌جا رمز عبور نداریم. ورود با ایمیل نداریم. ورود با شبکه‌های اجتماعی هم نداریم.
+
+---
+
+## ۷. پرداخت — درگاه ماک با شکل یک درگاه واقعی
+
+`PaymentGateway` یک اینترفیس است. `MockGateway` آن را با همان رقص دو مرحله‌ای زرین‌پال/سامان
+پیاده می‌کند، تا جایگزینی با درگاه واقعی فقط یک فایل provider و یک متغیر محیطی را لمس کند.
 
 ```ts
 interface PaymentGateway {
@@ -342,306 +340,326 @@ interface PaymentGateway {
 }
 ```
 
-Mock flow:
+جریان ماک:
 
-1. `POST /orders/:id/pay` → creates a `Payment` row, returns
-   `redirectUrl = ${API_URL}/mock-gateway?authority=…`
-2. The API serves a **standalone mock bank page** at that URL — deliberately styled like a
-   Shaparak page, showing amount, merchant, a fake card form, and three buttons:
-   **پرداخت موفق** / **پرداخت ناموفق** / **انصراف**. This makes demos convincing and lets
-   QA exercise every branch.
-3. It redirects to `${WEB_URL}/payment/callback?authority=…&status=…`
-4. The web app calls `POST /payments/verify`, which is **the only place that flips an order to
-   PAID**. Verification is idempotent — replaying the callback returns the same result and
-   never issues a second policy.
-5. On success the order moves `PENDING_PAYMENT → PAID → ISSUING → ISSUED`, a policy is
-   created, an SMS is queued.
+۱. `POST /orders/:id/pay` ← یک ردیف `Payment` می‌سازد و
+   `redirectUrl = ${API_URL}/mock-gateway?authority=…` را برمی‌گرداند.
+۲. API روی همان آدرس یک **صفحه بانک ماک مستقل** سرو می‌کند — عمداً به سبک صفحه شاپرک، با نمایش
+   مبلغ، پذیرنده، یک فرم کارت جعلی و سه دکمه:
+   **پرداخت موفق** / **پرداخت ناموفق** / **انصراف**. این کار دموها را باورپذیر می‌کند و به QA
+   اجازه می‌دهد هر شاخه را تمرین کند.
+۳. به `${WEB_URL}/payment/callback?authority=…&status=…` ریدایرکت می‌کند.
+۴. اپ وب `POST /payments/verify` را صدا می‌زند، که **تنها جایی است که سفارش را به PAID
+   می‌برد**. تأیید idempotent است — تکرار بازگشت همان نتیجه را می‌دهد و هرگز بیمه‌نامه دوم صادر
+   نمی‌کند.
+۵. در صورت موفقیت، سفارش مسیر `PENDING_PAYMENT → PAID → ISSUING → ISSUED` را طی می‌کند،
+   بیمه‌نامه ساخته می‌شود و یک پیامک در صف می‌نشیند.
 
-Order state machine, enforced in a service (illegal transitions throw):
+ماشین حالت سفارش، که در یک سرویس اعمال می‌شود (گذارهای غیرمجاز throw می‌کنند):
 
 ```
 DRAFT → PENDING_PAYMENT → PAID → ISSUING → ISSUED
              ↓                       ↓
       PAYMENT_FAILED            ISSUE_FAILED
              ↓
-         CANCELLED (expired after 30 min)
+         CANCELLED (بعد از ۳۰ دقیقه منقضی می‌شود)
 ```
 
 ---
 
-## 8. Policy issuance & the e-policy document
+## ۸. صدور بیمه‌نامه و سند الکترونیک
 
-- Policy number: `{insurerCode}-{productCode}-{yymm}-{sequence}`, sequence from a Postgres
-  sequence per insurer. Unique constraint enforced.
-- Issuance in MVP is **simulated**: no SANHAB, no insurer API. `ISSUING` completes
-  immediately with a generated number, and the code path is written as if it were an async
-  external call (a service returning a promise, a retry, a failure state) so the real
-  integration drops in without restructuring.
-- Document: an **HTML e-policy page** with a print stylesheet, matching the visual language of
-  a real بیمه‌نامه (header with insurer logo, policy number, insured details, coverage table,
-  premium breakdown, terms footer, QR to the verification URL).
-- **PDF is a fast-follow**, not MVP: Persian RTL text in PDF needs headless Chromium, which
-  bloats the Railway image. The seam is `PolicyDocumentService.render(policyId): Buffer`;
-  today it returns HTML, later it returns a PDF, and callers do not change.
+- شماره بیمه‌نامه: `{insurerCode}-{productCode}-{yymm}-{sequence}`، که دنباله‌اش از یک sequence
+  در Postgres به‌ازای هر شرکت می‌آید. قید یکتایی اعمال شده است.
+- صدور در MVP **شبیه‌سازی‌شده** است: نه سنهاب، نه API شرکت بیمه. `ISSUING` بلافاصله با یک شماره
+  تولیدشده تمام می‌شود، اما مسیر کد طوری نوشته شده که انگار یک فراخوان بیرونی ناهمگام است (سرویسی
+  که promise برمی‌گرداند، تلاش دوباره، حالت شکست) تا اتصال واقعی بدون بازساختاردهی جا بیفتد.
+- سند: یک **صفحه HTML بیمه‌نامه الکترونیک** با استایل چاپ، هم‌زبان با ظاهر یک بیمه‌نامه واقعی
+  (سربرگ با لوگوی شرکت، شماره بیمه‌نامه، مشخصات بیمه‌شده، جدول پوشش‌ها، تفکیک حق بیمه، پانویس
+  شرایط، و QR به آدرس استعلام).
+- **PDF بلافاصله بعد می‌آید**، نه در MVP: متن فارسی راست‌به‌چپ در PDF به Chromium بدون رابط نیاز
+  دارد که ایمیج Railway را چاق می‌کند. درز کار `PolicyDocumentService.render(policyId): Buffer`
+  است؛ امروز HTML برمی‌گرداند، بعداً PDF، و فراخوان‌کننده‌ها عوض نمی‌شوند.
 
 ---
 
-## 9. Frontend — React SPA, mobile only
+## ۹. فرانت‌اند — React SPA، فقط موبایل
 
-**Stack:** Vite 7 · React 19 · TypeScript · React Router 7 (declarative, no SSR) ·
-TanStack Query 5 · Zustand (auth only) · Tailwind CSS 4 · react-hook-form + zod ·
-`date-fns-jalali` · `framer-motion` (transitions only).
+**پشته:** Vite 7 · React 19 · TypeScript · React Router 7 (اعلانی، بدون SSR) ·
+TanStack Query 5 · Zustand (فقط برای احراز هویت) · Tailwind CSS 4 · react-hook-form + zod ·
+`date-fns-jalali` · `framer-motion` (فقط برای گذارها).
 
-### 9.1 Mobile-only rules
+### ۹.۱ قواعد فقط-موبایل
 
-- App shell is `max-w-[430px] mx-auto min-h-dvh` with a neutral backdrop, so it looks
-  deliberate — not a broken desktop site — when opened on a laptop.
-- `dvh` units, `env(safe-area-inset-*)` padding, no hover-dependent affordances,
-  44px minimum tap targets, bottom sheets instead of modals.
-- Sticky bottom **primary action bar** on every step of a purchase flow — the thumb never
-  travels.
-- Bottom tab bar: **خانه · بیمه‌نامه‌های من · پشتیبانی · پروفایل**.
-- PWA: manifest, icons, installable, offline shell. No push notifications in MVP.
-- `dir="rtl"`, `lang="fa"`, Vazirmatn Variable self-hosted via `@fontsource-variable/vazirmatn`
-  (same reason as the docs site — must work inside Iran, no CDN).
-- All digits rendered as Persian numerals; all dates Jalali; money in Tomans with thousand
-  separators and the unit word, never a bare number.
+- پوسته اپ `max-w-[430px] mx-auto min-h-dvh` با پس‌زمینه خنثی است، تا وقتی روی لپ‌تاپ باز
+  می‌شود عمدی به نظر برسد — نه یک سایت دسکتاپ خراب.
+- واحدهای `dvh`، فاصله‌گذاری با `env(safe-area-inset-*)`، هیچ قابلیتی وابسته به hover نیست،
+  حداقل ناحیه لمس ۴۴ پیکسل، و بوتم‌شیت به‌جای مودال.
+- **نوار اقدام اصلی چسبیده به پایین** در هر گام از مسیر خرید — انگشت شست هیچ سفری نمی‌کند.
+- نوار تب پایین: **خانه · بیمه‌نامه‌های من · پشتیبانی · پروفایل**.
+- PWA: مانیفست، آیکن‌ها، قابل نصب، پوسته آفلاین. در MVP نوتیفیکیشن پوش نداریم.
+- ‏`dir="rtl"`، `lang="fa"`، و Vazirmatn Variable که با `@fontsource-variable/vazirmatn` روی خود
+  سایت میزبانی می‌شود (به همان دلیل سایت مستندات — باید داخل ایران کار کند، بدون CDN).
+- همه ارقام با اعداد فارسی رندر می‌شوند؛ همه تاریخ‌ها شمسی؛ پول به تومان با جداکننده هزارگان و
+  کلمه واحد، هرگز عدد لخت.
 
-### 9.2 Routes
+### ۹.۲ مسیرها
 
 ```
-/                         home — product cards, active policies strip
-/auth                     mobile entry
-/auth/otp                 code entry, resend timer
-/auth/profile             first-login profile completion
-/p/:productSlug           product landing (what it covers, FAQ)
-/p/:productSlug/form      multi-step wizard (one question group per screen, progress bar)
-/quotes/:id               comparison list — insurer cards, price, badges, filter/sort
-/quotes/:id/offers/:oid   offer detail — full coverage table, breakdown, terms
-/checkout/:orderId        insured details confirmation + summary + pay
-/payment/callback         result screen (success / failure / pending)
-/policies                 my policies (active / expired tabs)
-/policies/:id             e-policy detail + share + download
-/profile, /profile/vehicles          (insured-persons not built — see §4.3)
-/support                  FAQ + contact
+/                         خانه — کارت محصولات، نوار بیمه‌نامه‌های فعال
+/auth                     ورود شماره موبایل
+/auth/otp                 ورود کد، تایمر ارسال دوباره
+/auth/profile             تکمیل پروفایل در نخستین ورود
+/p/:productSlug           صفحه محصول (چه چیزی پوشش می‌دهد، پرسش‌های متداول)
+/p/:productSlug/form      ویزارد چندگامی (هر صفحه یک گروه پرسش، نوار پیشرفت)
+/quotes/:id               فهرست مقایسه — کارت شرکت‌ها، قیمت، نشان‌ها، فیلتر/مرتب‌سازی
+/quotes/:id/offers/:oid   جزئیات پیشنهاد — جدول کامل پوشش، تفکیک، شرایط
+/checkout/:orderId        تأیید مشخصات بیمه‌شده + خلاصه + پرداخت
+/payment/callback         صفحه نتیجه (موفق / ناموفق / در انتظار)
+/policies                 بیمه‌نامه‌های من (تب فعال / منقضی)
+/policies/:id             جزئیات بیمه‌نامه + اشتراک‌گذاری + دانلود
+/profile, /profile/vehicles          (اشخاص بیمه‌شده ساخته نشد — §۴.۳ را ببینید)
+/support                  پرسش‌های متداول + تماس
 ```
 
-### 9.3 UX decisions worth stating
+### ۹.۳ تصمیم‌های تجربه کاربری که گفتنشان می‌ارزد
 
-- **Quote before login.** The wizard and the price comparison work anonymously; the OTP wall
-  is at *checkout*, not at the door. Anonymous quotes attach to the user on login.
-  This roughly doubles funnel completion versus login-first, and costs one nullable
-  `Quote.userId`.
-- **The wizard is one question-group per screen**, not a long form. Mobile forms die on
-  scroll length.
-- Every input is validated client-side with the *same zod schema the API uses*, so the user
-  never round-trips to learn a national code is invalid.
-- Quote results show a **live countdown** to `expiresAt` — real, because the stored price is
-  what gets charged.
-- Skeleton loaders, never spinners, on the quote screen — it is the slowest call and the one
-  where users bail.
-- Empty states, error states and the offline state are designed, not afterthoughts.
+- **اول استعلام، بعد ورود.** ویزارد و مقایسه قیمت به‌صورت ناشناس کار می‌کنند؛ دیوار کد
+  یک‌بارمصرف سرِ *تسویه‌حساب* است، نه دم در. استعلام‌های ناشناس هنگام ورود به کاربر می‌چسبند.
+  این کار نرخ تکمیل قیف را تقریباً دو برابر می‌کند نسبت به حالت اول-ورود، و هزینه‌اش یک
+  `Quote.userId` نال‌پذیر است.
+- **ویزارد در هر صفحه یک گروه پرسش دارد**، نه یک فرم بلند. فرم موبایل روی طول اسکرول می‌میرد.
+- هر ورودی سمت کلاینت با *همان اسکیمای zod که API استفاده می‌کند* اعتبارسنجی می‌شود، تا کاربر
+  برای فهمیدن نامعتبر بودن کد ملی، رفت‌وبرگشت به سرور نکند.
+- نتایج استعلام یک **شمارش معکوس زنده** تا `expiresAt` نشان می‌دهند — واقعی، چون همان قیمت
+  ذخیره‌شده است که دریافت می‌شود.
+- روی صفحه استعلام اسکلتون لودر، هرگز اسپینر — کندترین فراخوان همان است و همان‌جا کاربر می‌رود.
+- حالت خالی، حالت خطا و حالت آفلاین طراحی شده‌اند، نه چیزی که بعداً به فکرشان بیفتیم.
 
-### 9.4 Design system
+### ۹.۴ دیزاین‌سیستم
 
-A small token set in Tailwind config: one brand colour + accent, 4 surface levels, semantic
-success/warning/danger, radius scale, 3 shadow levels, type scale bound to Vazirmatn's
-weights. Components: `Button`, `Field`, `Select`, `Sheet`, `Card`, `Badge`, `Stepper`,
-`PriceTag`, `InsurerLogo`, `EmptyState`, `Skeleton`, `Toast`. Dark mode from day one
-(`prefers-color-scheme`), same as the docs site.
+یک مجموعه کوچک توکن در پیکربندی Tailwind: یک رنگ برند + رنگ تأکید، ۴ سطح سطح، رنگ‌های معنایی
+موفقیت/هشدار/خطر، مقیاس شعاع، ۳ سطح سایه، و مقیاس تایپوگرافی گره‌خورده به وزن‌های Vazirmatn.
+کامپوننت‌ها: `Button`، `Field`، `Select`، `Sheet`، `Card`، `Badge`، `Stepper`،
+`PriceTag`، `InsurerLogo`، `EmptyState`، `Skeleton`، `Toast`. حالت تیره از روز اول
+(`prefers-color-scheme`)، مثل سایت مستندات.
 
 ---
 
-## 10. Why there is no shared package
+## ۱۰. چرا پکیج مشترک نداریم
 
-The obvious monorepo move is a `packages/shared` holding zod schemas, DTO types and validators
-for both sides. It was built, then removed on 2026-08-20. The split turned out to be clean
-enough that sharing bought almost nothing and cost real friction:
+حرکت بدیهی در یک مونوریپو، یک `packages/shared` است که اسکیماهای zod، تایپ‌های DTO و
+اعتبارسنج‌های هر دو سمت را نگه دارد. ساخته شد و در ۲۹ مرداد ۱۴۰۵ حذف شد. تفکیک دو طرف آن‌قدر
+تمیز از آب درآمد که اشتراک‌گذاری تقریباً هیچ نیاورد و اصطکاک واقعی برد:
 
-| Concern | Actually needed by |
+| موضوع | واقعاً چه کسی لازمش دارد |
 |---|---|
-| Persian digits, Toman formatting, Jalali dates | **Web only** (plus a copy in the API for SMS text and the e-policy document) |
-| `roundPremium`, Rial arithmetic, rate tables | **API only** |
-| Product input schemas (travel, motor, home fire) | **API only** — it is the authority on what a valid quote request is |
-| National code / mobile / plate validation | Both, but ~60 lines of frozen logic |
-| API response types | Web reads them; hand-written and small |
+| ارقام فارسی، قالب‌بندی تومان، تاریخ شمسی | **فقط وب** (به‌علاوه یک کپی در API برای متن پیامک و سند بیمه‌نامه) |
+| `roundPremium`، حساب ریالی، جدول‌های نرخ | **فقط API** |
+| اسکیمای ورودی محصولات (مسافرتی، خودرو، آتش‌سوزی منزل) | **فقط API** — مرجع اینکه چه استعلامی معتبر است، همان است |
+| اعتبارسنجی کد ملی / موبایل / پلاک | هر دو، اما حدود ۶۰ خط منطق ثابت |
+| تایپ‌های پاسخ API | وب می‌خواندشان؛ دستی‌نوشته و کوچک‌اند |
 
-What a shared package would have added: a build step ordered before both apps, dual ESM/CJS
-output for a CommonJS Nest and an ESM Vite, `.js`-extension import rules that differ per
-consumer, and a rebuild between editing a schema and seeing the API pick it up.
+پکیج مشترک چه چیزی اضافه می‌کرد: یک گام بیلد که باید پیش از هر دو اپ اجرا شود، خروجی دوگانه
+ESM/CJS برای Nest که CommonJS است و Vite که ESM است، قواعد پسوند `.js` در import که برای هر
+مصرف‌کننده فرق دارد، و یک بیلد دوباره بین ویرایش اسکیما و دیدن اثرش در API.
 
-**The rule instead:** the API validates authoritatively and returns field-level Persian errors;
-the web does light client-side checks (required, length, digit count) purely for instant
-feedback and renders whatever the API says. The user never sees a worse message for it, and a
-new field on a product form is a one-file change on the server.
+**قاعده جایگزین:** API به‌عنوان مرجع اعتبارسنجی می‌کند و خطای فارسی در سطح فیلد برمی‌گرداند؛ وب
+بررسی‌های سبک سمت کلاینت را (اجباری بودن، طول، تعداد رقم) صرفاً برای بازخورد فوری انجام می‌دهد و
+هرچه API گفت را رندر می‌کند. کاربر بابت این کار پیام بدتری نمی‌بیند، و افزودن فیلد تازه به فرم
+یک محصول، تغییری در یک فایل روی سرور است.
 
-The one accepted duplication is the display formatting helpers (~40 lines, unchanged since
-written). That is the cheaper side of the trade.
+تنها تکرار پذیرفته‌شده، توابع کمکی قالب‌بندی نمایشی است (حدود ۴۰ خط که از زمان نوشته شدن تغییر
+نکرده). این سمتِ ارزان‌ترِ معامله است.
 
-## 11. Non-functional
+## ۱۱. ویژگی‌های غیرکارکردی
 
-| Concern | Approach |
+| موضوع | رویکرد |
 |---|---|
-| Config | zod-validated env at boot; the app refuses to start with a missing/invalid var |
-| Security | helmet, CORS allowlist (no `*`), throttler, argon2 for OTP/refresh hashes, no PII in logs |
-| Logging | pino, JSON, request-id propagated end to end and returned in every error |
-| Observability | `/health`, `/health/ready`, Railway metrics; Sentry optional and off by default |
-| Migrations | Prisma Migrate, `migrate deploy` on release; no `db push` outside local dev |
-| Seeding | idempotent seed script: insurers, products, offerings, rate tables for all three products, 115 vehicle models, 40 cities with seismic zones. Teaser prices are **derived** from the tables afterwards, never authored |
-| Testing | Jest unit tests for every rating strategy against fixture tables (the critical path), plus supertest e2e for: OTP login, quote, order, mock pay, policy issued |
-| Lint/format | prettier from the repo root (`.prettierrc.json`); strict TS, `noUncheckedIndexedAccess`. The API typechecks through `tsconfig.typecheck.json`, which covers `prisma/` and `test/` that the build's `rootDir` excludes |
-| CI | GitHub Actions: install → lint → typecheck → test → build on PR |
-| i18n | Persian only, hardcoded. No i18n library — it would be premature and adds a lookup layer to every string |
-| Shared code | None. The API validates authoritatively; the web keeps its own display helpers (§10) |
+| پیکربندی | متغیرهای محیطی با zod در زمان بوت اعتبارسنجی می‌شوند؛ اپ با متغیر گم‌شده یا نامعتبر بالا نمی‌آید |
+| امنیت | helmet، فهرست سفید CORS (بدون `*`)، throttler، argon2 برای هش کد یک‌بارمصرف و refresh، بدون داده شخصی در لاگ |
+| لاگ | pino، JSON، request-id که سرتاسر منتقل می‌شود و در هر خطا برمی‌گردد |
+| مشاهده‌پذیری | ‏`/health`، `/health/ready`، متریک‌های Railway؛ Sentry اختیاری و به‌طور پیش‌فرض خاموش |
+| مهاجرت‌ها | Prisma Migrate، اجرای `migrate deploy` هنگام انتشار؛ بیرون از توسعه محلی هیچ `db push` |
+| seed | اسکریپت seed خودتکرارپذیر: شرکت‌ها، محصولات، عرضه‌ها، جدول نرخ هر سه محصول، ۱۱۵ مدل خودرو، ۴۰ شهر با منطقه لرزه‌ای. قیمت‌های تیزر بعداً **از دل همان جدول‌ها استخراج می‌شوند**، هرگز دستی نوشته نمی‌شوند |
+| تست | تست واحد Jest برای هر استراتژی نرخ‌دهی در برابر جدول‌های آزمایشی (مسیر بحرانی)، به‌علاوه e2e با supertest برای: ورود با کد یک‌بارمصرف، استعلام، سفارش، پرداخت ماک، صدور بیمه‌نامه |
+| لینت/قالب‌بندی | prettier از ریشه مخزن (`.prettierrc.json`)؛ TS سخت‌گیر با `noUncheckedIndexedAccess`. API از راه `tsconfig.typecheck.json` تایپ‌چک می‌شود که `prisma/` و `test/` را هم می‌پوشاند؛ چیزی که `rootDir` بیلد کنار می‌گذارد |
+| CI | GitHub Actions: نصب ← لینت ← تایپ‌چک ← تست ← بیلد روی هر PR |
+| چندزبانگی | فقط فارسی، هاردکد. بدون کتابخانه i18n — زودهنگام است و یک لایه جست‌وجو به هر رشته اضافه می‌کند |
+| کد مشترک | هیچ. API به‌عنوان مرجع اعتبارسنجی می‌کند؛ وب توابع نمایشی خودش را نگه می‌دارد (§۱۰) |
 
 ---
 
-## 12. Deployment — Railway
+## ۱۲. استقرار — Railway
 
-| Host | Service |
+| میزبان | سرویس |
 |---|---|
-| **api.bimegold.com** | NestJS on Railway, `prisma migrate deploy && node dist/main.js` |
-| — | Postgres, Railway plugin, `DATABASE_URL` injected |
-| **app.bimegold.com** | Vite static build on Cloudflare Workers assets — the same pattern that already serves `docs.bimegold.com`, which is proven to work from inside Iran |
+| **api.bimegold.com** | NestJS روی Railway، با `prisma migrate deploy && node dist/main.js` |
+| — | Postgres، افزونه Railway، با تزریق `DATABASE_URL` |
+| **app.bimegold.com** | بیلد ایستای Vite روی فایل‌های Cloudflare Workers — همان الگویی که الان `docs.bimegold.com` را سرو می‌کند و کارکردنش از داخل ایران ثابت شده |
 
-`bimegold.com` is already an active zone on the Cloudflare account
-(`b9ce446f3cf5fbe49db85ce94e284a8f`), so no domain setup is pending.
+`bimegold.com` از قبل یک زون فعال روی حساب Cloudflare است
+(`b9ce446f3cf5fbe49db85ce94e284a8f`)، پس هیچ راه‌اندازی دامنه‌ای معلق نیست.
 
-**Two consequences of putting both hosts under one registrable domain**, both good:
+**دو پیامد قرار دادن هر دو میزبان زیر یک دامنه ثبت‌شده**، هر دو خوب:
 
-- The refresh cookie can be `Domain=.bimegold.com; SameSite=Lax; Secure` instead of
-  `SameSite=None`. Same-site, different origin — stricter, and it survives browsers tightening
-  third-party cookie rules.
-- CORS stays a simple allowlist of exactly one origin.
+- کوکی refresh می‌تواند `Domain=.bimegold.com; SameSite=Lax; Secure` باشد به‌جای
+  `SameSite=None`. هم‌سایت، مبدأ متفاوت — سخت‌گیرانه‌تر، و از سخت‌تر شدن قواعد کوکی شخص ثالث در
+  مرورگرها جان سالم به در می‌برد.
+- CORS یک فهرست سفید ساده با دقیقاً یک مبدأ می‌ماند.
 
-**Railway TLS for `api.bimegold.com`** has an ordering trap: Railway issues its own certificate
-and cannot do so through a proxied (orange-cloud) Cloudflare record. Sequence: create the CNAME
-**DNS-only** → let Railway issue → then turn the proxy on with SSL mode **Full (strict)**.
+**TLS در Railway برای `api.bimegold.com`** یک تله ترتیبی دارد: Railway گواهی خودش را صادر
+می‌کند و نمی‌تواند این کار را از پشت یک رکورد پراکسی‌شده (ابر نارنجی) Cloudflare انجام دهد.
+ترتیب کار: ساخت CNAME به‌صورت **DNS-only** ← اجازه دادن به Railway برای صدور ← بعد روشن کردن
+پراکسی با حالت SSL روی **Full (strict)**.
 
-Proxying the API through Cloudflare is not cosmetic. Railway's edge being reachable from inside
-Iran is **unverified**, and Railway may geo-block Iranian IPs outright; with the orange cloud on,
-users connect to Cloudflare and Cloudflare connects to Railway. Verify this early — it is the
-single biggest deployment risk in the plan, and the fallback (an Iranian VPS) is the same
-fallback the real payment gateway will force later anyway.
+پراکسی کردن API از دل Cloudflare تزئینی نیست. در دسترس بودن لبه Railway از داخل ایران
+**تأییدنشده** است، و ممکن است Railway اصلاً IPهای ایرانی را جغرافیایی مسدود کند؛ با ابر نارنجی
+روشن، کاربر به Cloudflare وصل می‌شود و Cloudflare به Railway. این را زود بررسی کنید — بزرگ‌ترین
+ریسک استقرار در این برنامه همین است، و راه پشتیبانش (یک VPS ایرانی) همان راهی است که درگاه
+پرداخت واقعی هم بعداً به آن مجبورمان می‌کند.
 
-Environments: `staging` and `production` as separate Railway environments off the same repo,
-production deploying from `main` only.
+محیط‌ها: `staging` و `production` به‌عنوان دو محیط جدا روی همان مخزن، و production فقط از `main`
+مستقر می‌شود.
 
-Required env vars (all zod-validated): `DATABASE_URL`, `JWT_ACCESS_SECRET`,
-`JWT_REFRESH_SECRET`, `WEB_URL`, `API_URL`, `AUTH_MOCK_OTP`, `PAYMENT_GATEWAY=mock`,
-`SMS_PROVIDER=console`, `NODE_ENV`.
+متغیرهای محیطی لازم (همه با zod اعتبارسنجی می‌شوند): `DATABASE_URL`، `JWT_ACCESS_SECRET`،
+`JWT_REFRESH_SECRET`، `WEB_URL`، `API_URL`، `AUTH_MOCK_OTP`، `PAYMENT_GATEWAY=mock`،
+`SMS_PROVIDER=console`، `NODE_ENV`.
 
-Note: the Railway MCP connector is not authorized in this workspace yet, so the actual
-provisioning needs an interactive session (`claude mcp` / `/mcp`) or the Railway CLI. Not a
-blocker for building.
+توجه: کانکتور MCP مربوط به Railway هنوز در این فضای کاری مجاز نشده، پس تأمین واقعی منابع به یک
+نشست تعاملی (`claude mcp` / `/mcp`) یا به CLI خود Railway نیاز دارد. برای ساخت مانع نیست.
 
-Deferred to when a real gateway arrives: an Iranian IP is required for most Iranian IPGs'
-callback allowlists, so production will likely need to move (or proxy) to an Iranian host at
-that point. Worth knowing now, not worth solving now.
+موکول به زمانی که درگاه واقعی بیاید: بیشتر درگاه‌های ایرانی برای فهرست سفید بازگشتشان IP ایرانی
+می‌خواهند، پس احتمالاً محیط عملیاتی همان موقع باید به میزبان ایرانی منتقل (یا از آن پراکسی) شود.
+الان دانستنش می‌ارزد، حل کردنش نه.
 
 ---
 
-## 13. Milestones
+## ۱۳. نقاط عطف
 
-| # | Milestone | Deliverable | Rough size |
+| # | نقطه عطف | تحویل‌دادنی | اندازه تقریبی |
 |---|---|---|---|
-| M0 | Monorepo | pnpm workspaces, Astro site moved to `apps/docs` (deploy unchanged), NestJS + Vite scaffolds, docker-compose postgres, shared package, lint/TS bases | 1 |
-| M1 | Auth | OTP request/verify with mock `1234`, JWT + rotating refresh, rate limits, `/me`, profile completion. Web: entry → OTP → profile → home | 2 |
-| M2 | Catalog + rating | Products/insurers/offerings/rate tables + seed, rating engine + travel strategy with unit tests, `POST /quotes`. Web: home, travel wizard, comparison screen | 3 |
-| M3 | Checkout | Order state machine, mock gateway page, callback, idempotent verify, policy issuance, e-policy HTML. Web: checkout, payment result, my policies | 3 |
-| M4 | Motor TPL | Third-party rating strategy + reference data (brands, plate input, discount ladder, levies). Web: the motor wizard, which is the hardest form in the app | 2 |
-| M5 | Home fire | Third product end to end | 1 |
-| M6 | Polish + deploy | PWA, empty/error/offline states, transitions, e2e suite green, Railway staging + production, `docs/` updated | 2 |
+| M0 | مونوریپو | pnpm workspaces، انتقال سایت Astro به `apps/docs` (استقرار بدون تغییر)، اسکلت NestJS و Vite، postgres با docker-compose، پکیج مشترک، پایه‌های لینت و TS | ۱ |
+| M1 | احراز هویت | درخواست/تأیید کد یک‌بارمصرف با ماک `1234`، JWT + refresh چرخشی، محدودیت نرخ، `/me`، تکمیل پروفایل. وب: ورود ← کد ← پروفایل ← خانه | ۲ |
+| M2 | کاتالوگ + نرخ‌دهی | محصولات/شرکت‌ها/عرضه‌ها/جدول‌های نرخ به‌علاوه seed، موتور نرخ‌دهی + استراتژی مسافرتی با تست واحد، `POST /quotes`. وب: خانه، ویزارد مسافرتی، صفحه مقایسه | ۳ |
+| M3 | تسویه‌حساب | ماشین حالت سفارش، صفحه درگاه ماک، بازگشت، تأیید idempotent، صدور بیمه‌نامه، HTML بیمه‌نامه. وب: تسویه‌حساب، نتیجه پرداخت، بیمه‌نامه‌های من | ۳ |
+| M4 | شخص ثالث خودرو | استراتژی نرخ‌دهی شخص ثالث + داده مرجع (برندها، ورودی پلاک، نردبان تخفیف، عوارض). وب: ویزارد خودرو، که سخت‌ترین فرم اپلیکیشن است | ۲ |
+| M5 | آتش‌سوزی منزل | محصول سوم، سرتاسر | ۱ |
+| M6 | پرداخت نهایی + استقرار | PWA، حالت‌های خالی/خطا/آفلاین، گذارها، سبز شدن مجموعه e2e، استقرار staging و production روی Railway، به‌روزرسانی `docs/` | ۲ |
 
-Sizes are relative, not days. M0–M3 is the real MVP: one product bought end to end.
-M4–M5 are repetitions of a proven pattern.
-
----
-
-## 14. Explicitly out of scope for the MVP
-
-Back office / کارتابل · real insurer or SANHAB integration · real payment gateway · real SMS
-provider · claims · renewals and renewal reminders · refunds and cancellations · discount
-codes · referrals · desktop layout · English UI · own rating for complex lines · reserving ·
-reinsurance · accounting/commission reconciliation.
-
-Every one of these has a seam left for it. None of them is stubbed with fake UI.
+اندازه‌ها نسبی‌اند، نه روز. M0 تا M3 همان MVP واقعی است: یک محصول که سرتاسر خریده شود.
+M4 و M5 تکرار الگویی‌اند که قبلاً ثابت شده.
 
 ---
 
-## 15. Open questions (not blocking M0–M1)
+## ۱۴. آنچه صریحاً بیرون از دامنه MVP است
 
-1. **Brand**: renamed to **Bime Gold** on 2026-08-21 (was bimegold / بیمه ۲۴۷). The logo
-   is final and lives in `brand/bime-gold/traced/`; colours are charcoal `#2B2B2B` and
-   flat gold `#D4AF37`, no gradient. Still open: what replaces the turquoise `--accent`
-   and the placeholder `--color-brand-*` ramp in `apps/web/src/styles.css`, and when the
-   old `apps/web/public/brand/` assets get swapped out. Persian wordmark not designed yet.
-2. **Which insurers to show** as the seeded comparison set — real names (Iran, Pasargad,
-   Saman, Karafarin, Dey, Alborz…) with a clear "نمونه" badge, or invented names? Real names
-   make demos land better but imply relationships that do not exist yet.
-3. **Rate realism**: is anyone able to get one real rate table (even just motor third-party,
-   which is publicly regulated) for M2? It would make the whole thing credible.
-4. Legal footer requirements for a site selling insurance without a licence yet — at minimum
-   the app should not claim to be a licensed broker.
+بک‌آفیس / کارتابل · اتصال واقعی به شرکت بیمه یا سنهاب · درگاه پرداخت واقعی · سرویس‌دهنده واقعی
+پیامک · خسارت · تمدید و یادآوری تمدید · بازگشت وجه و ابطال · کد تخفیف · معرفی دوستان · چیدمان
+دسکتاپ · رابط کاربری انگلیسی · نرخ‌دهی اختصاصی برای رشته‌های پیچیده · ذخایر فنی · اتکایی ·
+تطبیق حسابداری و کارمزد.
+
+برای هر کدام از این‌ها یک درز باز گذاشته شده. هیچ‌کدام با رابط کاربری جعلی استاب نشده‌اند.
 
 ---
 
-*Kept in sync with `docs/PROJECT.md` (project structure) and `docs/PLAN.md` (go-to-market).
-When this plan changes, update those.*
+## ۱۵. پرسش‌های باز (مانع M0 و M1 نیستند)
+
+۱. **برند**: در ۳۰ مرداد ۱۴۰۵ به **Bime Gold** تغییر نام داد (قبلاً bimegold / بیمه ۲۴۷). لوگو
+   نهایی است و در `brand/bime-gold/traced/` زندگی می‌کند؛ رنگ‌ها زغالی `#2B2B2B` و طلایی تخت
+   `#D4AF37` بدون گرادیان. هنوز باز است: چه چیزی جای `--accent` فیروزه‌ای و نردبان موقتی
+   `--color-brand-*` را در `apps/web/src/styles.css` می‌گیرد، و چه زمانی فایل‌های قدیمی
+   `apps/web/public/brand/` عوض می‌شوند. وردمارک فارسی هنوز طراحی نشده.
+۲. **کدام شرکت‌های بیمه نمایش داده شوند** به‌عنوان مجموعه مقایسه seed شده — نام‌های واقعی (ایران،
+   پاسارگاد، سامان، کارآفرین، دی، البرز…) با نشان روشن «نمونه»، یا نام‌های ساختگی؟ نام واقعی دمو را
+   بهتر می‌نشاند اما رابطه‌ای را القا می‌کند که هنوز وجود ندارد.
+۳. **واقعی بودن نرخ**: آیا کسی می‌تواند برای M2 حتی یک جدول نرخ واقعی بگیرد (حتی فقط شخص ثالث
+   خودرو که عمومی و تنظیم‌شده است)؟ همین کل ماجرا را باورپذیر می‌کند.
+۴. الزامات حقوقی پانویس برای سایتی که هنوز بدون مجوز بیمه می‌فروشد — دست‌کم اپلیکیشن نباید ادعا
+   کند کارگزار دارای مجوز است.
 
 ---
 
-## 16. What the build changed — read this before trusting the rest
+*با `docs/PROJECT.md` (ساختار پروژه) و `docs/PLAN.md` (ورود به بازار) هماهنگ نگه داشته می‌شود.
+وقتی این برنامه عوض شد، آن‌ها را هم به‌روز کنید.*
 
-Written after M0–M5 shipped. Everything above is the plan *as designed*; the corrections are
-inline, but these are the decisions that came out of building it and were not foreseen here.
-`PROGRESS.md` carries the reasoning for each in full.
+---
 
-**Rating**
+## ۱۶. ساخت چه چیزی را عوض کرد — این را پیش از اعتماد به بقیه بخوانید
 
-- **`RatingLookups` + `prepare()`.** Home fire rates on the seismic zone of the customer's
-  city, which lives in the database — but `rate()` must stay pure and the client must not be
-  able to send the zone (it would let them pick their own price band). `prepare()` resolves it
-  once per quote through a narrow port, so strategies never import Prisma.
-- **A price driver is never accepted from the client.** The motor `vehicleGroup` is read off
-  the catalog row, not the request, for the same reason.
-- **دیه is one number.** Both motor premiums and the property limit derive from `diyeAmount`,
-  so a new policy year is a one-line table change. The ماه‌های حرام uplift is **not** modelled —
-  a real rule sitting on invented numbers only looks authoritative.
-- **Premiums round before discounts come off**, so each discount line is exactly its stated
-  percentage of the line above it. Discounting the unrounded figure leaves an invoice whose own
-  arithmetic does not check out.
-- **Fire is rated on the sum insured, not floor area.** `areaSqm` is an eligibility limit only.
+بعد از تحویل M0 تا M5 نوشته شد. هرچه بالاتر آمده، برنامه *آن‌طور که طراحی شد* است؛ اصلاح‌ها در
+متن آمده‌اند، اما این‌ها تصمیم‌هایی‌اند که از دل ساختن بیرون آمدند و اینجا پیش‌بینی نشده بودند.
+`PROGRESS.md` استدلال کامل هر کدام را دارد.
 
-**Checkout**
+**نرخ‌دهی**
 
-- **A concurrent duplicate callback may legitimately answer `policyId: null`.** Three
-  simultaneous verifies produce exactly one policy and one SMS and all three report SUCCEEDED,
-  but a loser can reply before issuance commits. The invariant is *never two different policy
-  ids* — not that every caller sees one.
+- **`RatingLookups` و `prepare()`.** آتش‌سوزی منزل بر اساس منطقه لرزه‌ای شهر مشتری نرخ می‌خورد که
+  در دیتابیس است — اما `rate()` باید خالص بماند و کلاینت نباید بتواند منطقه را بفرستد (این یعنی
+  خودش باند قیمتش را انتخاب کند). `prepare()` آن را یک‌بار در هر استعلام از راه یک پورت باریک
+  resolve می‌کند، تا استراتژی‌ها هرگز Prisma را import نکنند.
+- **هیچ محرک قیمتی از کلاینت پذیرفته نمی‌شود.** به همین دلیل `vehicleGroup` خودرو هم از ردیف
+  کاتالوگ خوانده می‌شود، نه از درخواست.
+- **دیه یک عدد است.** هم حق بیمه خودرو و هم سقف مالی از `diyeAmount` مشتق می‌شوند، پس سال
+  بیمه‌ای تازه یعنی یک خط تغییر در جدول. افزایش ماه‌های حرام مدل **نشده** است — یک قاعده واقعی که
+  روی عددهای ساختگی بنشیند فقط ظاهر معتبر می‌سازد.
+- **حق بیمه پیش از کسر تخفیف گرد می‌شود**، تا هر ردیف تخفیف دقیقاً همان درصدِ اعلام‌شده از ردیف
+  بالایی‌اش باشد. تخفیف دادن روی عدد گردنشده، صورت‌حسابی می‌سازد که حساب‌وکتاب خودش جور درنمی‌آید.
+- **آتش‌سوزی بر اساس سرمایه بیمه‌شده نرخ می‌خورد، نه متراژ.** `areaSqm` فقط یک حد پذیرش است.
 
-**Web**
+**تسویه‌حساب**
 
-- **`hasWizard()` gates the product card, not `fromAmount` alone.** Rate tables ship a release
-  before the wizard that feeds them, so a priceable product with no form would link to a 404.
-  The router builds its wizard routes from the same list, typed so the two cannot drift.
-- **`queryClient.clear()` on sign-out.** TanStack's `enabled: false` stops the fetch, not the
-  cache read — without it a signed-out phone showed the previous user's policies.
-- **The plate widget is LTR; a plate in prose is not.** The widget mimics a physical object read
-  left to right; running Persian text writes «۴۴ ص ۸۲۱ ایران ۱۱» and reads it right to left.
-- **The service worker never caches `/api/`.** A cached quote is a price the customer can no
-  longer buy at. Being offline has to read as offline.
+- **یک بازگشت تکراری هم‌زمان می‌تواند به‌درستی `policyId: null` جواب دهد.** سه تأیید هم‌زمان دقیقاً
+  یک بیمه‌نامه و یک پیامک تولید می‌کنند و هر سه SUCCEEDED گزارش می‌دهند، اما بازنده می‌تواند پیش
+  از commit شدن صدور پاسخ بدهد. تغییرناپذیر ماجرا این است که *هرگز دو شناسه بیمه‌نامه متفاوت*
+  نباشد — نه اینکه هر فراخوان یکی ببیند.
 
-**Not built, and why**
+**وب**
 
-| Planned | Status |
+- **`hasWizard()` کارت محصول را کنترل می‌کند، نه فقط `fromAmount`.** جدول‌های نرخ یک انتشار
+  زودتر از ویزاردی که تغذیه‌شان می‌کند می‌آیند، پس محصولی که قیمت دارد اما فرم ندارد به یک ۴۰۴
+  لینک می‌داد. روتر مسیرهای ویزاردش را از همان فهرست می‌سازد، با تایپی که اجازه نمی‌دهد این دو
+  از هم فاصله بگیرند.
+- **`queryClient.clear()` هنگام خروج.** مقدار `enabled: false` در TanStack جلوی fetch را
+  می‌گیرد نه خواندن از کش — بدون آن، یک گوشی خارج‌شده از حساب، بیمه‌نامه‌های کاربر قبلی را نشان
+  می‌داد.
+- **ویجت پلاک چپ‌به‌راست است؛ پلاک داخل نثر نه.** ویجت از یک شیء فیزیکی تقلید می‌کند که از چپ
+  خوانده می‌شود؛ متن جاری فارسی «۴۴ ص ۸۲۱ ایران ۱۱» را می‌نویسد و از راست می‌خواند.
+- **سرویس‌ورکر هرگز `/api/` را کش نمی‌کند.** یک استعلام کش‌شده یعنی قیمتی که مشتری دیگر نمی‌تواند
+  با آن بخرد. آفلاین بودن باید آفلاین خوانده شود.
+
+**ساخته نشد، و چرا**
+
+| برنامه‌ریزی‌شده | وضعیت |
 |---|---|
-| `/me/insured-persons`, `/profile/insured-persons` | Not needed yet — the insured travels on the order |
-| ماه‌های حرام دیه uplift | Deliberate; needs real rate tables first |
-| Web unit tests | Per §12 the web is verified in the browser; adding a runner was never in scope |
-| Sentry | Optional and still off |
+| `/me/insured-persons`، `/profile/insured-persons` | هنوز لازم نشده — بیمه‌شده روی خود سفارش سفر می‌کند |
+| افزایش دیه در ماه‌های حرام | عمدی؛ اول جدول نرخ واقعی لازم دارد |
 
-**Everything priced is a placeholder.** Every rate table carries `meta.source: "PLACEHOLDER"`
-and the UI shows the «نمونه» badge. Real insurer rates and the official استاندارد ۲۸۰۰ seismic
-zoning must both be sourced before this can be sold to anyone.
+---
 
+## ۱۷. بک‌لاگ QA چه چیزی را عوض کرد — این را کنار §۱۶ بخوانید
+
+بعد از بستن بک‌لاگ QA مسیر خرید در ۲ شهریور ۱۴۰۵ نوشته شد. فهرست کامل و یادداشت اصلاح‌ها:
+[`QA-FINDINGS.md`](QA-FINDINGS.md)؛ استدلالش در `PROGRESS.md`.
+
+- **دوره بیمه‌نامه یک جفت روز تقویمی تهران است.** `common/tehran.ts` صاحب اختلاف ساعت است
+  (ثابت +۰۳:۳۰). `startsAt` ساعت ۲۰:۳۰ UTC عصر پیش از شروع پوشش است، پس **هر قالب‌بند شمسی
+  `Asia/Tehran` را می‌خواند** — هم در API هم در وب. قالب‌بندی که به UTC سنجاق شده باشد، حالا روزِ
+  پیش از انتخاب مشتری را چاپ می‌کند.
+- **`decode()` و `parse()` دو پرسش متفاوت‌اند.** `decode` فقط شکل را می‌سنجد و ساعت نمی‌گیرد؛
+  `parse` قواعد پذیرشِ وابسته به ساعت را در `rating/admission.ts` اضافه می‌کند. صدور `decode` را
+  صدا می‌زند، چون فقط حق دارد پرسش‌هایی بپرسد که پاسخشان بعد از وجود سفارش نمی‌تواند عوض شود.
+- **پوشش نمی‌تواند بیش از `MAX_START_DAYS_AHEAD` (۹۰) روز بعد شروع شود.** هیچ سقفی وجود نداشت و
+  هر جدول نرخ اینجا سالانه است.
+- **`INSURED_RULES` تصمیم می‌گیرد بیمه‌نامه نام چه کسی را ببرد**، به‌ازای هر محصول، در API.
+  تاریخ‌های تولد بر اساس موقعیت با استعلام تطبیق داده می‌شوند، تا جفت‌شدن «مسافر ۱» در سند راست
+  باشد.
+- **`riskSummary()` موضوع بیمه را موقع صدور در اسنپ‌شات قفل می‌کند.** پلاک و مدل، شهر و نوع ملک،
+  مقصد و مدت. هرگز موقع رندر join نمی‌شود.
+- **پیام‌های اعتبارسنجی فارسی یک نقشه خطای سراسری zod هستند**، نه انضباط فیلد به فیلد
+  (`common/zod-fa.ts`)، که از راه `schemas/common.ts` نصب می‌شود تا نتوان دورش زد.
+| تست واحد وب | طبق §۱۲ وب در مرورگر بررسی می‌شود؛ افزودن یک اجراکننده تست هرگز در دامنه نبود |
+| Sentry | اختیاری و همچنان خاموش |
+
+**هر قیمتی موقتی است.** هر جدول نرخ `meta.source: "PLACEHOLDER"` را با خود دارد و رابط کاربری
+نشان «نمونه» را نمایش می‌دهد. پیش از آنکه این را بشود به کسی فروخت، هم نرخ واقعی شرکت‌ها و هم
+پهنه‌بندی لرزه‌ای رسمی استاندارد ۲۸۰۰ باید تأمین شوند.

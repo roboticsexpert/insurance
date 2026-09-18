@@ -1,10 +1,15 @@
 import { formatToman, toPersianDigits } from '../common/fa'
 
+/*
+ * Formatted in **Tehran**, because that is what the instants mean. A policy period is a pair of
+ * Tehran calendar days: `startsAt` is 20:30 UTC the day before it starts, so formatting in UTC
+ * would print a start date one day earlier than the one the customer chose.
+ */
 const jalali = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
-  timeZone: 'UTC',
+  timeZone: 'Asia/Tehran',
 })
 
 const jalaliDate = (value: Date | string): string =>
@@ -24,6 +29,9 @@ export interface PolicyDocumentInput {
     productTitleFa?: string
     insurerName?: string
     insured?: { firstName?: string; lastName?: string; nationalCode?: string; passportNo?: string; birthDate?: string }[]
+    /** What is insured: plate and model, or city and property type, or destination and duration. */
+    risk?: { labelFa?: string; valueFa?: string }[]
+    productType?: string
     coverages?: { labelFa?: string; valueFa?: string }[]
     lineItems?: { labelFa?: string; amount?: number; kind?: string }[]
     totalAmount?: number
@@ -45,6 +53,13 @@ const row = (label: string, value: string): string =>
 export function renderPolicyDocument(input: PolicyDocumentInput): string {
   const { snapshot: s } = input
 
+  /*
+   * Only travel names people. Motor and fire name one بیمه‌گذار, and printing them under a
+   * «تاریخ تولد / شماره گذرنامه» header — the travel shape — was how a motor policy came to
+   * carry columns nobody involved had any use for.
+   */
+  const isTravel = s.productType === 'TRAVEL'
+
   const insuredRows = (s.insured ?? [])
     .map(
       (person, index) => `
@@ -53,7 +68,7 @@ export function renderPolicyDocument(input: PolicyDocumentInput): string {
         <td>${escapeHtml([person.firstName, person.lastName].filter(Boolean).join(' '))}</td>
         <td>${person.nationalCode ? toPersianDigits(escapeHtml(person.nationalCode)) : '—'}</td>
         <td>${person.birthDate ? escapeHtml(jalaliDate(person.birthDate)) : '—'}</td>
-        <td dir="ltr">${escapeHtml(person.passportNo ?? '—')}</td>
+        ${isTravel ? `<td dir="ltr">${escapeHtml(person.passportNo ?? '—')}</td>` : ''}
       </tr>`,
     )
     .join('')
@@ -61,6 +76,12 @@ export function renderPolicyDocument(input: PolicyDocumentInput): string {
   const coverageRows = (s.coverages ?? [])
     .map((c) => `<tr><th>${escapeHtml(c.labelFa)}</th><td>${escapeHtml(c.valueFa)}</td></tr>`)
     .join('')
+
+  const riskRows = (s.risk ?? [])
+    .map((r) => `<tr><th>${escapeHtml(r.labelFa)}</th><td>${escapeHtml(r.valueFa)}</td></tr>`)
+    .join('')
+
+  const insuredHeading = isTravel ? 'بیمه‌شدگان' : 'بیمه‌گذار'
 
   const premiumRows = (s.lineItems ?? [])
     .map(
@@ -117,7 +138,7 @@ export function renderPolicyDocument(input: PolicyDocumentInput): string {
 <body>
 <div class="sheet">
   <header>
-    <div class="brand">بیمه ۲۴۷<small>صادرکننده: ${escapeHtml(s.insurerName ?? '—')}</small></div>
+    <div class="brand">بیمه گلد<small>صادرکننده: ${escapeHtml(s.insurerName ?? '—')}</small></div>
     <div class="num">شماره بیمه‌نامه<strong dir="ltr">${escapeHtml(input.policyNumber)}</strong></div>
   </header>
 
@@ -129,10 +150,15 @@ export function renderPolicyDocument(input: PolicyDocumentInput): string {
     ${row('پایان اعتبار', jalaliDate(input.endsAt))}
   </table>
 
-  <h2>بیمه‌شدگان</h2>
+  ${riskRows ? `<h2>مشخصات مورد بیمه</h2>\n  <table>${riskRows}</table>` : ''}
+
+  <h2>${insuredHeading}</h2>
   <table class="people">
-    <tr><th>ردیف</th><th>نام و نام خانوادگی</th><th>کد ملی</th><th>تاریخ تولد</th><th>شماره گذرنامه</th></tr>
-    ${insuredRows || '<tr><td colspan="5">—</td></tr>'}
+    <tr>
+      <th>ردیف</th><th>نام و نام خانوادگی</th><th>کد ملی</th><th>تاریخ تولد</th>
+      ${isTravel ? '<th>شماره گذرنامه</th>' : ''}
+    </tr>
+    ${insuredRows || `<tr><td colspan="${isTravel ? 5 : 4}">—</td></tr>`}
   </table>
 
   <h2>پوشش‌ها</h2>

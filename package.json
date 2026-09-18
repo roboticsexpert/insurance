@@ -20,7 +20,10 @@
     "db:seed": "pnpm --filter @bimegold/api seed",
     "db:studio": "pnpm --filter @bimegold/api studio",
     "db:reset": "pnpm --filter @bimegold/api migrate:reset",
-    "test:e2e": "pnpm --filter @bimegold/api test:e2e"
+    "test:e2e": "pnpm --filter @bimegold/api test:e2e",
+    "dev:site": "pnpm --filter @bimegold/site dev",
+    "site:seed": "pnpm --filter @bimegold/site seed",
+    "site:types": "pnpm --filter @bimegold/site generate:types"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

@@ -90,6 +90,28 @@ export function CheckoutPage() {
 
   const error = purchase.error instanceof ApiError ? purchase.error : undefined
 
+  /*
+   * The API reports insured problems as `insured.<index>.<field>`, so each one can be shown on
+   * the card it belongs to. Anything that does not name a person — a mismatched count, an
+   * expired quote — falls through to the summary note above the pay button, and `messageFa`
+   * stands in when the server sent no field detail at all.
+   */
+  const { personErrors, generalErrors } = useMemo(() => {
+    const byPerson: Record<number, string[]> = {}
+    const general: string[] = []
+
+    for (const [key, message] of Object.entries(error?.fields ?? {})) {
+      const index = /^insured\.(\d+)\./.exec(key)?.[1]
+      if (index === undefined) general.push(message)
+      else (byPerson[Number(index)] ??= []).push(message)
+    }
+
+    if (error && general.length === 0 && Object.keys(byPerson).length === 0) {
+      general.push(error.messageFa)
+    }
+    return { personErrors: byPerson, generalErrors: general }
+  }, [error])
+
   if (quote.isPending) return <PageSkeleton />
   // The API knows exactly why — expired, not yours, gone. Repeat it rather than guessing.
   if (quote.isError) {
@@ -208,6 +230,13 @@ export function CheckoutPage() {
                         hint="روی صفحه اول گذرنامه"
                       />
                     ) : null}
+
+                    {/* The server names the person and the field; showing it here is the whole
+                        point of it doing so. A list at the foot of a three-card form leaves the
+                        buyer to work out which card it meant. */}
+                    {personErrors[index]?.map((message) => (
+                      <ErrorNote key={message}>{message}</ErrorNote>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -228,12 +257,13 @@ export function CheckoutPage() {
             >
               پرداخت
             </Button>
-            {error ? (
-              <ErrorNote>
-                {/* The server says which person and which field; a generic sentence throws that
-                    away and leaves the buyer guessing which card to fix. */}
-                {Object.values(error.fields ?? {}).join(' · ') || error.messageFa}
-              </ErrorNote>
+            {/* Only what could not be pinned to a card — anything that was is already on it. */}
+            {error && generalErrors.length > 0 ? (
+              <>
+                {generalErrors.map((message) => (
+                  <ErrorNote key={message}>{message}</ErrorNote>
+                ))}
+              </>
             ) : null}
             <p className="mt-2 text-center text-xs text-muted">
               به درگاه بانکی منتقل می‌شوید.

@@ -134,6 +134,53 @@ describe('checkout (e2e)', () => {
       expect(sms[0]!.body).toContain(policy.body.policyNumber)
     })
 
+    /*
+     * H6. The policy has to say what it insures, not only what it pays for. The data was in the
+     * snapshot the whole time — nothing declared it and nothing rendered it.
+     */
+    it('states what is insured on both the detail view and the document', async () => {
+      const { token, authority } = await reachTheBank()
+      await settle(authority, 'PAID')
+      const { body } = await verify(authority)
+
+      const policy = await request(http)
+        .get(`${ctx.api}/policies/${body.policyId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200)
+
+      expect(policy.body.risk).toEqual(
+        expect.arrayContaining([expect.objectContaining({ key: 'destination' })]),
+      )
+
+      const doc = await request(http)
+        .get(`${ctx.api}/policies/${body.policyId}/document`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200)
+      expect(doc.text).toContain('مشخصات مورد بیمه')
+    })
+
+    /*
+     * M7. The period is a pair of **Tehran** calendar days. Stored as UTC midnight it began at
+     * 03:30 local, so a 06:00 departure on the first day of cover was uninsured.
+     */
+    it('covers the whole Tehran day the customer asked for', async () => {
+      const { token, authority } = await reachTheBank()
+      await settle(authority, 'PAID')
+      const { body } = await verify(authority)
+
+      const policy = await request(http)
+        .get(`${ctx.api}/policies/${body.policyId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200)
+
+      // 2026-11-01 in Tehran begins at 20:30 UTC on 31 October.
+      expect(policy.body.startsAt).toBe('2026-10-31T20:30:00.000Z')
+      expect(policy.body.endsAt).toBe('2026-11-11T20:29:59.000Z')
+
+      const earlyFlight = new Date('2026-11-01T02:30:00Z') // 06:00 in Tehran
+      expect(new Date(policy.body.startsAt).getTime()).toBeLessThan(earlyFlight.getTime())
+    })
+
     it('serves the e-policy document to its owner and nobody else', async () => {
       const { token, authority } = await reachTheBank()
       await settle(authority, 'PAID')
@@ -211,6 +258,42 @@ describe('checkout (e2e)', () => {
   })
 
   /*
+   * C3. Issuance can fail after the money moved — that is what ISSUE_FAILED exists for, and the
+   * state machine allows ISSUE_FAILED → ISSUING precisely so the order can be re-driven. Before
+   * this, nothing ever drove it: `issueForOrder` demanded PAID and `verify` short-circuited on a
+   * settled payment, so a parked order stayed parked forever with the customer's money in.
+   */
+  describe('an order parked in ISSUE_FAILED', () => {
+    it('issues on the next verify instead of staying stuck', async () => {
+      const { order, authority } = await reachTheBank()
+      await settle(authority, 'PAID')
+      await verify(authority).expect(200)
+
+      // Put the order back in the state a failed issuance leaves it in: paid, no policy.
+      await ctx.db.policy.deleteMany({ where: { orderId: order.id } })
+      await ctx.db.order.update({
+        where: { id: order.id },
+        data: { status: OrderStatus.ISSUE_FAILED },
+      })
+
+      const recovered = await verify(authority).expect(200)
+
+      expect(recovered.body.paymentStatus).toBe(PaymentStatus.SUCCEEDED)
+      expect(recovered.body.orderStatus).toBe(OrderStatus.ISSUED)
+      expect(recovered.body.policyId).toEqual(expect.any(String))
+      await expect(ctx.db.policy.count({ where: { orderId: order.id } })).resolves.toBe(1)
+    })
+
+    it('still refuses to issue an order that was never paid', async () => {
+      const { order, authority } = await reachTheBank()
+      await settle(authority, 'CANCELLED')
+      await verify(authority, 'NOK').expect(200)
+
+      await expect(ctx.db.policy.count({ where: { orderId: order.id } })).resolves.toBe(0)
+    })
+  })
+
+  /*
    * The customer's browser owns the callback query string. A gateway that believes `Status=OK`
    * hands free policies to anyone who can edit a URL, so this asserts the ledger wins.
    */
@@ -276,6 +359,32 @@ describe('checkout (e2e)', () => {
       const replay = await verify(authority, 'OK').expect(200)
       expect(replay.body.paymentStatus).toBe(PaymentStatus.FAILED)
       await expect(ctx.db.policy.count({ where: { orderId: order.id } })).resolves.toBe(1)
+    })
+  })
+
+  /*
+   * H4. `requiresPassport` lived only in the checkout screen, so a direct POST issued a travel
+   * policy whose document showed «—» where the passport number belongs — the identifier the
+   * insurer and the embassy actually use.
+   */
+  describe('a travel order with no passport number', () => {
+    it('is refused by the API, not only by the screen', async () => {
+      const token = await login()
+      const q = await quote()
+      const offer = q.offers.find((o: { isEligible: boolean }) => o.isEligible)
+
+      const res = await request(http)
+        .post(`${ctx.api}/orders`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          quoteOfferId: offer.id,
+          insured: [{ ...INSURED[0], passportNo: undefined }],
+          idempotencyKey: randomUUID(),
+        })
+        .expect(422)
+
+      expect(res.body.code).toBe('VALIDATION_FAILED')
+      expect(res.body.fields['insured.0.passportNo']).toContain('گذرنامه')
     })
   })
 

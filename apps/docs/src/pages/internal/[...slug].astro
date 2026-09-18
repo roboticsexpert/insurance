@@ -1,0 +1,32 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { docPath, docSummary, docTitle } from '../../lib/internal-docs';
+
+export async function getStaticPaths() {
+  const docs = await getCollection('internal');
+  return docs.map((doc) => ({ params: { slug: doc.id }, props: { doc } }));
+}
+
+const { doc } = Astro.props;
+const { Content } = await render(doc);
+---
+
+<BaseLayout
+  title={`${docTitle(doc)} — یادداشت‌های داخلی`}
+  description={docSummary(doc)}
+  noindex
+>
+  <div class="wrap">
+    <article>
+      <nav class="crumbs">
+        <a href="/internal/">یادداشت‌های داخلی</a>
+        <span class="ltr">{docPath(doc)}</span>
+      </nav>
+      {/* هر فایل تیتر خودش را دارد، پس عنوان جداگانه‌ای بالای آن گذاشته نمی‌شود. */}
+      <div class="prose">
+        <Content />
+      </div>
+    </article>
+  </div>
+</BaseLayout>

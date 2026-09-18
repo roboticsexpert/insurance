@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { OrderStatus, type Prisma } from '@prisma/client'
+import { OrderStatus, type Prisma, type ProductType } from '@prisma/client'
 import { AppException } from '../common/app.exception'
+import { toPersianDigits } from '../common/fa'
+import { INSURED_RULES } from '../products/insured-rules'
 import { ORDER_STATUS_FA } from '../products/labels'
 import { PrismaService } from '../prisma/prisma.service'
 import type { CreateOrderDto, OrderDto } from './orders.dto'
@@ -19,10 +21,6 @@ const ORDER_INCLUDE = {
 } as const
 
 type OrderWithRelations = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>
-
-interface QuotedTraveler {
-  birthDate: string
-}
 
 @Injectable()
 export class OrdersService {
@@ -60,7 +58,11 @@ export class OrdersService {
       })
     }
 
-    this.assertInsuredMatchesQuote(quote.input, dto.insured)
+    const product = await this.prisma.product.findUniqueOrThrow({
+      where: { id: quote.productId },
+      select: { type: true },
+    })
+    this.assertInsuredMatchesProduct(product.type, quote.input, dto.insured)
 
     const order = await this.prisma.order.create({
       data: {
@@ -113,27 +115,50 @@ export class OrdersService {
   }
 
   /**
-   * The insured must be exactly the people who were priced.
+   * The insured must be exactly the people the product names, priced as quoted.
    *
    * Age drives the premium, so quoting a 30-year-old and insuring an 80-year-old would sell
-   * cover the insurer never agreed to. Count and dates of birth both have to match.
+   * cover the insurer never agreed to. The rule is per product (`INSURED_RULES`) rather than
+   * inferred from the input's shape: reading `travelers` and returning early when it was absent
+   * made this a no-op for motor and home fire, which happily accepted ten insured people —
+   * all born in 2050 — on a policy that names one بیمه‌گذار.
    */
-  private assertInsuredMatchesQuote(input: Prisma.JsonValue, insured: CreateOrderDto['insured']): void {
-    const travelers = (input as { travelers?: QuotedTraveler[] } | null)?.travelers
-    if (!Array.isArray(travelers)) return
+  private assertInsuredMatchesProduct(
+    productType: ProductType,
+    input: Prisma.JsonValue,
+    insured: CreateOrderDto['insured'],
+  ): void {
+    const rule = INSURED_RULES[productType]
+    const expected = rule.count(input)
 
-    if (travelers.length !== insured.length) {
+    if (insured.length !== expected) {
       throw new AppException('VALIDATION_FAILED', {
-        messageFa: 'تعداد بیمه‌شدگان با استعلام یکسان نیست. لطفاً دوباره استعلام بگیرید.',
+        messageFa: `این بیمه‌نامه برای ${toPersianDigits(expected)} ${rule.subjectFa} صادر می‌شود.`,
       })
     }
 
-    const quoted = [...travelers.map((t) => t.birthDate)].sort()
-    const given = [...insured.map((p) => p.birthDate)].sort()
+    if (rule.requiresPassport) {
+      const missing = insured.findIndex((person) => !person.passportNo)
+      if (missing !== -1) {
+        throw new AppException('VALIDATION_FAILED', {
+          fields: { [`insured.${missing}.passportNo`]: 'شماره گذرنامه الزامی است' },
+          messageFa: 'شماره گذرنامه همه بیمه‌شدگان الزامی است.',
+        })
+      }
+    }
 
-    if (quoted.some((date, index) => date !== given[index])) {
+    const priced = rule.pricedBirthDates(input)
+    if (!priced) return
+
+    /*
+     * Positional, not sorted. The document pairs person *i* with «حق بیمه — مسافر i», so any
+     * reordering between quote and order puts the wrong premium beside the wrong person on the
+     * customer's own policy — with a correct total, which is what made it hard to notice.
+     */
+    const mismatch = priced.findIndex((date, index) => date !== insured[index]?.birthDate)
+    if (mismatch !== -1) {
       throw new AppException('VALIDATION_FAILED', {
-        fields: { insured: 'تاریخ تولد بیمه‌شدگان با استعلام یکسان نیست' },
+        fields: { [`insured.${mismatch}.birthDate`]: 'تاریخ تولد با استعلام یکسان نیست' },
         messageFa: 'مشخصات بیمه‌شدگان با استعلام همخوانی ندارد. لطفاً دوباره استعلام بگیرید.',
       })
     }

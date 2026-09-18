@@ -24,6 +24,7 @@ const offerRow = (over: Record<string, unknown> = {}) => ({
   quote: {
     id: 'q1',
     userId: 'u1',
+    productId: 'p1',
     expiresAt: new Date(NOW.getTime() + 10 * 60_000),
     input: { travelers: [{ birthDate: '1990-05-20' }] },
   },
@@ -55,6 +56,7 @@ describe('OrdersService', () => {
   const orderUpdateMany = jest.fn()
   const offerFindUnique = jest.fn()
   const quoteUpdate = jest.fn()
+  const productFindUniqueOrThrow = jest.fn()
   let service: OrdersService
 
   beforeEach(async () => {
@@ -63,6 +65,7 @@ describe('OrdersService', () => {
     orderCreate.mockResolvedValue(orderRow())
     orderUpdateMany.mockResolvedValue({ count: 1 })
     offerFindUnique.mockResolvedValue(offerRow())
+    productFindUniqueOrThrow.mockResolvedValue({ type: 'TRAVEL' })
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -73,6 +76,7 @@ describe('OrdersService', () => {
             order: { findUnique: orderFindUnique, create: orderCreate, updateMany: orderUpdateMany },
             quoteOffer: { findUnique: offerFindUnique },
             quote: { update: quoteUpdate },
+            product: { findUniqueOrThrow: productFindUniqueOrThrow },
           },
         },
       ],
@@ -158,7 +162,7 @@ describe('OrdersService', () => {
       it('refuses a different date of birth', async () => {
         const error = await create({ insured: [insured('1945-01-01')] }).catch((e: AppException) => e)
         expect((error as AppException).code).toBe('VALIDATION_FAILED')
-        expect((error as AppException).fields?.insured).toContain('تاریخ تولد')
+        expect((error as AppException).fields?.['insured.0.birthDate']).toContain('تاریخ تولد')
         expect(orderCreate).not.toHaveBeenCalled()
       })
 
@@ -168,7 +172,13 @@ describe('OrdersService', () => {
         })
       })
 
-      it('accepts the same people listed in a different order', async () => {
+      /*
+       * H5. This used to be accepted — both lists were sorted before comparing. But the policy
+       * document pairs the insured table with position-labelled premium lines
+       * («حق بیمه — مسافر ۱»), so a reordered submission printed the child's premium beside the
+       * adult's name. The total stayed right, which is exactly why nobody noticed.
+       */
+      it('refuses the same people listed in a different order', async () => {
         offerFindUnique.mockResolvedValue(
           offerRow({
             quote: {
@@ -179,7 +189,72 @@ describe('OrdersService', () => {
         )
         await expect(
           create({ insured: [insured('2010-01-01'), insured('1990-05-20')] }),
+        ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' })
+      })
+
+      it('accepts them in the order they were quoted', async () => {
+        offerFindUnique.mockResolvedValue(
+          offerRow({
+            quote: {
+              ...offerRow().quote,
+              input: { travelers: [{ birthDate: '1990-05-20' }, { birthDate: '2010-01-01' }] },
+            },
+          }),
+        )
+        await expect(
+          create({ insured: [insured('1990-05-20'), insured('2010-01-01')] }),
         ).resolves.toBeDefined()
+      })
+    })
+
+    /*
+     * H4. `passportNo` is optional on the schema because two of three products have no use for
+     * one — but for travel it is the identifier the insurer and the embassy actually use, and
+     * only the checkout screen was enforcing it. A direct POST issued a policy showing «—».
+     */
+    describe('a travel policy needs a passport number', () => {
+      it('refuses an insured person without one', async () => {
+        const error = await create({
+          insured: [insured('1990-05-20', { passportNo: undefined })],
+        }).catch((e: AppException) => e)
+
+        expect((error as AppException).code).toBe('VALIDATION_FAILED')
+        expect((error as AppException).fields?.['insured.0.passportNo']).toContain('گذرنامه')
+        expect(orderCreate).not.toHaveBeenCalled()
+      })
+
+      it('does not ask for one on a product that does not use it', async () => {
+        productFindUniqueOrThrow.mockResolvedValue({ type: 'HOME_FIRE' })
+        offerFindUnique.mockResolvedValue(
+          offerRow({ quote: { ...offerRow().quote, input: { cityId: 'c1' } } }),
+        )
+        await expect(
+          create({ insured: [insured('1990-05-20', { passportNo: undefined })] }),
+        ).resolves.toBeDefined()
+      })
+    })
+
+    /*
+     * M3. The old check read `travelers` off the input and returned early when it was absent,
+     * which made it a no-op for both single-holder products: ten insured people, all born in
+     * 2050, were accepted on a motor order.
+     */
+    describe('single-holder products name exactly one person', () => {
+      beforeEach(() => {
+        productFindUniqueOrThrow.mockResolvedValue({ type: 'MOTOR_TPL' })
+        offerFindUnique.mockResolvedValue(
+          offerRow({ quote: { ...offerRow().quote, input: { vehicleModelId: 'v1' } } }),
+        )
+      })
+
+      it('refuses a second insured person on a motor order', async () => {
+        await expect(
+          create({ insured: [insured(), insured('2050-01-01')] }),
+        ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' })
+      })
+
+      it('accepts the one بیمه‌گذار, whatever their date of birth', async () => {
+        await expect(create({ insured: [insured('1975-03-11')] })).resolves.toBeDefined()
       })
     })
   })

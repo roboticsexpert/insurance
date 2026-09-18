@@ -15,8 +15,16 @@ tools
 **/*.log
 .DS_Store
 
-# apps/web source is needed by apps/web/Dockerfile. apps/docs deploys to Cloudflare
-# and no image builds it — but pnpm reads every package.json named in
-# pnpm-workspace.yaml before it applies --filter, so its manifest has to stay.
+**/.next
+
+# apps/web source is needed by apps/web/Dockerfile, apps/site source by
+# apps/site/Dockerfile. apps/docs and apps/brand deploy to Cloudflare and no image
+# builds them — but pnpm reads every package.json named in pnpm-workspace.yaml
+# before it applies --filter, so their manifests have to stay.
 apps/docs
 !apps/docs/package.json
+apps/brand
+!apps/brand/package.json
+
+# آپلودهای محلی پیشخان به ایمیج نمی‌روند؛ روی Railway یک volume جایشان است.
+apps/site/public/media

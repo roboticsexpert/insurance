@@ -1,4 +1,5 @@
 import { PrismaClient, type Prisma } from '@prisma/client'
+import { PrismaRatingLookups } from '../src/rating/rating.lookups'
 import { RatingRegistry } from '../src/rating/rating.registry'
 import { RatingService } from '../src/rating/rating.service'
 import { HomeFireRatingStrategy } from '../src/rating/strategies/home-fire.strategy'
@@ -186,6 +187,7 @@ async function main(): Promise<void> {
       new MotorTplRatingStrategy(),
       new HomeFireRatingStrategy(),
     ]),
+    new PrismaRatingLookups(db as never),
   )
   const teasers = await rating.refreshTeaserPrices()
   for (const { slug, fromAmount, isSample } of teasers) {

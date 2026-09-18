@@ -2,22 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "api",
+      "name": "site",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
-        "dev:api"
+        "dev:site"
       ],
-      "port": 3000,
-      "autoPort": false
-    },
-    {
-      "name": "web",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "dev:web"
-      ],
-      "port": 5173,
-      "autoPort": false
+      "port": 3100
     },
     {
       "name": "docs",
@@ -25,19 +15,56 @@
       "runtimeArgs": [
         "dev:docs"
       ],
-      "port": 4321,
-      "autoPort": true
+      "port": 4321
     },
     {
-      "name": "brand",
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev:web"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "web-build",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
         "--filter",
-        "@bimegold/brand",
-        "dev"
+        "@bimegold/web",
+        "exec",
+        "vite",
+        "preview",
+        "--port",
+        "4174",
+        "--strictPort"
       ],
-      "port": 8788,
-      "autoPort": false
+      "port": 4174
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev:api"
+      ],
+      "port": 3000,
+      "env": {
+        "CORS_ORIGINS": "http://localhost:5173,http://localhost:5174",
+        "WEB_URL": "http://localhost:5174"
+      }
+    },
+    {
+      "name": "web-5174",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@bimegold/web",
+        "exec",
+        "vite",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
     }
   ]
 }

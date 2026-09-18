@@ -1,16 +1,16 @@
-# apps/brand — the public brand book
+# apps/brand — کتاب برند عمومی
 
-Serves the Bime Gold brand book at **https://brand.bimegold.com**. Persian primary with
-an English toggle.
+کتاب برند بیمه گلد را روی **https://brand.bimegold.com** سرو می‌کند. فارسی به‌عنوان زبان اصلی،
+با کلید تغییر به انگلیسی.
 
-`dist/` is **generated** — do not edit it. The page, its assets and the downloadable
-archive are all built by [`tools/brand-gold/site.py`](../../tools/brand-gold/site.py)
-from `brand/bime-gold/`, so the site can never show a logo the package does not contain.
+پوشه `dist/` **تولیدشده است** — ویرایشش نکنید. صفحه، فایل‌هایش و آرشیو قابل دانلود، همگی توسط
+[`tools/brand-gold/site.py`](../../tools/brand-gold/site.py) از `brand/bime-gold/` ساخته
+می‌شوند، پس سایت هرگز نمی‌تواند لوگویی را نشان بدهد که در بسته نیست.
 
 ```bash
 pnpm --filter @bimegold/brand deploy
 ```
 
-Fonts are self-hosted, no CDN — it has to work from inside Iran. Persian is Vazirmatn
-Variable; Latin is Plus Jakarta Sans, the wordmark's own typeface, subset to the Latin
-range and converted to woff2 at build time.
+قلم‌ها روی خود سایت میزبانی می‌شوند، بدون CDN — باید از داخل ایران کار کند. قلم فارسی
+Peyda Pro است (وب‌فونت متغیر از `tools/brand-gold/fonts/PeydaWebVF.woff2`، عمداً بیرون از آرشیو عمومی)؛ لاتین Plus Jakarta Sans است، یعنی قلم خودِ وردمارک، که در زمان بیلد به
+محدوده لاتین محدود و به woff2 تبدیل می‌شود.

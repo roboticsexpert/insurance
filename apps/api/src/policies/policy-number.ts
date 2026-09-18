@@ -2,7 +2,7 @@
 const jalaliParts = new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', {
   year: 'numeric',
   month: '2-digit',
-  timeZone: 'UTC',
+  timeZone: 'Asia/Tehran',
 })
 
 export function jalaliPeriod(date: Date): string {

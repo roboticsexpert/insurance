@@ -1,9 +1,11 @@
 import { Test } from '@nestjs/testing'
+import { AppException } from '../common/app.exception'
 import { OrderStatus } from '@prisma/client'
 import { ENV } from '../config/config.module'
 import { NotificationsService } from '../notifications/notifications.service'
 import { OrdersService } from '../orders/orders.service'
 import { PrismaService } from '../prisma/prisma.service'
+import { PrismaRatingLookups } from '../rating/rating.lookups'
 import { RatingRegistry } from '../rating/rating.registry'
 import { PoliciesService } from './policies.service'
 
@@ -35,8 +37,13 @@ describe('PoliciesService.issueForOrder', () => {
   const queryRaw = jest.fn()
   const transition = jest.fn()
   const send = jest.fn()
+  const lookups = { vehicleModelName: jest.fn(), cityName: jest.fn() }
   const strategy = {
     productType: 'TRAVEL',
+    decode: jest.fn((i: unknown) => i),
+    riskSummary: jest.fn(() =>
+      Promise.resolve([{ key: 'destination', labelFa: 'مقصد', valueFa: 'شنگن' }]),
+    ),
     parse: jest.fn((i: unknown) => i),
     rate: jest.fn(),
     coveragePeriod: jest.fn(() => ({
@@ -62,6 +69,7 @@ describe('PoliciesService.issueForOrder', () => {
         },
         { provide: OrdersService, useValue: { transition } },
         { provide: RatingRegistry, useValue: { get: () => strategy } },
+        { provide: PrismaRatingLookups, useValue: lookups },
         { provide: NotificationsService, useValue: { send } },
         { provide: ENV, useValue: { WEB_URL: 'https://app.bimegold.com' } },
       ],
@@ -132,6 +140,35 @@ describe('PoliciesService.issueForOrder', () => {
 
     await expect(service.issueForOrder('o1', NOW)).rejects.toMatchObject({ code: 'ISSUE_FAILED' })
     expect(transition).toHaveBeenLastCalledWith('o1', OrderStatus.ISSUE_FAILED, OrderStatus.ISSUING)
+  })
+
+  /*
+   * C3. `parse` carries the clock-relative admission rules — "cover may not start in the past".
+   * Re-running them at issuance meant a same-day-departure order whose payment settled after
+   * midnight threw here, landing in ISSUE_FAILED with the money already taken. Issuance asks
+   * only what the input's shape says, so the answer cannot change under it.
+   */
+  it('re-derives the period without re-running request-time validation', async () => {
+    strategy.parse.mockImplementation(() => {
+      throw new AppException('VALIDATION_FAILED', { fields: { startDate: 'در گذشته' } })
+    })
+
+    await expect(service.issueForOrder('o1', NOW)).resolves.toEqual({ policyId: 'pol1' })
+    expect(strategy.parse).not.toHaveBeenCalled()
+    expect(strategy.decode).toHaveBeenCalledWith({ startDate: '2026-10-02', endDate: '2026-10-12' })
+  })
+
+  /*
+   * C3, the other half. `ISSUE_FAILED → ISSUING` is a legal transition precisely so a paid order
+   * that failed to issue can be re-driven; guarding on PAID alone made that edge unreachable and
+   * the order permanently stuck.
+   */
+  it('re-drives issuance for an order parked in ISSUE_FAILED', async () => {
+    orderFindUnique.mockResolvedValue(orderRow({ status: OrderStatus.ISSUE_FAILED }))
+
+    await expect(service.issueForOrder('o1', NOW)).resolves.toEqual({ policyId: 'pol1' })
+    expect(transition.mock.calls[0]).toEqual(['o1', OrderStatus.ISSUING, OrderStatus.ISSUE_FAILED])
+    expect(transition.mock.calls[1]).toEqual(['o1', OrderStatus.ISSUED, OrderStatus.ISSUING])
   })
 
   it('reserves the number in a single atomic statement', async () => {

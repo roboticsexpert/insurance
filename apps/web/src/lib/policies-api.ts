@@ -33,6 +33,8 @@ export interface PolicyDetail extends PolicyListItem {
     birthDate?: string
     passportNo?: string
   }[]
+  /** What is insured — the plate, the property, the trip. Empty on policies issued before H6. */
+  risk: CoverageItem[]
   coverages: CoverageItem[]
   lineItems: PremiumLineItem[]
   documentUrl: string

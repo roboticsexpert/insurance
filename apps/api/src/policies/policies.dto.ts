@@ -39,6 +39,11 @@ export interface PolicyDetailDto extends PolicyListItemDto {
     birthDate?: string
     passportNo?: string
   }[]
+  /**
+   * What is insured — the plate, the property, the trip. Distinct from `coverages`, which is
+   * what the insurer pays for; a policy needs both to be a document rather than a receipt.
+   */
+  risk: CoverageItem[]
   coverages: CoverageItem[]
   lineItems: PremiumLineItem[]
   /** Relative; the client resolves it against the API base. */

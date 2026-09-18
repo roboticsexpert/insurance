@@ -1,31 +1,42 @@
-# Bime Gold
+# بیمه گلد
 
-Monorepo for the **Bime Gold** («بیمه گلد») insurance business.
+مونوریپوی کسب‌وکار بیمه‌ای **بیمه گلد** (Bime Gold).
 
-| App | What | Where |
+| اپلیکیشن | چیست | کجا |
 |---|---|---|
-| [`apps/web`](apps/web) | Customer app — React SPA, Persian, RTL, **mobile only** | app.bimegold.com |
-| [`apps/api`](apps/api) | NestJS + PostgreSQL — catalog, rating engine, orders, policies | api.bimegold.com |
-| [`apps/docs`](apps/docs) | Astro research site on the Iranian insurance industry | docs.bimegold.com |
-| [`apps/brand`](apps/brand) | The brand book — Persian/English, generated from `brand/bime-gold/` | brand.bimegold.com |
+| [`apps/web`](apps/web) | اپ مشتری — React SPA، فارسی، راست‌به‌چپ، **فقط موبایل** | app.bimegold.com |
+| [`apps/api`](apps/api) | NestJS + PostgreSQL — کاتالوگ، موتور نرخ‌دهی، سفارش‌ها، بیمه‌نامه‌ها | api.bimegold.com |
+| [`apps/docs`](apps/docs) | سایت پژوهشی Astro درباره صنعت بیمه ایران | docs.bimegold.com |
+| [`apps/site`](apps/site) | سایت بازاریابی — Payload CMS + Next.js، لندینگ بلوکی و مجله | bimegold.com *(هنوز مستقر نشده)* |
+| [`apps/brand`](apps/brand) | کتاب برند — فارسی/انگلیسی، ساخته‌شده از `brand/bime-gold/` | brand.bimegold.com |
 
-## Getting started
+## شروع کار
 
 ```bash
 pnpm install
-pnpm db:up          # Postgres on :5433
+pnpm db:up          # Postgres روی :5433
 pnpm db:migrate
 pnpm db:seed
-pnpm dev            # api on :3000, web on :5173
+pnpm dev            # api روی :3000، web روی :5173
 ```
 
-## Docs
+سایت بازاریابی دیتابیس خودش را دارد و جدا بالا می‌آید:
 
-- [`docs/platform/MVP-PLAN.md`](docs/platform/MVP-PLAN.md) — the full design of the platform
-- [`docs/platform/PROGRESS.md`](docs/platform/PROGRESS.md) — what is built, what is next
-- [`docs/platform/DEPLOY.md`](docs/platform/DEPLOY.md) — the Railway runbook for the API
-- [`docs/PROJECT.md`](docs/PROJECT.md) — the research site
-- [`docs/PLAN.md`](docs/PLAN.md) — go-to-market plan for the business
+```bash
+pnpm site:db                      # دیتابیس bimegold_cms در همان Postgres
+cp apps/site/.env.example apps/site/.env
+pnpm --filter @bimegold/site seed
+pnpm dev:site                     # :3100، پیشخان روی /admin
+```
 
-The MVP runs on mocks by design: payment gateway, SMS, and the OTP code `1234`.
-Rate tables are placeholders and the UI marks them as such.
+## مستندات
+
+- [`docs/platform/MVP-PLAN.md`](docs/platform/MVP-PLAN.md) — طراحی کامل پلتفرم
+- [`docs/platform/PROGRESS.md`](docs/platform/PROGRESS.md) — چه چیزی ساخته شده و قدم بعدی چیست
+- [`docs/platform/DEPLOY.md`](docs/platform/DEPLOY.md) — دستورالعمل اجرایی Railway برای API
+- [`docs/website/LANDING-PAGES.md`](docs/website/LANDING-PAGES.md) — طراحی سایت بازاریابی
+- [`docs/PROJECT.md`](docs/PROJECT.md) — سایت پژوهشی
+- [`docs/PLAN.md`](docs/PLAN.md) — برنامه ورود به بازار کسب‌وکار
+
+MVP عمداً روی ماک‌ها کار می‌کند: درگاه پرداخت، پیامک و کد یک‌بارمصرف `1234`.
+جدول‌های نرخ موقت‌اند و رابط کاربری همین را به کاربر نشان می‌دهد.

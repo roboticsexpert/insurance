@@ -25,13 +25,35 @@ const OLDEST_PRODUCTION_YEAR = 1350
 
 type StepId = 'vehicle' | 'usage' | 'identity' | 'history' | 'tier' | 'start'
 
+/**
+ * The screens this vehicle needs.
+ *
+ * A motorcycle can only be insured for personal use, so asking is a question with one answer —
+ * the screen is dropped rather than shown disabled, which keeps the progress bar honest.
+ *
+ * A pure function of the group, not a value derived inside the component, because the step list
+ * has to be computable for a vehicle that has *not* been rendered yet: applying a saved
+ * motorcycle needs to know where 'history' sits in the list it is about to become, not in the
+ * list currently on screen.
+ */
+const stepsFor = (group: string | undefined): StepId[] =>
+  group === 'MOTORCYCLE'
+    ? ['vehicle', 'identity', 'history', 'tier', 'start']
+    : ['vehicle', 'usage', 'identity', 'history', 'tier', 'start']
+
 export function MotorWizardPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
   const { status } = useAuth()
   const signedIn = status === 'authenticated'
-  const [stepIndex, setStepIndex] = useState(0)
+  /*
+   * The current screen is held by **id**, not by index. An index into a list that changes length
+   * is a bug waiting for a motorcycle: applying a saved one used to jump to index 3 of the
+   * six-step list, which the next render turned into 'tier' of the five-step list — silently
+   * skipping the no-claims question and quoting a returning rider at the no-discount price.
+   */
+  const [stepId, setStepId] = useState<StepId>('vehicle')
 
   const [modelId, setModelId] = useState<string | null>(null)
   const [usage, setUsage] = useState<string | null>(null)
@@ -73,7 +95,7 @@ export function MotorWizardPage() {
     setPlate(vehicle.plate)
     // Straight past the three screens it just answered — re-asking them is the whole point of
     // having saved it. The remaining steps are cover choices, which are per-policy, not per-car.
-    setStepIndex(steps.indexOf('history'))
+    setStepId('history')
   }
 
   // Arriving from «استعلام دوباره» on the saved list: prefill once the list has loaded.
@@ -88,25 +110,19 @@ export function MotorWizardPage() {
   const model = models.data?.find((m) => m.value === modelId)
   const group = model?.meta?.group as string | undefined
 
-  /*
-   * A motorcycle can only be insured for personal use, so asking is a question with one answer.
-   * The step list is built per-render instead of being a constant: skipping the screen keeps the
-   * progress bar honest, which a disabled step or a one-option list would not.
-   */
   const isMotorcycle = group === 'MOTORCYCLE'
-  const steps = useMemo<StepId[]>(
-    () =>
-      isMotorcycle
-        ? ['vehicle', 'identity', 'history', 'tier', 'start']
-        : ['vehicle', 'usage', 'identity', 'history', 'tier', 'start'],
-    [isMotorcycle],
-  )
+  const steps = useMemo<StepId[]>(() => stepsFor(group), [group])
 
-  // Clamped because choosing a motorcycle last drops a step out from under the current index.
-  const index = Math.min(stepIndex, steps.length - 1)
+  /*
+   * Falls back to the first screen only if the current step left the list entirely — which can
+   * happen just once, by picking a motorcycle while standing on 'usage'. Every other change of
+   * list keeps the id it was showing.
+   */
+  const index = Math.max(0, steps.indexOf(stepId))
   const step = steps[index] as StepId
   const isLast = index === steps.length - 1
   const effectiveUsage = isMotorcycle ? 'PERSONAL' : usage
+  const goTo = (next: number) => setStepId(steps[next] as StepId)
 
   const quote = useMutation({
     mutationFn: () =>
@@ -160,13 +176,13 @@ export function MotorWizardPage() {
       hint={HINTS[step]}
       step={index + 1}
       totalSteps={steps.length}
-      onBack={() => (index === 0 ? navigate('/') : setStepIndex(index - 1))}
+      onBack={() => (index === 0 ? navigate('/') : goTo(index - 1))}
       footer={
         <>
           <Button
             disabled={!complete[step] || quote.isPending}
             loading={quote.isPending}
-            onClick={() => (isLast ? quote.mutate() : setStepIndex(index + 1))}
+            onClick={() => (isLast ? quote.mutate() : goTo(index + 1))}
           >
             {isLast ? 'مشاهده قیمت‌ها' : 'ادامه'}
           </Button>

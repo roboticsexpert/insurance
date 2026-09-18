@@ -1,40 +1,67 @@
-# Insurance Docs — project notes
+# مستندات بیمه — یادداشت‌های پروژه
 
-Notes on **`apps/docs`**, the static research site at `docs.bimegold.com`. Each research topic
-is one Markdown file and the homepage lists them.
+یادداشت‌هایی درباره **`apps/docs`**، همان سایت ایستای پژوهشی روی `docs.bimegold.com`. هر موضوع
+پژوهشی یک فایل Markdown است و صفحه اصلی فهرست‌شان می‌کند.
 
-This is one of three apps in the workspace — see *The two parts of the project* below. The
-platform being built lives in `apps/api` and `apps/web`; its own notes are
-[`docs/platform/MVP-PLAN.md`](platform/MVP-PLAN.md) and
+این یکی از اپلیکیشن‌های این فضای کاری است — بخش *دو بخش پروژه* در پایین را ببینید. پلتفرمی که
+در حال ساخت است در `apps/api` و `apps/web` زندگی می‌کند و یادداشت‌های خودش را دارد:
+[`docs/platform/MVP-PLAN.md`](platform/MVP-PLAN.md) و
 [`PROGRESS.md`](platform/PROGRESS.md).
 
-## Decisions
+## تصمیم‌ها
 
-- **Content language: Persian, RTL.** Audience is the Iranian insurance/insurtech market.
-  Font is Vazirmatn Variable, self-hosted via `@fontsource-variable/vazirmatn` (no CDN —
-  works offline and inside Iran).
-- **Stack: Astro (latest, currently 7.x)**, static output, content collections. No client-side
-  JS shipped. Keep `astro` on `latest` — do not pin to an old major.
-- **Single source of truth:** the research content lives in `src/content/topics/`, not in
-  a separate `docs/` copy. This file documents the project itself, not its subject matter.
+- **زبان محتوا: فارسی، راست‌به‌چپ.** مخاطب، بازار بیمه و اینشورتک ایران است.
+  قلم Peyda Pro است (وب‌فونت متغیر `public/fonts/PeydaWebVF.woff2`) که روی خود سایت میزبانی
+  می‌شود (بدون CDN — هم آفلاین کار می‌کند هم داخل ایران).
+- **پشته: Astro (آخرین نسخه، فعلاً ۷.x)**، خروجی ایستا، content collections. هیچ جاوااسکریپتی
+  به سمت کاربر فرستاده نمی‌شود. `astro` را روی `latest` نگه دارید — روی یک نسخه اصلی قدیمی پین نکنید.
+- **یک منبع حقیقت:** محتوای پژوهشی در `src/content/topics/` است، نه در یک کپی جداگانه در `docs/`.
+  این فایل، خودِ پروژه را مستند می‌کند نه موضوع پژوهش را.
+- **سایت دو مجموعه منتشر می‌کند.** `topics` — مقاله‌های پژوهشی فارسی — و `internal` که پوشه
+  `docs/` ریشه همین مخزن را عیناً روی `/internal/` رندر می‌کند (۱۴۰۵/۰۶/۱۲). این یادداشت‌های
+  داخلی فارسی و راست‌به‌چپ‌اند، `noindex` هستند و در `robots.txt` منع شده‌اند، اما *روی دامنه
+  عمومی‌اند* — بخش *یادداشت‌های داخلی روی سایت* را ببینید.
 
-## Structure
+## ساختار
 
-Paths below are relative to **`apps/docs/`**.
+مسیرهای زیر نسبت به **`apps/docs/`** هستند.
 
 ```
 src/
-  content.config.ts          collection schema (title, summary, order, updated, tags, status)
-  content/topics/*.md        one file per research topic  ← the actual content
-  layouts/BaseLayout.astro   html shell, lang="fa" dir="rtl", header/footer
-  pages/index.astro          homepage: topic cards sorted by `order`
-  pages/topics/[...slug].astro   topic page
-  styles/global.css          the whole design system (light + dark via prefers-color-scheme)
+  content.config.ts          اسکیمای مجموعه (title, summary, order, updated, tags, status)
+  content/topics/*.md        هر موضوع پژوهشی یک فایل  ← محتوای اصلی
+  layouts/BaseLayout.astro   پوسته html با lang="fa" dir="rtl"، هدر و فوتر
+  pages/index.astro          صفحه اصلی: کارت موضوع‌ها مرتب‌شده بر اساس `order`
+  pages/topics/[...slug].astro   صفحه موضوع
+  styles/global.css          کل دیزاین‌سیستم (روشن + تیره از راه prefers-color-scheme)
 ```
 
-## Adding a new topic
+## یادداشت‌های داخلی روی سایت
 
-Create `src/content/topics/<slug>.md`. The URL becomes `/topics/<slug>/`.
+`/internal/` درخت `docs/` ریشه مخزن — همان یادداشت‌های کاری — را رندر می‌کند تا همه‌چیز یک‌جا
+قابل مرور باشد، نه فقط روی دیسک. در ۱۴۰۵/۰۶/۱۲ اضافه شد.
+
+- مجموعه `internal` در `src/content.config.ts` الگوی `../../docs/**/*.md` را می‌گیرد و با یک
+  `generateId` صریح (مسیر، حروف کوچک، بدون پسوند) کار می‌کند → `docs/platform/MVP-PLAN.md` به
+  `/internal/platform/mvp-plan/` تبدیل می‌شود.
+- این فایل‌ها **فرانت‌متر ندارند** — یادداشت کاری معمولی‌اند که باید روی گیت‌هاب هم خوب خوانده
+  شوند. `src/lib/internal-docs.ts` عنوان را از اولین تیتر `#` و خلاصه را از اولین پاراگراف
+  بیرون می‌کشد و کارت‌ها را بر اساس پوشه گروه‌بندی می‌کند.
+- `plugins/internal-links.mjs` لینک‌های `*.md` داخل متن را به آدرس‌های سایت بازنویسی می‌کند (و هر
+  جدول Markdown را داخل `div.table-scroll` می‌پیچد). این‌ها **پلاگین‌های hast مربوط به Sätteri**
+  هستند، نه rehype: در Astro 7 دیگر unified پردازشگر پیش‌فرض Markdown نیست، بنابراین
+  `markdown.rehypePlugins` حالا نصب `@astrojs/markdown-remark` را لازم دارد، در حالی که
+  `markdown.processor: satteri({ hastPlugins })` مسیر پشتیبانی‌شده است. یک پلاگین hast صرفاً یک
+  آبجکت ساده است — `{ name, element: { filter, visit } }` — و `ctx.fileURL` همان چیزی است که
+  حل کردن لینک‌های نسبی را ممکن می‌کند.
+- این صفحه‌ها `noindex, nofollow` هستند و `/internal/` در `public/robots.txt` منع شده است.
+  **این پنهان‌کاری است، نه کنترل دسترسی.** هر کسی که آدرس را داشته باشد می‌تواند بخواندشان، و این
+  یادداشت‌ها شامل صورت‌جلسه‌های شرکا، شناسه حساب Cloudflare و گزارش QA هستند. اگر روزی این وضع
+  قابل قبول نبود، راه‌حل گذاشتن Cloudflare Access جلوی این مسیر است.
+
+## افزودن موضوع تازه
+
+فایل `src/content/topics/<slug>.md` را بسازید. آدرس صفحه `/topics/<slug>/` می‌شود.
 
 ```yaml
 ---
@@ -47,46 +74,46 @@ status: 'in-progress'     # draft | in-progress | reviewed
 ---
 ```
 
-Conventions used in the existing topic:
+قراردادهایی که در موضوع‌های موجود رعایت شده:
 
-- Markdown tables are written as **raw HTML wrapped in `<div class="table-scroll">`** so
-  they scroll inside their own box on mobile instead of breaking the page layout.
-- Latin text/URLs inside Persian prose go in `<span class="ltr">…</span>` to stop bidi
-  from scrambling them.
-- Every topic ends with a **منابع** section of real links, and unverified claims are
-  explicitly marked as such (see the 60% vs 90% market-share note).
+- جدول‌های Markdown به‌صورت **HTML خام داخل `<div class="table-scroll">`** نوشته می‌شوند تا روی
+  موبایل داخل جعبه خودشان اسکرول شوند و چیدمان صفحه را نشکنند.
+- متن یا آدرس لاتین داخل نثر فارسی در `<span class="ltr">…</span>` قرار می‌گیرد تا الگوریتم دوسویه
+  آن را به هم نریزد.
+- هر موضوع با بخش **منابع** از لینک‌های واقعی تمام می‌شود، و ادعاهای تأییدنشده صریحاً علامت
+  می‌خورند (نمونه‌اش یادداشت سهم بازار ۶۰٪ در برابر ۹۰٪).
 
-## Commands
+## دستورها
 
-From the repo root:
+از ریشه مخزن:
 
 ```bash
 pnpm dev:docs                      # http://localhost:4321
 pnpm --filter @bimegold/docs build  # → apps/docs/dist/
 ```
 
-## Deployment
+## استقرار
 
-Live at **https://docs.bimegold.com** — Cloudflare Workers static assets (no Worker
-script), config in `wrangler.jsonc`.
+روی **https://docs.bimegold.com** بالاست — فایل‌های ایستای Cloudflare Workers (بدون اسکریپت
+Worker)، پیکربندی در `wrangler.jsonc`.
 
-- Account: `Hallehesmaeelnejad@gmail.com's Account` (`022e4e5b87a14dc3d0e17772f66b5d6b`);
-  zone `bimegold.com`. **Moved here on 2026-08-21** from the `Mahdi Youseftabar` account
-  (`45d1cc1b…`, zone `zisef.ir`) when the brand became Bime Gold: a Workers custom domain
-  has to sit on the same account as its zone, so the Worker had to move accounts, not just
-  change its route. The old `insurance-docs` Worker still exists on the old account and
-  still answers `insurance.zisef.ir`; delete it once nothing links there.
-- The custom domain is declared as a route in `wrangler.jsonc`, so `wrangler deploy`
-  creates and keeps the DNS record — do not add it by hand in the dashboard.
-- `not_found_handling: "404-page"` is served by `src/pages/404.astro`.
+- حساب: `Hallehesmaeelnejad@gmail.com's Account` (`022e4e5b87a14dc3d0e17772f66b5d6b`)؛
+  زون `bimegold.com`. **در ۱۴۰۵/۰۵/۳۰ به اینجا منتقل شد** از حساب `Mahdi Youseftabar`
+  (`45d1cc1b…`، زون `zisef.ir`) وقتی برند به بیمه گلد تغییر کرد: دامنه اختصاصی یک Worker باید
+  روی همان حسابی باشد که زونش هست، پس Worker باید حساب عوض می‌کرد نه فقط مسیر. Worker قدیمی
+  `insurance-docs` هنوز روی حساب قبلی هست و هنوز به `insurance.zisef.ir` جواب می‌دهد؛ وقتی هیچ
+  لینکی به آن نماند حذفش کنید.
+- دامنه اختصاصی به شکل یک route در `wrangler.jsonc` تعریف شده، پس `wrangler deploy` رکورد DNS را
+  می‌سازد و نگه می‌دارد — دستی در داشبورد اضافه‌اش نکنید.
+- `not_found_handling: "404-page"` را `src/pages/404.astro` سرو می‌کند.
 
 ```bash
 pnpm --filter @bimegold/docs build && cd apps/docs && npx wrangler deploy
 ```
 
-**Verifying from inside Iran:** the Cloudflare edge is not reachable directly from the
-local network, and the SOCKS proxy resolves the site's hostname to a different origin, so `curl`
-and `WebFetch` both give misleading results. Verify from Cloudflare's own side instead:
+**بررسی از داخل ایران:** لبه Cloudflare مستقیم از شبکه محلی در دسترس نیست و پراکسی SOCKS نام
+میزبان سایت را به مبدأ دیگری resolve می‌کند، بنابراین هم `curl` و هم `WebFetch` نتیجه گمراه‌کننده
+می‌دهند. به جایش از سمت خود Cloudflare بررسی کنید:
 
 ```bash
 curl -X POST "https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/browser-rendering/content" \
@@ -94,90 +121,107 @@ curl -X POST "https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/browser
   -d '{"url":"https://docs.bimegold.com/"}'
 ```
 
-## Content status
+## وضعیت محتوا
 
-| Topic | order | Status |
+| موضوع | order | وضعیت |
 |---|---|---|
-| `core-insurance-va-sanhab` | 1 | in-progress — open questions at article end |
-| `anatomy-of-core-insurance` | 2 | in-progress — build-oriented anatomy of a core; the project's focus area |
-| `anvae-bime-dar-iran` | 3 | in-progress |
-| `sherkathaye-bime-iran` | 4 | in-progress |
-| `matris-foroosh-online-bime` | 5 | in-progress |
-| `bazigaran-va-mogharrarat-foroosh-online` | 6 | in-progress |
-| `andaze-bazar-va-forsat` | 7 | in-progress |
-| `barnameh-shoroo-platform` | 8 | in-progress — the actionable conclusion of the other topics |
+| `core-insurance-va-sanhab` | 1 | در جریان — پرسش‌های باز در انتهای مقاله |
+| `anatomy-of-core-insurance` | 2 | در جریان — کالبدشکافی هسته با نگاه ساخت؛ کانون تمرکز پروژه |
+| `anvae-bime-dar-iran` | 3 | در جریان |
+| `sherkathaye-bime-iran` | 4 | در جریان |
+| `matris-foroosh-online-bime` | 5 | در جریان |
+| `bazigaran-va-mogharrarat-foroosh-online` | 6 | در جریان |
+| `andaze-bazar-va-forsat` | 7 | در جریان |
+| `barnameh-shoroo-platform` | 8 | در جریان — نتیجه عملی سایر موضوع‌ها |
 
-## The two parts of the project
+## دو بخش پروژه
 
-1. **هسته بیمه‌گری (core insurance)** — research only so far; see the Focus section below.
-2. **Online insurance purchase platform** — the product being built. Plan:
-   [`docs/platform/MVP-PLAN.md`](platform/MVP-PLAN.md). MVP is a mobile-only React SPA +
-   NestJS API, simple instant-buy products, mock payment and mock OTP, deployed on Railway.
-   **This has happened**: the repo is now a pnpm workspace (`apps/api`, `apps/web`,
-   `apps/docs`), and the Astro site described above lives in `apps/docs/`. The deployment of
-   the docs site was unaffected, as planned. M0–M5 are built — all three products quote,
-   and **all three can be bought end to end against the mock gateway, over the API and through
-   the web app alike**. Progress and every decision made along the way:
-   [`docs/platform/PROGRESS.md`](platform/PROGRESS.md); the purchase-flow test run that found
-   this and 25 other defects: [`docs/platform/QA-FINDINGS.md`](platform/QA-FINDINGS.md).
+۱. **هسته بیمه‌گری (core insurance)** — تا اینجا فقط پژوهش؛ بخش تمرکز در پایین را ببینید.
+۲. **پلتفرم خرید آنلاین بیمه** — محصولی که ساخته می‌شود. برنامه‌اش:
+   [`docs/platform/MVP-PLAN.md`](platform/MVP-PLAN.md). MVP یک React SPA فقط-موبایل به‌علاوه
+   یک API روی NestJS است، با محصولات ساده خرید-فوری، پرداخت و کد یک‌بارمصرف ماک، مستقر روی Railway.
+   **این اتفاق افتاده است**: مخزن حالا یک workspace از pnpm است (`apps/api`، `apps/web`،
+   `apps/docs`، `apps/brand`، `apps/site`) و سایت Astro که بالا توضیح داده شد در `apps/docs/` زندگی می‌کند. استقرار سایت
+   مستندات هم — طبق برنامه — دست‌نخورده ماند. M0 تا M5 ساخته شده‌اند — هر سه محصول نرخ می‌دهند و
+   **هر سه سرتاسر و در برابر درگاه ماک قابل خریدند، هم از راه API و هم از دل اپ وب**. پیشرفت کار و
+   تمام تصمیم‌هایی که در مسیر گرفته شده: [`docs/platform/PROGRESS.md`](platform/PROGRESS.md)؛
+   و اجرای آزمایشی مسیر خرید که این و ۲۵ نقص دیگر را پیدا کرد:
+   [`docs/platform/QA-FINDINGS.md`](platform/QA-FINDINGS.md).
 
-## Plan
+## مشارکت با شرکت‌های بیمه
 
-The go-to-market plan for the business itself (which line to enter first, phases,
-validation questions) exists in two places:
+پلتفرم امروز سرتاسر ماک است (پرداخت ماک، PDF صادرشده توسط خودمان). واقعی کردنش یعنی اتصال به
+هسته یک شرکت بیمه و به سنهاب. این مسیر از اینجا شروع می‌شود:
 
-- `docs/PLAN.md` — internal notes, English, the working version.
-- `src/content/topics/barnameh-shoroo-platform.md` — the published Persian version on the
-  site (order 8). Keep the two in sync when the plan changes.
+- [`docs/platform/CARRIER-INTEGRATION.md`](platform/CARRIER-INTEGRATION.md) — طراحی زنده:
+  سه لایه، دو توپولوژی ممکن (اتصال مستقیم به شرکت بیمه در برابر اتصال از پشت شرکت هسته
+  فناوران/ایران‌ای‌آی‌تی)، پیش‌نیازهایی که نداریم، و آنچه در `apps/api` تغییر می‌کند.
+- [`docs/meetings/`](meetings/2026-09-03-bimeh-taavon.md) — صورت هر گفت‌وگو با شرکت‌های بیمه، با
+  شروع از [بیمه تعاون، ۱۴۰۵/۰۶/۱۲](meetings/2026-09-03-bimeh-taavon.md).
 
-## Focus
+## برنامه
 
-The project's stated focus is **هسته بیمه‌گری (Core Insurance)** — specifically what it is
-made of and how each part works, from the perspective of building one. That thread lives in
-`anatomy-of-core-insurance.md`; its open-questions section is the current research backlog.
+برنامه ورود به بازارِ خودِ کسب‌وکار (اول کدام رشته، فازها، پرسش‌های اعتبارسنجی) در دو جا وجود دارد:
 
-## Brand
+- `docs/ROADMAP.md` — **نقشه راه فاز بعد (۱۵ شهریور ۱۴۰۵)**: ترتیب کارها، چهار خط کاری موازی و
+  دروازه‌های تصمیم برای رفتن از MVP ماک به نخستین بیمه‌نامه واقعی. نقطه شروع هر نشست تازه.
+- `docs/PLAN.md` — یادداشت‌های داخلی، نسخه کاری.
+- `src/content/topics/barnameh-shoroo-platform.md` — نسخه فارسی منتشرشده روی سایت (order 8).
+  هر وقت برنامه عوض شد، این دو را با هم هماهنگ نگه دارید.
 
-**2026-08-21 — the name changed to «Bime Gold».** It replaces **bime247 / بیمه ۲۴۷**.
-The new identity is a typography-only lockup: lowercase `bimegold`, `bime` in charcoal,
-`gold` in flat gold, with a gold dot on the *i* standing in for a separate mark.
+## تمرکز
 
-- Approved artwork, cleaned and vectorised: `brand/bime-gold/traced/` — **this is the logo**.
-- Editable re-typesetting in Plus Jakarta Sans Bold, plus icons/tiles/favicon:
-  `brand/bime-gold/svg/` and `png/`.
-- Both are generated by `tools/brand-gold/build.sh`; the spec is
-  `brand/bime-gold/README.md`, published at **https://brand.bimegold.com**
-  (`apps/brand`, Persian with an English toggle, built by `tools/brand-gold/site.py`).
-- Colour: charcoal `#2B2B2B`, gold `#D4AF37`, navy field `#0F172A`.
-  **Flat — no gradient.** The reference render carried a faint metallic gradient; it is
-  deliberately not reproduced.
+تمرکز اعلام‌شده پروژه **هسته بیمه‌گری (Core Insurance)** است — مشخصاً اینکه از چه اجزایی ساخته شده
+و هر جزء چطور کار می‌کند، از زاویه دیدِ کسی که می‌خواهد یکی بسازد. این رشته در
+`anatomy-of-core-insurance.md` دنبال می‌شود؛ بخش پرسش‌های بازِ آن، همان بک‌لاگ فعلی پژوهش است.
 
-Not yet done: nothing in `apps/` has been renamed. The docs site, `apps/web`, the old
-turquoise accent and `apps/web/public/brand/` still carry bime247. Migrating them is a
-separate pass.
+## برند
 
-### Previous identity — bime247 (superseded, kept for context)
+**۱۴۰۵/۰۵/۳۰ — نام به «Bime Gold» تغییر کرد.** جایگزین **bime247 / بیمه ۲۴۷** شد.
+هویت تازه فقط تایپوگرافیک است: `bimegold` با حروف کوچک، `bime` به رنگ زغالی، `gold` به طلایی تخت،
+و یک نقطه طلایی روی *i* که جای نشانه مستقل را می‌گیرد.
 
-The old name was **bime247.com** — «بیمه» plus 24/7. Its identity lives in
-`apps/web/public/brand/`, generated by `tools/brand/build.sh`; that folder's `README.md`
-is its spec (mark, lockups, icons, clear space, colour).
+- آثار تأییدشده، تمیزشده و وکتور: `brand/bime-gold/traced/` — **لوگو همین است**.
+- حروف‌چینی دوباره و قابل ویرایش با Plus Jakarta Sans Bold، به‌علاوه آیکن‌ها/کاشی‌ها/فاویکون:
+  `brand/bime-gold/svg/` و `png/`.
+- هر دو را `tools/brand-gold/build.sh` می‌سازد؛ مشخصات در `brand/bime-gold/README.md` است و روی
+  **https://brand.bimegold.com** منتشر می‌شود (`apps/brand`، فارسی با کلید تغییر به انگلیسی،
+  ساخته‌شده با `tools/brand-gold/site.py`).
+- **قلم: Peyda Pro v4** (۱۹ شهریور ۱۴۰۵) — قلم خانگی همه پروژه‌ها، جای Vazirmatn را گرفت.
+  وب‌فونت متغیر `PeydaWebVF.woff2` (۹۲ کیلوبایت، وزن ۱۰۰ تا ۹۵۰) روی خود سایت میزبانی می‌شود:
+  `apps/docs/public/fonts/`، `apps/web/src/assets/fonts/` (با URL نسبی تا Vite هش‌اش کند و
+  service worker کش‌اش کند) و `tools/brand-gold/fonts/` (برای brand.bimegold.com). از ۲۶ شهریور
+  ۱۴۰۵ هیچ محصولی Vazirmatn بارگذاری نمی‌کند و `@fontsource-variable/vazirmatn` از وابستگی‌ها
+  حذف شد. بسته اصلی در `~/Downloads/Peyda Pro v4-1.0/` است. تنها باقی‌مانده `tools/brand/build.py`
+  است که هویت کنارگذاشته bime247 را می‌ساخت و دیگر اجرا نمی‌شود.
+  چون یک خانواده است، کنتراست تیتر و متن با **وزن** ساخته می‌شود نه با قلم دوم.
+- رنگ: زغالی `#2B2B2B`، طلایی `#D4AF37`، زمینه سرمه‌ای `#0F172A`.
+  **تخت — بدون گرادیان.** رندر مرجع یک گرادیان فلزی محو داشت؛ عمداً بازتولید نشده است.
 
-Decisions worth keeping from it:
+هنوز انجام نشده: هیچ‌چیزی در `apps/` تغییر نام نداده. سایت مستندات، `apps/web`، رنگ تأکید فیروزه‌ای
+قدیمی و `apps/web/public/brand/` هنوز bime247 را با خود دارند. مهاجرت آن‌ها یک پاس جداگانه است.
 
-- **Mark: a closed ring around a shield.** Ring = the 24/7 cycle, shield = the cover.
-  Earlier drafts left a gap at the top of the ring; with two round caps it reads as a
-  power button, so the ring is deliberately unbroken. A second solid cut of the mark
-  (filled disc, shield knocked out) exists purely because the outline version silts up
-  below ~20px.
-- **Colour: firouzeh `#0b7c7c` / `#3fd0d0`.** Persian turquoise, picked to sit clear of
-  Azki's orange and Bimeh.com's blue. This replaced the old `#0f6b5c` teal as `--accent`
-  in the docs site, so the two surfaces share one accent.
-  **The app does not use it yet.** `apps/web/src/styles.css` defines `--color-brand-*` as an
-  oklch ramp whose 600 resolves to `#00897b`, and its own comment marks it a placeholder until
-  the brand book settles. So the docs site and the app are currently *not* the same teal —
-  reconciling them is one edit to that token block, and nothing else follows the value.
-- **Wordmarks are outlined Vazirmatn Bold, not live text**, so the files carry no font
-  dependency. `بیمه۲۴۷` must be shaped as two bidi runs (word RTL, numerals LTR) —
-  HarfBuzz does not run the bidi algorithm, and shaping the whole string RTL silently
-  renders the digits reversed as `۷۴۲`.
-- **The Persian lockup puts the mark on the right**, matching RTL reading order.
+### هویت پیشین — bime247 (کنار گذاشته شد، برای زمینه نگه داشته شده)
+
+نام قدیمی **bime247.com** بود — «بیمه» به‌علاوه ۲۴/۷. هویتش در `apps/web/public/brand/` است که
+`tools/brand/build.sh` می‌سازدش؛ `README.md` همان پوشه، مشخصات آن است (نشانه، لاک‌آپ‌ها، آیکن‌ها،
+فضای خالی، رنگ).
+
+تصمیم‌هایی از آن که ارزش نگه‌داشتن دارند:
+
+- **نشانه: یک حلقه بسته دور یک سپر.** حلقه = چرخه ۲۴/۷، سپر = پوشش. پیش‌نویس‌های اولیه بالای حلقه
+  را باز می‌گذاشتند؛ با دو سر گرد، شکل مثل دکمه پاور خوانده می‌شود، پس حلقه عمداً بی‌شکاف است.
+  یک نسخه توپر از نشانه (دیسک پر، سپر تورفته) صرفاً به این دلیل وجود دارد که نسخه خطی زیر حدود
+  ۲۰ پیکسل به هم می‌ریزد.
+- **رنگ: فیروزه `#0b7c7c` / `#3fd0d0`.** فیروزه ایرانی، انتخاب‌شده تا از نارنجی ازکی و آبی
+  Bimeh.com فاصله بگیرد. این رنگ جای teal قدیمی `#0f6b5c` را به‌عنوان `--accent` در سایت مستندات
+  گرفت تا این دو سطح یک رنگ تأکید مشترک داشته باشند.
+  **اپلیکیشن هنوز از آن استفاده نمی‌کند.** `apps/web/src/styles.css` مقدار `--color-brand-*` را
+  به‌صورت یک نردبان oklch تعریف می‌کند که ۶۰۰ آن به `#00897b` می‌رسد، و کامنت خودش می‌گوید تا
+  نهایی شدن کتاب برند موقتی است. پس سایت مستندات و اپلیکیشن فعلاً *یک* teal نیستند — یکسان کردنشان
+  یک ویرایش روی همان بلوک توکن است و هیچ‌چیز دیگری به آن مقدار وابسته نیست.
+- **وردمارک‌ها Vazirmatn Bold تبدیل‌شده به مسیر هستند، نه متن زنده**، تا فایل‌ها وابستگی به قلم
+  نداشته باشند. `بیمه۲۴۷` باید در دو ران دوسویه شکل بگیرد (کلمه راست‌به‌چپ، ارقام چپ‌به‌راست) —
+  HarfBuzz الگوریتم دوسویه را اجرا نمی‌کند و شکل‌دهی کل رشته به‌صورت راست‌به‌چپ، بی‌صدا ارقام را
+  برعکس و به شکل `۷۴۲` رندر می‌کند.
+- **در لاک‌آپ فارسی، نشانه سمت راست می‌نشیند** تا با ترتیب خواندن راست‌به‌چپ جور باشد.

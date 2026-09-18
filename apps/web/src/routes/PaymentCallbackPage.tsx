@@ -65,14 +65,14 @@ export function PaymentCallbackPage() {
             }
           />
         ) : verify.data ? (
-          <Settled result={verify.data} />
+          <Settled result={verify.data} onRecheck={() => void verify.refetch()} />
         ) : null}
       </div>
     </div>
   )
 }
 
-function Settled({ result }: { result: VerifyPaymentResult }) {
+function Settled({ result, onRecheck }: { result: VerifyPaymentResult; onRecheck: () => void }) {
   if (result.paymentStatus !== 'SUCCEEDED') {
     return (
       <Result
@@ -96,8 +96,9 @@ function Settled({ result }: { result: VerifyPaymentResult }) {
   }
 
   /*
-   * Paid, but no policy yet. The money is safe and support picks it up — saying "successful"
-   * with nothing to show would be worse than saying plainly what is happening.
+   * Paid, but no policy yet. Saying "successful" with nothing to show would be worse than saying
+   * plainly what is happening — and «بررسی دوباره» is not a placebo: verification re-drives
+   * issuance for a paid order that has no policy, so the retry is the recovery path itself.
    */
   if (!result.policyId) {
     return (
@@ -107,7 +108,12 @@ function Settled({ result }: { result: VerifyPaymentResult }) {
         body="بیمه‌نامه شما در حال صدور است. به‌محض آماده شدن پیامک می‌شود."
         refId={result.refId}
         amount={result.amount}
-        actions={<PoliciesLink />}
+        actions={
+          <>
+            <Primary onClick={onRecheck}>بررسی دوباره</Primary>
+            <QuietLink to="/policies">بیمه‌نامه‌های من</QuietLink>
+          </>
+        }
       />
     )
   }
@@ -197,20 +203,13 @@ const Primary = ({ children, onClick }: { children: React.ReactNode; onClick: ()
   </button>
 )
 
-const HomeLink = () => (
+const QuietLink = ({ to, children }: { to: string; children: React.ReactNode }) => (
   <Link
-    to="/"
+    to={to}
     className="flex min-h-[44px] w-full items-center justify-center text-sm font-medium text-brand-600"
   >
-    بازگشت به خانه
+    {children}
   </Link>
 )
 
-const PoliciesLink = () => (
-  <Link
-    to="/policies"
-    className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-brand-600 text-[0.95rem] font-semibold text-white"
-  >
-    بیمه‌نامه‌های من
-  </Link>
-)
+const HomeLink = () => <QuietLink to="/">بازگشت به خانه</QuietLink>

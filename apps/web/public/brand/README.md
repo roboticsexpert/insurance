@@ -1,4 +1,4 @@
-# Generated — do not edit
+# تولیدشده — ویرایش نکنید
 
-Copied from `brand/bime-gold/traced/` by `tools/brand-gold/sync.sh`.
-Change the artwork there and re-run `tools/brand-gold/build.sh`.
+از `brand/bime-gold/traced/` توسط `tools/brand-gold/sync.sh` کپی شده است.
+اثر را همان‌جا عوض کنید و `tools/brand-gold/build.sh` را دوباره اجرا کنید.

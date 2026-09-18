@@ -4,6 +4,7 @@ import { AppException } from '../common/app.exception'
 import { NotificationsService } from '../notifications/notifications.service'
 import { OrdersService } from '../orders/orders.service'
 import { PrismaService } from '../prisma/prisma.service'
+import { PrismaRatingLookups } from '../rating/rating.lookups'
 import { RatingRegistry } from '../rating/rating.registry'
 import { ENV } from '../config/config.module'
 import type { Env } from '../config/env'
@@ -25,6 +26,7 @@ export class PoliciesService {
     private readonly prisma: PrismaService,
     private readonly orders: OrdersService,
     private readonly registry: RatingRegistry,
+    private readonly lookups: PrismaRatingLookups,
     private readonly notifications: NotificationsService,
     @Inject(ENV) private readonly env: Env,
   ) {}
@@ -63,6 +65,7 @@ export class PoliciesService {
         branchCount: policy.insurer.branchCount,
       },
       insured: (snapshot?.insured as PolicyDetailDto['insured']) ?? [],
+      risk: (snapshot?.risk as PolicyDetailDto['risk']) ?? [],
       coverages: (snapshot?.coverages as PolicyDetailDto['coverages']) ?? [],
       lineItems: (snapshot?.lineItems as PolicyDetailDto['lineItems']) ?? [],
       documentUrl: `/policies/${policy.id}/document`,
@@ -151,14 +154,36 @@ export class PoliciesService {
 
     if (!order) throw new AppException('NOT_FOUND')
     if (order.policy) return { policyId: order.policy.id }
-    if (order.status !== OrderStatus.PAID) throw new AppException('ORDER_INVALID_TRANSITION')
 
-    await this.orders.transition(order.id, OrderStatus.ISSUING, OrderStatus.PAID)
+    /*
+     * ISSUE_FAILED is re-drivable, and this is what makes the state machine's own
+     * `ISSUE_FAILED → ISSUING` edge real. Without it a paid order that failed to issue was
+     * stuck for good: money taken, no policy, and no path back.
+     */
+    if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.ISSUE_FAILED) {
+      throw new AppException('ORDER_INVALID_TRANSITION')
+    }
+
+    await this.orders.transition(order.id, OrderStatus.ISSUING, order.status)
 
     try {
       const { insurer, quote } = order.quoteOffer
       const strategy = this.registry.get(quote.product.type)
-      const period = strategy.coveragePeriod(strategy.parse(quote.input, { now }))
+      /*
+       * `decode`, not `parse`. The clock-relative admission rules were answered when the order
+       * was accepted; re-asking them here means a same-day-departure order whose payment settles
+       * after midnight can never issue — the money is already taken and the answer has changed
+       * underneath it. What is being re-derived is the coverage period, which depends only on
+       * the input's shape.
+       */
+      const decoded = strategy.decode(quote.input)
+      const period = strategy.coveragePeriod(decoded)
+
+      /*
+       * Resolved now, into the snapshot — never joined at render time. A vehicle model withdrawn
+       * from the catalog next year must still print on the policy that was sold this year.
+       */
+      const risk = (await strategy.riskSummary?.(decoded, this.lookups)) ?? []
 
       const policyNumber = await this.nextPolicyNumber(
         insurer.id,
@@ -188,6 +213,7 @@ export class PoliciesService {
             insurerName: insurer.name,
             insurerSlug: insurer.slug,
             insured: order.insuredSnapshot,
+            risk,
             quoteInput: quote.input,
             coverages: order.quoteOffer.coverages,
             lineItems: order.quoteOffer.lineItems,

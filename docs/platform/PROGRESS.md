@@ -1,1127 +1,1232 @@
-# Bime247 MVP — build progress
+# MVP بیمه گلد — پیشرفت ساخت
 
-The single source of truth for **what is done and what is next**. One line = one unit of
-work small enough to finish and verify in a single sitting.
+منبع یگانه حقیقت برای **آنچه انجام شده و آنچه بعدی است**. هر خط = یک واحد کار، آن‌قدر کوچک که در
+یک نشست تمام و بررسی شود.
 
-Legend: `[x]` done · `[ ]` next · `[!]` blocked (reason on the line)
+راهنما: `[x]` انجام‌شده · `[ ]` بعدی · `[!]` مسدود (دلیلش روی همان خط)
 
-Domains: **app.bime247.com** (web) · **api.bime247.com** (API).
-Full design: [`MVP-PLAN.md`](MVP-PLAN.md).
-
----
-
-## M0 — monorepo & skeleton
-
-- [x] pnpm workspace, root scripts, prettier/editorconfig, docker-compose Postgres (port 5433)
-- [x] Astro research site moved to `apps/docs` — `insurance.zisef.ir` deploy unchanged
-- [x] Prisma schema: full MVP data model (identity, catalog, rating, quote, order, payment, policy)
-- [x] Iranian validators (national code, mobile, plate) + product zod schemas, inside the API
-- [x] No shared package — API owns validation, web keeps its own small display helpers
-- [x] API bootstrap: zod-validated env config, PrismaModule, pino logging, helmet + CORS,
-      global error filter emitting `{ code, messageFa, requestId }`, ZodValidationPipe, `/health`
-- [x] First migration created and applied; `pnpm db:migrate` works end to end
-- [x] Web scaffold: Vite + React + TS, Tailwind v4 RTL, Vazirmatn self-hosted, mobile app
-      shell (`max-w-[430px]`, safe-area, bottom tab bar), router, TanStack Query, API client
-- [x] `.claude/launch.json` entries for api + web; root `README.md`
-
-## M1 — auth (mobile + OTP)
-
-- [x] Notifications module: `SmsSender` interface, `ConsoleSmsSender`, `SmsLog` persistence
-- [x] `POST /auth/otp/request` — argon2-hashed code, 2 min TTL, throttle 1/60s per mobile,
-      5/hour per mobile, 20/hour per IP; `devCode` in the response outside production only
-- [x] `POST /auth/otp/verify` — real code **or** the universal `1234`; boot guard that refuses
-      to start in production with `AUTH_MOCK_OTP` set unless `ALLOW_MOCK_AUTH_IN_PROD=true`
-- [x] Refresh rotation with family-reuse detection; `POST /auth/refresh`, `POST /auth/logout`;
-      cookie `Domain=.bime247.com; SameSite=Lax; Secure` in production
-- [x] `JwtAuthGuard`, `OptionalJwtGuard`, `@CurrentUser()`; `GET /me`, `PATCH /me`
-- [x] e2e: login happy path, wrong code, expired code, attempt lockout, rate limit
-- [x] Web: `/auth` mobile entry screen
-- [x] Web: `/auth/otp` code entry, resend countdown, auth store, silent-refresh interceptor
-- [x] Web: `/auth/profile` first-login completion + protected-route guard
-
-## M2 — catalog, rating engine, quotes
-
-- [x] Catalog module: `GET /catalog/products`, `/products/:slug`, `/insurers`
-- [x] Reference data: `GET /catalog/reference/:key` (cities, vehicle models, travel zones)
-- [x] Seed script (idempotent): insurers, products, offerings, cities, travel rate tables —
-      every table tagged `data.meta.source: "PLACEHOLDER"`
-- [x] Rating engine core: strategy registry, pure `rate(input, table)`, `explain[]` trace
-- [x] Travel rating strategy + unit tests against fixture tables (zone × duration × age × limit)
-- [x] Populate `Product.fromAmount` from the rating engine (seed leaves it null on purpose —
-      a teaser price must be derived, never authored)
-- [x] `POST /quotes` + `GET /quotes/:id` — anonymous allowed, expiry, sorted offers, badges
-- [x] Web: home screen — product cards and the «از … تومان» teaser
-- [x] Web: travel wizard — one question group per screen, progress bar, sticky action bar
-- [x] Web: quote comparison — insurer cards, live expiry countdown, «نمونه» sample-rate badge
-- [x] Web: offer detail — full coverage table and premium breakdown
-
-## M3 — checkout, mock payment, policy
-
-- [x] Orders module: state machine (illegal transitions throw), idempotency key, 30 min expiry
-- [x] `PaymentGateway` interface + `MockGateway` (ZarinPal-shaped two-step choreography)
-- [x] Shaparak-style mock bank page served by the API: pay / fail / cancel
-- [x] Callback + **idempotent** verify — the only place an order becomes PAID
-- [x] Policy issuance: numbering sequence per insurer, `dataSnapshot`, async-shaped code path
-- [x] E-policy HTML document + print stylesheet
-- [x] `GET /policies`, `GET /policies/:id` (the `/document` route landed with the renderer)
-- [x] Web: checkout — insured details confirmation, summary, pay button
-- [x] Web: `/payment/callback` result screen (success / failure / pending)
-- [x] Web: my policies (active / expired tabs) + policy detail
-- [x] Web: active-policy strip on the home screen (needs `GET /policies` from M3)
-- [x] e2e: quote → order → mock pay → policy issued, including replayed callback
-
-## M4 — motor third-party liability
-
-- [x] Motor TPL rating strategy: دیه base, group/usage factors, discount ladder,
-      property tier, VAT and statutory levies as separate line items + unit tests
-- [x] Vehicle model seed data
-- [x] Web: Iranian plate input component
-- [x] Web: motor wizard (the hardest form in the app) — needs the plate field above, which is
-      why the two are in this order and not the plan's
-- [x] Web: saved vehicles under profile (needed an API — see notes)
-
-## M5 — home fire
-
-- [x] Home fire rating strategy + tests; city quake-zone seed (already seeded in M2)
-- [x] Web: home fire wizard
-
-## M6 — polish & deploy
-
-- [x] PWA: manifest, icons, installable, offline shell
-- [x] Designed empty / error / offline states, skeleton loaders, screen transitions
-- [x] Dockerfile for the API (`apps/api/Dockerfile` + root `railway.json`)
-- [!] Railway staging + production environments — needs the user's explicit go-ahead: provisions paid infrastructure on their account
-- [!] `api.bime247.com` on Railway (grey-cloud CNAME → cert issued → proxy on, SSL full-strict) — blocked with the two below: public DNS on a real domain
-- [!] `app.bime247.com` static deploy (Cloudflare Workers assets, same pattern as the docs site) — same: publishes the app publicly
-- [x] `docs/PROJECT.md` and `MVP-PLAN.md` updated to match what was actually built
+دامنه‌ها: **app.bimegold.com** (وب) · **api.bimegold.com** (API) — هر دو روی Railway بالا هستند.
+طراحی کامل: [`MVP-PLAN.md`](MVP-PLAN.md).
 
 ---
 
-## Notes & decisions made during the build
+## M0 — مونوریپو و اسکلت
 
-- **2026-08-21 — the brand book is published at `brand.bimegold.com`**, Persian with an
-  English toggle, as its own Cloudflare Worker (`apps/brand`). It is *generated* from
-  `brand/bime-gold/` by `tools/brand-gold/site.py` rather than written as a page, so it
-  cannot drift from the package: the logos it displays and the archive it offers are the
-  same files. Copy is in `site_copy.py`, both languages beside each other.
-  Two things worth remembering. **Inlining the wordmark at every call site cost 327 KB of
-  HTML** — sixteen copies of the same 19 KB outline; one `<symbol>` plus `<use>` took it to
-  82 KB (13 KB gzipped). And **RTL silently reverses Latin technical strings**: `#D4AF37`
-  rendered as `D4AF37#`, `4.9 : 1` as `1 : 4.9`, `--color-brand-600` backwards. The bidi
-  algorithm is doing exactly what it should with a paragraph marked Persian; the fix is
-  `direction:ltr; unicode-bidi:isolate` on hex codes, tokens, ratios and sizes. Anything
-  Latin-and-technical inside Persian copy needs it.
-- **2026-08-21 — the `bi` monogram was pulled back to just the browser tab.** It had been
-  used for every icon and for the app header, which meant the product introduced itself as
-  «bi». The full lockup goes everywhere it can be read. Where that line falls was measured,
-  not guessed: the *horizontal* lockup holds to 16px tall because it is allowed to be 53px
-  wide, but a square icon constrains width instead, and there the *stacked* lockup holds to
-  about 48px, is soft at 32 and unreadable at 16. So app icons, apple-touch and maskable all
-  carry the stacked lockup, `favicon.ico` carries the monogram at 16/32 and the stacked
-  lockup at 48 — `.ico` is the one format that can hold different artwork per size — and
-  only `favicon.svg` is monogram-only. `BrandLogo` joins `BrandMark` as a generated
-  component; inlining both costs +3.7kB gzip and buys `currentColor` letterforms.
-  One trap on the way in: an `<svg>` that is a flex item stretches to full width, and
-  `preserveAspectRatio` then centres the artwork inside it — the auth screen's logo looked
-  centred for no visible reason until `self-start` went on.
-- **2026-08-21 — `bimegold.com` is live; the cutover broke once, on ordering.** `app.` and
-  `api.bimegold.com` are Railway custom domains, `docs.bimegold.com` is a Cloudflare Worker.
-  The app came up branded and *empty*: «ارتباط با سرور برقرار نشد» on every product. The
-  cause is worth remembering because nothing about it looks like a CORS bug from the outside
-  — the preflight answers `204`, it just omits `access-control-allow-origin`, so the browser
-  drops the response and the app reports a network failure. `VITE_API_URL` is baked into the
-  web image at build time while `CORS_ORIGINS` is read by the API at run time, so pushing the
-  Dockerfile change before setting the variables left the new bundle calling a host the API
-  would not answer for. Fixed by setting `WEB_URL`/`API_URL`/`CORS_ORIGINS`/`COOKIE_DOMAIN`
-  and redeploying the API. It then broke a **second** time on the same symptom for a
-  different reason: the `web` service carries its own `VITE_API_URL` Railway variable, and
-  Railway feeds service variables into the Docker build as build args, so it silently beat
-  the `ARG VITE_API_URL=…` default in `apps/web/Dockerfile`. Editing the Dockerfile did
-  nothing; the bundle kept calling `api.bime247.com`, which had just been detached. Read
-  the deployed bundle, not the deploy status: `curl` the `/assets/index-*.js` the live HTML
-  names and grep it for the API host. `COOKIE_DOMAIN` is the same trap one step later: a value that does
-  not match the host is dropped silently, so the login succeeds and the session dies on the
-  first refresh — verified instead by reading `Set-Cookie` off a real mock login
-  (`bimegold_rt=…; Domain=.bimegold.com`). Old hostnames detached. The `app`/`api` records on
-  the `bime247.com` zone are now dangling and should be deleted there.
-- **2026-08-21 — the brand became «Bime Gold» and the domain became `bimegold.com`.**
-  The approved artwork is a raster render; `tools/brand-gold/trace.py` knocks its white
-  background out to real alpha, trims the margin, and traces it to vector, then builds every
-  lockup and icon from those outlines and renders each PNG *from* the SVG so raster and vector
-  cannot drift. `sync.sh` copies the package into both apps' `public/brand/` and regenerates
-  `apps/web/src/components/BrandMark.tsx`; those are generated, do not hand-edit them.
-  Decisions worth keeping:
-  - **No gradient.** The render carries a faint metallic sheen; the identity is flat `#D4AF37`.
-    Reproducing the sheen was tried first and is what the de-matte maths originally broke on —
-    a fixed reference ink colour makes α < 1 inside a shaded stroke, which punched holes in the
-    trace. The fix was to estimate the ink colour *locally* from each glyph's interior.
-  - **Gold is not a text colour.** `#D4AF37` on white is 2.1:1. The docs site's `--accent` is
-    `#8A6D1F` in light and `#E5C158` in dark; the app's `--color-brand-*` ramp holds the logo's
-    hue at 90 and walks lightness so `bg-brand-600` + white stays at 4.87:1. `--color-gold` is
-    the exact logo gold, for marks only. This *raised* the old teal's contrast, it did not
-    trade it away.
-  - **The mark is `bi`** — the first two letters plus the gold tittle, split out of the traced
-    wordmark by connected component. The full lockup dies below 16px; the monogram is legible
-    at 16.
-  - **The docs Worker changed Cloudflare accounts.** A Workers custom domain must sit on the
-    same account as its zone, and `bimegold.com` is on `022e4e5b…` while the old
-    `insurance.zisef.ir` was on `45d1cc1b…`. So `docs.bimegold.com` is a new Worker
-    (`bimegold-docs`), not a re-routed one. The old Worker still answers the old hostname.
-  - **`bime247` → `bimegold` everywhere except the local Postgres**, which keeps its old user
-    and database name so existing dev volumes still mount. The refresh cookie is now
-    `bimegold_rt`, which signs every session out once.
-  - **Railway DNS is the manual step.** The CLI attaches a custom domain but will not write the
-    CNAME/TXT, and the deploy token only has Cloudflare `zone:read`. Records are in
-    [`DEPLOY.md`](DEPLOY.md); the cutover order matters because `VITE_API_URL` is baked at
-    image build time.
-- **2026-08-20** — `packages/shared` removed. Persian/money formatting is web-only, `roundPremium`
-  is API-only, and product validation belongs to the API as the authority. The web does light
-  client-side checks and renders the API's field errors. No cross-package build ordering.
-- **2026-08-20** — Postgres is on host port **5433** so it cannot collide with a local 5432.
-- **2026-08-20** — `apps/web/public/brand/mark.svg` arrived from outside this session; kept as
-  the working brand mark until a real one is decided.
-- **2026-08-20** — `@nestjs/config` dropped. A 15-line `ConfigModule` providing one zod-parsed
-  object is fully typed and needs no `get('KEY')` string lookups. Import `ENV` to inject it.
-- **2026-08-20** — `AppException('CODE')` is the only exception thrown on purpose. Status and
-  Persian wording come from `ERROR_STATUS` / `ERROR_MESSAGE_FA` in `common/errors.ts`, so a
-  throw site only names a code. Add new codes to all three tables together.
-- **2026-08-20** — `loadEnv()` is memoised and throws a multi-line report listing every invalid
-  var at once. Its production guards are unit-tested: mock OTP, example secrets, empty CORS.
-- **2026-08-20** — Nest 11 + Express 5 prints two `Unsupported route path: "/api/v1/*"` warnings
-  at boot, from `setGlobalPrefix({ exclude })`. It auto-converts and works; cosmetic only.
-- **2026-08-20** — `/health` and `/health/ready` sit outside the `api/v1` prefix on purpose, so
-  Railway's probes never break on an API version bump.
-- **2026-08-20** — Migration `20260819232119_init` (395 lines): 17 tables, 5 enums. Verified by
-  round-tripping real rows through the generated client — Persian text, jsonb, cascade delete,
-  and a `P2002` on a duplicate `Offering` all behave. The four unique indexes the money path
-  depends on exist: `Order.idempotencyKey`, `Payment.authority`, `Policy.policyNumber`, `User.mobile`.
-- **2026-08-20** — `apps/api` is CommonJS, so **`tsx` scripts cannot use top-level await**. The
-  seed script must wrap its body in `async function main()`. This bites silently — esbuild fails
-  with a wall of "Top-level await is currently not supported" lines.
-- **2026-08-20** — Removed the deprecated `package.json#prisma` block (gone in Prisma 7). It only
-  declared the seed command, and it pointed at a file that does not exist yet. Consequence:
-  `prisma migrate reset` no longer auto-seeds — run `pnpm db:seed` after a reset. Set this up
-  properly with `prisma.config.ts` when the seed script lands in M2.
-- **2026-08-20** — Staying on **Prisma 6.19** for the MVP although 7.9 is out. Prisma 7 is ESM-first
-  and relocates the generated client, which fights a CommonJS Nest build. Revisit after M6.
-- **2026-08-20** — Web stack: Vite 6 + React 19 + React Router 7 + TanStack Query 5 + Tailwind 4
-  (`@tailwindcss/vite`). Brand tokens live in `@theme`; semantic surfaces are plain CSS variables
-  on `:root` re-exported through `@theme inline`, so light values always exist and only the dark
-  block overrides them.
-- **2026-08-20** — **No icon library and no date library.** Six inline SVGs cover the app, and
-  Jalali dates come from `Intl.DateTimeFormat('fa-IR-u-ca-persian')` — built in, already emits
-  Persian digits, cannot drift. Verified against Nowruz: `2026-03-21 → ۱ فروردین ۱۴۰۵`.
-- **2026-08-20** — Persian number typography: thousands separator is **٬** (U+066C) and the decimal
-  is **٫** (U+066B), not a Latin `.` or a Persian comma. `toFixed()` emits a Latin dot, so any new
-  decimal formatting must map it. Fixed in both `apps/web/src/lib/fa.ts` and
-  `apps/api/src/common/fa.ts` — the two copies must stay in agreement.
-- **2026-08-20** — Bundle baseline: **318 KB JS / 102 KB gzip**, CSS 16 KB / 4 KB gzip. Vazirmatn is
-  split by subset, so Persian users fetch the 46 KB arabic file only. Watch this number.
-- **2026-08-20** — Browser pane: clicking a `ref_N` timed out while the pane was hidden;
-  `navigate()` to the URL is the reliable way to move between routes when verifying.
-- **2026-08-20** — **`tsx`/esbuild cannot run NestJS.** esbuild does not implement
-  `emitDecoratorMetadata`, so the DI graph resolves to `undefined` at every injection point.
-  Consequences: the M2 seed script must talk to `PrismaClient` directly rather than booting a
-  Nest context, and any throwaway integration probe has to run against `dist/` after `nest build`
-  (or through ts-jest, which does emit the metadata).
-- **2026-08-20** — `SmsLog` stores a **redacted** body. Each template returns `{ body, logBody }`;
-  `OTP_LOGIN` masks the code as `****`. Hashing the code in `OtpChallenge` would be pointless if
-  the plaintext sat in an audit table two minutes long. Any new template carrying a credential
-  must set `logBody`.
-- **2026-08-20** — The OTP SMS uses **Latin digits** — the only place in the product that does.
-  iOS and Android only offer one-tap OTP autofill for codes they can recognise, and they do not
-  recognise Persian numerals. Note the brand «بیمه ۲۴۷» still contains Persian digits, so a test
-  asserting "no Persian digits in the body" is wrong; assert about the code instead.
-- **2026-08-20** — `NotificationsService.send()` **never throws**. A dead SMS provider must not
-  fail an issued policy; failures land in `SmsLog` with `status=FAILED` for reconciliation.
-- **2026-08-20** — `ConsoleSmsSender` prints the live OTP to the log by design. `SMS_PROVIDER` is
-  boot-validated, and it must never be `console` in production.
-- **2026-08-20** — `POST /auth/otp/request` **never looks the user up**. The response is identical
-  whether the number has an account or not, so the endpoint cannot enumerate customers. The `User`
-  row is created at verify time. Keep it that way when writing verify.
-- **2026-08-20** — `devCode` is gated on `NODE_ENV !== 'production'`, **not** on `AUTH_MOCK_OTP`.
-  Returning a live code over the wire is worse than the universal-code shortcut, so it must not
-  ride along on the same flag.
-- **2026-08-20** — Issuing a code invalidates every older unconsumed challenge for that mobile,
-  both writes inside one `$transaction`. Without it, every code issued within the 2-minute TTL
-  stays valid at once and the effective guess budget multiplies.
-- **2026-08-20** — `app.set('trust proxy', true)` plus `getClientIp()` preferring `CF-Connecting-IP`.
-  Without it every user shares one rate-limit bucket behind Cloudflare→Railway. **Caveat:** that
-  header is only trustworthy while the origin is reachable *exclusively* through Cloudflare — if
-  the Railway host is ever exposed directly, per-IP limits become spoofable.
-- **2026-08-20** — Bug found by calling the endpoint rather than reading the code: the cooldown
-  message rendered `60 ثانیه` in Latin digits. **Any number inside a `messageFa` must go through
-  `toPersianDigits`.** Unit tests asserting on that copy must expect Persian digits too.
-- **2026-08-20** — argon2id at OWASP's baseline (m=19456, t=2, p=1). A 4-digit code has only
-  10,000 possibilities, so hashing cannot make an offline attack impossible — it keeps a leaked
-  table from handing over live codes for free. The real defence is the 5-attempt burn plus the
-  2-minute TTL.
-- **2026-08-20** — **The mock `1234` is not a master key.** `verify()` requires an active, unexpired
-  challenge even when the shortcut is on, so logging in still costs an OTP request and stays behind
-  the full throttle ladder. Without that check, `1234` alone would log anyone in as anyone.
-- **2026-08-20** — Refresh tokens are 256 random bits hashed with **SHA-256, not argon2**. Argon2
-  exists to make *guessable* secrets expensive; against this much entropy it buys nothing and would
-  add ~50 ms to every refresh. Verified: the stored value is `sha256(cookie)`, so a database leak
-  yields no usable session.
-- **2026-08-20** — Refresh cookie: `HttpOnly; SameSite=Lax; Path=/api/v1/auth`, `Secure` only in
-  production, 30-day expiry. `Lax` is possible because app/api share the registrable domain
-  `bime247.com`. Path-scoping means it is never sent to catalog or quote endpoints.
-- **2026-08-20** — `AuthResponse.isNewUser` lets the client route a first-time login straight to
-  profile completion without an extra round trip.
-- **2026-08-20** — The verify DTO normalises Persian digits, so `۱۲۳۴` typed on a Persian keyboard
-  works. Verified end to end.
-- **2026-08-20** — Refresh tokens are **single-use**. Presenting one twice means someone holds a
-  copy they should not — and there is no way to tell whether it was the user's or a thief's — so
-  the entire family is revoked and both are forced to log in again. Verified over HTTP:
-  A→B→C rotated fine, replaying A returned 401 *and* killed C, which had been valid a second
-  earlier. All three rows end up revoked.
-- **2026-08-20** — The rotation claim is an atomic `updateMany` guarded on `revokedAt: null`.
-  Two tabs refreshing at once both read the token as live; whoever updates zero rows is treated
-  as a replay. Without that guard both would rotate and leave two live tokens in one family.
-- **2026-08-20** — A failed refresh **clears the cookie**, so a dead session does not leave a
-  cookie behind that fails on every subsequent request.
-- **2026-08-20** — `POST /auth/logout` revokes the whole family and is idempotent: `204` whether
-  the token is live, already revoked, or absent entirely.
-- **2026-08-20** — `JwtAuthGuard` verifies the **signature only** and does not load the user, so a
-  deleted or blocked account keeps working until its access token expires — at most 15 minutes.
-  The trade is one fewer query per authenticated request. If immediate blocking is ever needed,
-  add the lookup in `JwtAuthGuard.verify`.
-- **2026-08-20** — `OptionalJwtGuard` treats an **invalid** token as no token, not as a rejection.
-  This is what lets the quote wizard run anonymously: a stale token in a long-open tab must never
-  break anonymous quoting. It is the guard the M2 quote endpoints need.
-- **2026-08-20** — `@CurrentUser()` throws `UNAUTHORIZED` when `req.user` is missing, so forgetting
-  `@UseGuards` fails loudly on the first request instead of handing the handler `undefined`.
-  Use `@OptionalUser()` on routes where absent is a legitimate answer.
-- **2026-08-20** — `JwtModule.register({ global: true })` in `AuthModule`, so guards outside that
-  module can inject `JwtService` without `UsersModule` ↔ `AuthModule` becoming a circular import.
-- **2026-08-20** — Profile completion is all-or-nothing: the schema requires every field, so
-  `isProfileComplete` is simply set true. Checkout depends on that flag and a half-filled profile
-  would fail at the worst possible moment.
-- **2026-08-20** — `birthDate` is `@db.Date` and round-trips as `1990-05-20` with no timezone
-  drift. Verified over HTTP and in the row.
-- **2026-08-20** — e2e harness lives in `apps/api/test/`. Run with `pnpm test:e2e` (root) — it needs
-  Postgres up. `globalSetup` creates **`bime247_test`** if missing (catching `42P04`) and runs
-  `migrate deploy` against it; `env-setup.ts` repoints `DATABASE_URL` in every worker *before*
-  `loadEnv()` runs. The suite `TRUNCATE`s between tests, so it must never point at the dev
-  database — verified: 4 users in `bime247`, 0 in `bime247_test`.
-- **2026-08-20** — e2e boots the real `AppModule` with the same middleware and prefix as `main.ts`,
-  so it exercises what the deployed process runs rather than a stand-in.
-- **2026-08-20** — Time-dependent limits are tested by **backdating `createdAt`** rather than
-  sleeping, which keeps the whole suite at ~3 s.
-- **2026-08-20** — Bug found by the suite, in the test helper rather than the app: `cookieFrom`
-  used a truthiness check, so a *cleared* cookie (`name=`, empty value) read as "no cookie at
-  all". Needs an explicit `!== undefined`. Worth remembering wherever empty-string values matter.
-- **2026-08-20** — Unit and e2e are separate commands on purpose: `pnpm test` needs nothing,
-  `pnpm test:e2e` needs Docker. CI can run both; a quick local loop only needs the first.
-- **2026-08-20** — Phone entry holds the value in **Latin digits** and renders it in **Persian**.
-  The mapping is 1:1 with no grouping separators, so the string length never changes and the
-  caret does not jump when editing mid-number — which is exactly what breaks if you ever add
-  separators to this field.
-- **2026-08-20** — Client-side validation is deliberately thin (`lib/mobile.ts`): enough for
-  instant feedback, with the API as the authority. A field-level message from the API always
-  wins over the local hint. Confirmed live — the server's «برای دریافت کد جدید ۴۱ ثانیه صبر
-  کنید.» renders verbatim, Persian digits and all, with no client-side string building.
-- **2026-08-20** — Auth screens live **outside** `AppShell`, so no bottom tab bar during a linear
-  task. `AuthLayout` is the shared frame for all three auth screens.
-- **2026-08-20** — Browser-pane quirk: `computer left_click` on a `ref` times out while the pane
-  is hidden. `form.requestSubmit()` via `javascript_tool` exercises the same handler and works.
-  Use `Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set` to set controlled
-  React inputs — assigning `.value` directly does not notify React.
-- **2026-08-20** — **The silent refresh must be single-flight, and this is not optional.** The API
-  revokes the whole token family when a refresh token is presented twice, so two components
-  hitting 401 together — or React StrictMode double-mounting `AuthProvider` in dev — would look
-  exactly like a stolen-token replay and log the user out. `refreshSession()` in `lib/api.ts`
-  shares one promise across callers. Verified: a full page reload issues **exactly one**
-  `/auth/refresh`. Anything that adds a second refresh path must go through that function.
-- **2026-08-20** — The access token lives in a module variable, never `localStorage`, so an XSS
-  bug cannot walk off with a 30-day session. The session survives reload because the httpOnly
-  refresh cookie does — verified, including that logout does **not** resurrect on reload.
-- **2026-08-20** — An anonymous cold load always spends one `/auth/refresh` that 401s. Accepted:
-  the alternative is a "probably logged in" flag in localStorage, which is state that can lie.
-- **2026-08-20** — OTP entry is **one input with `autocomplete="one-time-code"`**, not four boxes.
-  Four boxes look better and cost the user one-tap SMS autofill on iOS and Android; that is also
-  why the OTP is sent in Latin digits. It auto-submits on the fourth digit, guarded by a ref so a
-  re-render or autofill event cannot fire it twice.
-- **2026-08-20** — After login the OTP screen goes to `/`. The profile-completion redirect belongs
-  to the route guard in the next task, not to this screen.
-- **2026-08-20** — **M1 complete.** Login works end to end in the browser: entry → OTP → profile
-  completion → guarded pages, session surviving reload.
-- **2026-08-20** — Jalali↔Gregorian (`lib/jalali.ts`) uses **`Intl` as the source of truth and
-  searches for the inverse** rather than implementing the Persian calendar a second time. Two
-  hand-rolled implementations would eventually disagree on a leap year; this one cannot drift.
-  Verified: 1462 days round-tripped exactly across 1399/1400/1403/1405, Esfand is 30 days in
-  1399 and 29 in 1400, and `1400/12/30` correctly returns null. `۲ خرداد ۱۳۶۹ → 1990-05-23`
-  confirmed in the database.
-- **2026-08-20** — Birth date is **three controls** (day input, month *name* select, year input),
-  not a text field with separators. Parsing free-text dates on a phone keyboard means fighting
-  separators and digit systems for nothing, and people remember month names, not numbers.
-- **2026-08-20** — `RequireAuth` renders a spinner while `status === 'loading'`. Redirecting during
-  the cookie-restore window would bounce a signed-in user to the login screen on every refresh.
-  `requireCompleteProfile={false}` on `/auth/profile` itself, or the redirect chases its own tail.
-- **2026-08-20** — Bug caught while wiring: `TextField` spread `{...props}` *before* its own
-  `className`, silently dropping any className a caller passed. It now merges. Watch for this in
-  any new wrapper component.
-- **2026-08-20** — Added `Product.fromAmount` (migration `20260820123526_product_from_amount`): the
-  cheapest published premium in Rial, for the «از … تومان» teaser. **Denormalised on purpose** —
-  rating every product against every insurer just to draw a home-screen card would be absurd.
-  The seed must populate it whenever rate tables change, and it stays null rather than showing
-  an invented price.
-- **2026-08-20** — Catalog is public and unauthenticated (browsing has to work before login) and
-  carries `Cache-Control: public, max-age=60, stale-while-revalidate=300`, so behind Cloudflare
-  the home screen is an edge hit rather than a query per visitor.
-- **2026-08-20** — An **inactive** product returns 404, indistinguishable from a missing one, and
-  inactive insurers are filtered out of a product's insurer list. Verified with both an inactive
-  product and an inactive insurer present in the table.
-- **2026-08-20** — `faq` is jsonb, so it arrives as `unknown`. Malformed entries are dropped, never
-  thrown on — one bad row must not take the product page down. Tested against a string, a null,
-  and an array of junk.
-- **2026-08-20** — Gotcha: **`docker exec` needs `-i`** to forward a heredoc to `psql`. Without it
-  the SQL is silently discarded and psql exits 0, so a seeding step "succeeds" while inserting
-  nothing. Cost a confusing round of empty API responses.
-- **2026-08-20** — One endpoint, eleven keys, one `ReferenceItem { value, labelFa, groupFa?, meta? }`
-  shape — so the web renders every dropdown with a single component. Lists come back whole rather
-  than paged: fetch once, cache, filter locally beats a request per keystroke on a phone. `q`
-  exists for lists that outgrow that; results are capped at 500.
-- **2026-08-20** — **Persian alphabetical order is not Unicode code-point order.** پ is U+067E and
-  س is U+0633, so Postgres ordered `سمند` before `پژو ۲۰۶` — backwards to any Persian speaker.
-  Ordering now happens in the app with `Intl.Collator('fa')`, which is correct regardless of the
-  database's collation (Railway's Postgres will not have a Persian locale). **Any new
-  user-facing list must sort this way, not with `ORDER BY` alone.**
-- **2026-08-20** — Search terms go through `normalizeFa`, so `كرمان` typed with an Arabic ك matches
-  `کرمان` stored with a Persian ک. Verified over HTTP. The same applies to any future text search
-  over Persian columns.
-- **2026-08-20** — `city.meta.quakeZone` rides along with the city option, because the home-fire
-  earthquake add-on is priced off it and the form should not need a second lookup.
-- **2026-08-20** — Seed is **idempotent**: every write upserts on a natural unique key. Verified by
-  running it three times — 5 insurers, 3 products, 13 offerings, 5 rate tables, 40 cities,
-  30 vehicle models, unchanged each run. Bump `RATE_TABLE_VERSION` in `seed.ts` to publish a new
-  set of rates rather than overwriting v1.
-- **2026-08-20** — **Real insurer names are seeded** (پاسارگاد، سامان، کارآفرین، دی، البرز) because
-  a comparison screen full of invented names cannot be evaluated. **No commercial relationship
-  with any of them exists.** Solvency and satisfaction figures are placeholders too. If this
-  becomes a problem before partnerships are signed, `seed-data/insurers.ts` is the only file to
-  change. → still open question #2 in MVP-PLAN.
-- **2026-08-20** — Travel rate table shape (`seed-data/travel-rates.ts`), which the rating engine
-  consumes: `zoneBase × durationBand × ageBand × coverageFactor`, then `taxRate`, then fixed
-  `fees[]` as separate line items. Plus `limits` for hard refusals and `coverages[]` for display.
-  Each insurer has a `priceIndex` and `elderlyLoading`, so the cheapest option genuinely changes
-  with the traveller's age rather than one insurer always winning.
-- **2026-08-20** — Every number in the rate tables is invented. `meta.source: "PLACEHOLDER"` is on
-  every row and the UI must show the «نمونه» badge until real insurer tables replace them.
-- **2026-08-20** — `City.quakeZone` values are approximate, **not** the official استاندارد ۲۸۰۰
-  zoning. That table must be sourced before home-fire earthquake cover is priced for real.
-- **2026-08-20** — Rating engine core: `RatingStrategy` (pure `rate(input, table, ctx)`, clock
-  passed in so a quote is reproducible), `RatingRegistry` (one strategy per product type, throws
-  on duplicates), `RatingService` (loads the effective table per offering and prices every
-  insurer), and `PremiumBuilder`/`pickBand` as the shared money primitives.
-- **2026-08-20** — **Bug caught by its own test: `netPremium` was rounded but `totalAmount` summed
-  the unrounded lines**, so the stated premium and the charged amount disagreed by 400 Rial.
-  Rounding now happens **as each line is added**, never on the sum, so what the customer is shown
-  always adds up to what they pay. There is a parametrised test asserting
-  `Σ lineItems === totalAmount` — do not remove it.
-- **2026-08-20** — Tax is computed at `build()` time, not when `withTax()` is called, so adding a
-  premium line after declaring tax cannot silently under-charge. The ordering trap is removed by
-  the design rather than documented.
-- **2026-08-20** — A refusal is a **result**, not an exception: `ineligible(reasonFa)` returns a
-  zero-priced result the UI renders next to the priced ones. One insurer refusing must never
-  break the comparison.
-- **2026-08-20** — An insurer with no effective rate table is **skipped with a warning**, not an
-  error — a half-configured insurer must not take the whole comparison down. `NO_ELIGIBLE_OFFERS`
-  only when nothing at all can be priced.
-- **2026-08-20** — Input is parsed **once**, before any insurer is rated, so a malformed date
-  reads as one validation error rather than "every insurer refused you".
-- **2026-08-20** — Verified against the seeded tables: a 10-day Schengen trip prices across all
-  five insurers (دی ۳۸۳٬۸۱۰ تومان … کارآفرین ۴۶۵٬۳۲۰ تومان), `isSampleRates` true, explain trace
-  populated, and line items summing exactly to the total.
-- **2026-08-20** — Travel strategy priced against the seeded tables. The comparison genuinely
-  reorders with age: at 36 دی is cheapest (۳۸۳٬۸۱۰ تومان) and کارآفرین dearest; at 72 that
-  **inverts** — کارآفرین cheapest (۱٬۰۶۲٬۹۵۰) and دی dearest. At 82, سامان and دی refuse with
-  their own limits while three still quote. That is the point of `elderlyLoading` in the seed.
-- **2026-08-20** — Travel rates on **age at departure**, not age today: a birthday between quote
-  and travel changes the price, and `ageOnDeparture` is tested on the exact-birthday boundary.
-- **2026-08-20** — `parse()` now receives `RatingContext`, so "trip starts in the past" is a
-  single `VALIDATION_FAILED` on `startDate` rather than five identical ineligible cards that
-  read as five insurers refusing the customer.
-- **2026-08-20** — A malformed rate table makes **that one insurer** ineligible (zod-validated at
-  rate time), never an exception. One bad row in the database must not blank the comparison.
-- **2026-08-20** — Added `toPersianNumber()`: Persian digits **and** the Persian decimal separator
-  ٫ (U+066B). `toPersianDigits` alone leaves a Latin dot, so factors printed as `ضریب ۱.۵`.
-  **Use `toPersianNumber` for any number that might not be an integer.** The old test only
-  asserted "no Latin digits", which a Latin dot passes — it now rejects `.` outright.
-- **2026-08-20** — `RatingService.refreshTeaserPrices()` derives «از … تومان» from the live tables;
-  the seed calls it last. Travel resolves to **۱۳۹٬۵۰۰ تومان** (دی، آسیا), verified to equal the
-  cheapest actually-quotable price for that basket. Motor and home-fire are `null` — no strategy
-  yet, and no price beats a wrong price.
-- **2026-08-20** — Strategies expose `teaserInputs()` returning **several candidate baskets**, one
-  per zone, so the cheapest is *found* rather than assumed. Hardcoding "Asia is cheapest" would
-  go stale the first time a rate table changed.
-- **2026-08-20** — The teaser basket is an ordinary **35-year-old on a 7-day trip at the lowest
-  cover** — a price a real customer can actually pay. Rating it off a newborn's 0.65 age factor
-  would produce a headline nobody could ever reach. There is a test asserting the age is 35 and
-  that every basket still parses (i.e. never departs in the past).
-- **2026-08-20** — Rerun `pnpm db:seed` after **any** rate-table change, or the teaser goes stale.
-  `RatingService` takes plain constructor arguments precisely so the seed can build it without
-  Nest DI, which cannot run under tsx.
-- **2026-08-20** — **The frozen price is proven, not assumed.** Doubled دی's Schengen base rate in
-  the database and re-read an existing quote: still ۳٬۸۳۸٬۱۰۰ ریال and still CHEAPEST, while a
-  *new* quote dropped دی out of the top three and promoted سامان. Orders reference `QuoteOffer`,
-  so nothing can reprice a customer mid-checkout.
-- **2026-08-20** — Added `Quote.isSampleRates` (migration `20260820131631_quote_sample_rates`).
-  It has to be frozen with the quote: the tables can be swapped after the customer saw the price,
-  so looking it up at read time would misreport what they were actually shown.
-- **2026-08-20** — Quote TTL is **30 minutes**. `GET` on an expired quote still returns it with
-  `isExpired: true` rather than erroring — the UI needs something to render for
-  "expired, quote again". Refusing the *order* is M3's job.
-- **2026-08-20** — Badges are computed from transparent rules and **never sold**: `CHEAPEST` is the
-  lowest total, `RECOMMENDED` is the best claims record among offers within 20% of it. There is
-  deliberately **no `BEST_COVERAGE`** — every travel insurer grants identical coverage keys, so it
-  would be a badge with nothing behind it. Add it when a product's coverages actually differ.
-- **2026-08-20** — Refused insurers stay in the list, sorted last, unbadged. "This company will not
-  cover an 82-year-old" is information the customer wants; hiding it makes the comparison look
-  incomplete.
-- **2026-08-20** — An anonymous quote is **claimed by the first signed-in caller** that presents its
-  id. That is what makes "quote before login" survive the OTP wall at checkout. Verified: claimed
-  on read, then `QUOTE_NOT_YOURS` for both a different user and an anonymous caller.
-- **2026-08-20** — Home screen done: product cards, derived teaser, «نرخ نمونه» badge, skeletons,
-  and a real error state. **Split out the active-policy strip** — it needs `GET /policies`, which
-  does not exist until M3, and a strip with no data source would be placeholder UI.
-- **2026-08-20** — Added `Product.fromAmountIsSample` (migration `20260820132256_...`), stored
-  beside the number it describes. A headline price and "is this real" must travel together, or a
-  teaser keeps claiming to be real after the rates behind it were swapped. The flag follows the
-  offer that actually **won** the teaser, not any offer in the set.
-- **2026-08-20** — A product with `fromAmount === null` renders as «به‌زودی» and is not a link.
-  Derived from the data — the engine genuinely cannot quote motor or home fire yet — rather than
-  a hardcoded list of "ready" products, so the cards light up on their own when a strategy lands.
-- **2026-08-20** — **Transient:** the travel card links to `/p/travel/form`, which the next task
-  builds. It 404s until then.
-- **2026-08-20** — The catalog's `Cache-Control` means the home screen keeps rendering from browser
-  cache for ~60s after the API dies — good behaviour, but it hides the error state. To verify
-  error UI, point `VITE_API_URL` at a dead port and restart Vite; stopping the API is not enough.
-- **2026-08-20** — **Quoting no longer asks for identity.** The travel input required names,
-  national codes and passport numbers *to see a price*; nobody types a passport number to get a
-  quote, so the funnel would have died at the first step. `travelInputSchema.travelers` is now
-  `[{ birthDate }]` — rating needs age and nothing else. Identity is collected at checkout, on
-  the order, where it is actually needed to issue. Premium lines are numbered («حق بیمه — مسافر ۱»)
-  because travellers are anonymous at quote time. **Apply the same rule to motor and home fire:
-  ask only what changes the price.**
-- **2026-08-20** — Travel wizard: 4 steps (مقصد → تاریخ → مسافران → سقف پوشش), progress bar, sticky
-  action bar, back-to-previous-step. Verified end to end in the browser — it created a real quote
-  and navigated to `/quotes/:id`.
-- **2026-08-20** — Jalali entry verified inside the wizard: ۱۰ مهر ۱۴۰۵ → `2026-10-02` and
-  ۲۰ مهر → `2026-10-12`, with the live «مدت سفر: ۱۰ روز» summary.
-- **2026-08-20** — Two travelers aged ۳۶ and ۷۲ priced across all five insurers
-  (کارآفرین ۱٬۵۲۶٬۲۷۰ … دی ۱٬۷۲۳٬۹۴۰ تومان), with age factors 1 and 2.6/3.07 visible in the
-  stored explain trace.
-- **2026-08-20** — **Transient:** the wizard lands on `/quotes/:id`, which the next task builds.
-- **2026-08-20** — Gotcha when inspecting data by hand: Postgres renders a **concatenated**
-  boolean as `true`/`false`, not `t`/`f`. Comparing against `'t'` after `||` silently takes the
-  wrong branch — it made correct offers look ineligible. Use `::int` or a separate column.
-- **2026-08-20** — **Race condition fixed, and it would have broken every authenticated screen.**
-  React runs child effects *before* parent effects, so a `useQuery` inside the tree fired its
-  request before `AuthProvider` could restore the session. The request went out anonymous and the
-  API answered correctly — 403 on someone else's quote. The session restore now starts at
-  **module load** in `lib/api.ts` (`sessionBootstrap`), and every request awaits it. Fixing it
-  per-query would have left the same trap for the next screen.
-  `AuthProvider` awaits that same promise instead of calling `refreshSession()` again — a second
-  refresh would rotate the token for nothing.
-- **2026-08-20** — Comparison screen: trip summary with «ویرایش», live countdown (verified ticking
-  ۲۹:۳۰ → ۲۹:۲۸), «نمونه» notice, badges «ارزان‌ترین»/«پیشنهاد ما», solvency and claims-satisfaction
-  as trust signals, and refusals shown with their own reason («این شرکت مسافر بالای ۸۰ سال را
-  پوشش نمی‌دهد»).
-- **2026-08-20** — The countdown recomputes from the deadline every tick rather than decrementing,
-  so a backgrounded tab that misses timer ticks still shows the truth when the user returns.
-- **2026-08-20** — Expired quote: banner + «استعلام دوباره», countdown hidden, offers dimmed and
-  `pointer-events: none` — visible for reference but not purchasable. Verified in the browser.
-- **2026-08-20** — **Transient:** offer cards link to `/quotes/:id/offers/:offerId`, which the next
-  task builds.
-- **2026-08-20** — **M2 complete.** A visitor can open the app, pick a product, run the travel
-  wizard, compare five real insurers on frozen prices, and inspect a full premium breakdown.
-- **2026-08-20** — Offer detail shows the invoice as a real one reads: a premium line per
-  traveller, levies and tax as their own rows, then the payable total. Verified on screen that
-  ۴۲۱٬۲۰۰ + ۱٬۸۵۳٬۳۰۰ + ۲٬۰۰۰ + ۲۲۷٬۴۵۰ = ۲٬۵۰۳٬۹۵۰ — the `Σ lineItems === totalAmount`
-  invariant holding all the way to the pixel.
-- **2026-08-20** — A refused insurer's detail page shows the reason and **no price and no buy
-  button** — there is nothing to sell, so nothing is offered.
-- **2026-08-20** — The buy button is **disabled with an honest note** («پرداخت آنلاین به‌زودی فعال
-  می‌شود») because ordering does not exist until M3. A button that 404s would be worse than one
-  that says why it cannot work yet. Enable it in the M3 checkout task.
-- **2026-08-20** — Order state machine is a **table**, not scattered `if`s (`order-status.ts`).
-  Refuses: issuing without paying, un-paying, cancelling a paid or issued order, re-issuing.
-  Allows the two retries that matter — `PAYMENT_FAILED → PENDING_PAYMENT` (a declined card is a
-  retry) and `ISSUE_FAILED → ISSUING` (the money is already taken, support must be able to
-  re-drive). A test asserts **every non-terminal status has a way out**, so a paid order can
-  never become a dead end.
-- **2026-08-20** — `transition()` guards its `updateMany` on the **current** status, so two
-  concurrent callers cannot both move one order; the loser updates zero rows and is refused.
-  Payment callbacks arrive twice far more often than anyone expects.
-- **2026-08-20** — **Idempotency is checked before any validation.** A retried request must return
-  the original order even if the quote has since expired, or a flaky network turns one purchase
-  into an error the customer cannot resolve. Verified: two identical POSTs → one order row.
-- **2026-08-20** — **The insured must be exactly who was priced** — same count, same dates of
-  birth (order-insensitive). Age drives the premium, so quoting a 30-year-old and insuring an
-  80-year-old would sell cover the insurer never agreed to. Verified over HTTP.
-- **2026-08-20** — Order TTL (30 min) is independent of the quote's. Once someone commits to
-  buying, the price is frozen on the `QuoteOffer`, so the quote expiring mid-payment is harmless.
-  `isExpired` only applies while still `PENDING_PAYMENT`.
-- **2026-08-20** — Orders are created straight into `PENDING_PAYMENT`; `DRAFT` has no producer and
-  is reserved for a future save-and-return flow.
-- **2026-08-20** — Test-data trap hit twice while verifying by hand: `insuredPersonSchema` requires
-  `passportNo` ≥ 5 chars and names ≥ 2 chars, so `'A1'` or a one-letter first name fails zod
-  *before* the business checks run and looks like the wrong error.
-- **2026-08-20** — **The mock gateway ignores the callback's `Status` parameter on purpose.** The
-  customer's browser controls that URL, so a gateway that believes `Status=OK` hands out free
-  policies to anyone who can edit a query string. `verify()` reads the outcome the mock bank page
-  recorded server-side — standing in for the PSP ledger a real `verify` would query. Two tests
-  pin this: `Status=OK` on an unsettled or declined payment stays refused, and `Status=NOK` on a
-  genuinely paid one still confirms. **Any real IPG adapter must keep this property.**
-- **2026-08-20** — Authorities are ZarinPal-shaped (36 chars, leading `A`), so nothing downstream
-  changes when a real gateway replaces the mock. Verified unique across 50 concurrent requests.
-- **2026-08-20** — `POST /orders/:id/pay` allows **multiple attempts per order** — a declined card
-  must not cost the customer their quote. Each attempt is its own `Payment` row with its own
-  authority, so the history stays auditable. `PAYMENT_FAILED` moves back to `PENDING_PAYMENT` on
-  retry. Verified: two attempts → two rows, one order.
-- **2026-08-20** — Refuses to charge an order that is already paid/issued (`ORDER_ALREADY_PAID`),
-  mid-issuance or cancelled (`ORDER_INVALID_TRANSITION`), expired (`ORDER_EXPIRED`), or somebody
-  else's (`FORBIDDEN` — verified over HTTP).
-- **2026-08-20** — Amounts go to the gateway in **Rial**. Some Iranian PSPs take Toman; check the
-  unit when swapping in a real one, or every charge is off by 10×.
-- **2026-08-20** — Mock bank page at `GET /mock-gateway?Authority=…` (outside the `api/v1` prefix),
-  settling via a plain form POST to `/mock-gateway/settle`. All three outcomes verified: PAID
-  writes a `refId` + masked card and returns `Status=OK`; FAILED and CANCELLED write no receipt
-  and return `Status=NOK`. Unknown or missing authority → 404.
-- **2026-08-20** — **The card fields are readonly with fake values on purpose.** A mock bank page
-  that accepts card input is a liability: sooner or later somebody types a real PAN into it
-  during a demo and it lands in a request log. The page needs to *look* like Shaparak, not to
-  collect anything. Keep it that way.
-- **2026-08-20** — **New production boot guard: `PAYMENT_GATEWAY=mock` refuses to start in
-  production** unless `ALLOW_MOCK_PAYMENT_IN_PROD=true`. Same risk shape as the universal OTP —
-  anyone reaching the bank page could click «پرداخت موفق» and be issued a policy without paying.
-  Verified: the guard bites with a production env, and dev still boots. The M6 demo deployment
-  will need that flag set deliberately.
-- **2026-08-20** — `express.urlencoded` is now mounted in `main.ts`; the bank page posts a normal
-  HTML form rather than JSON.
-- **2026-08-20** — **Transient:** settling redirects to `${WEB_URL}/payment/callback`, which the
-  web app does not route yet — the callback/verify task builds it.
-- **2026-08-20** — `POST /payments/verify` is the **only** place an order becomes PAID, and it is
-  **unauthenticated on purpose**. The money moved whether or not the customer's browser came
-  back — they may have closed the tab, lost signal, or paid in a banking app that never returns.
-  The authority is an unguessable capability, so a retry, a second tab, or a future
-  reconciliation job can all drive the same path. It reports what the gateway decided; it cannot
-  make a payment succeed.
-- **2026-08-20** — Verified over HTTP, the four cases that matter:
-  · forged `Status=OK` **before** paying → FAILED, no policy
-  · genuine payment verified **three times** → same refId each time, order PAID once, 1 payment row
-  · bank declined then forged `Status=OK` → FAILED, order left **retryable**
-  · two callbacks racing concurrently → both report the same refId, order PAID once
-- **2026-08-20** — The atomic claim is `updateMany` guarded on the payment still being
-  CREATED/REDIRECTED. The loser reads the winner's outcome instead of moving the order again —
-  which is what stops a double callback issuing two policies.
-- **2026-08-20** — A declined payment leaves the order `PAYMENT_FAILED`, not cancelled, so the
-  customer can try another card. Known minor exposure: someone holding an authority could force
-  that state — but it is unguessable and the order is retryable, so the impact is nil.
-- **2026-08-20** — `OrdersModule` ↔ `PaymentsModule` is a genuine cycle (orders expose `/pay`,
-  payments transition orders). Resolved with `forwardRef` on both sides.
-- **2026-08-20** — Verify currently stops at PAID; issuance is the next task and hooks in there.
-- **2026-08-20** — **A customer can now buy a policy end to end.** Three purchases verified:
-  `DEY-TRV-0505-000001/2/3`, cover `2026-10-02 → 2026-10-12` (the trip, not today), counter at 3,
-  SMS delivered with the policy number.
-- **2026-08-20** — Policy numbers are `INSURER-PRODUCT-yymm-NNNNNN` on a **Jalali** period, and the
-  sequence is reserved by a single `INSERT … ON CONFLICT DO UPDATE … RETURNING` against
-  `PolicyCounter`. A read-then-write would eventually hand two concurrent issuances the same
-  number, and a duplicate policy number is the kind of thing an insurer notices. The sequence is
-  zero-padded so numbers sort lexicographically.
-- **2026-08-20** — Cover dates come from `RatingStrategy.coveragePeriod(input)` — the product knows
-  its own term. Travel runs for the trip; motor will run a year from its start date. **Every new
-  strategy must implement it.**
-- **2026-08-20** — `Policy.dataSnapshot` copies the product, insurer, insured, coverages, line
-  items and totals. Rate tables get replaced and profiles get edited; an issued policy must keep
-  showing exactly what was sold.
-- **2026-08-20** — **Issuance failing does not fail the payment response.** The money is already
-  taken, so `verify` reports SUCCEEDED and the order is parked in `ISSUE_FAILED` for support.
-  Telling the customer their payment failed would be a lie that also costs them their receipt.
-- **2026-08-20** — Issuance is idempotent: an order that already has a policy returns it untouched,
-  and a replayed callback never re-issues.
-- **2026-08-20** — `issueWithInsurer()` is deliberately async with its own failure path, so the
-  real insurer/SANHAB call drops in without restructuring anything around it.
-- **2026-08-20** — Test-shape note: Prisma's `$queryRaw` tagged template passes the **strings
-  array itself** as the first mock argument — there is no `.strings` property to read.
-- **2026-08-20** — E-policy renders from **`dataSnapshot` only**, never live joins. If the renderer
-  ever needs another table, the snapshot is missing something. Verified on a real two-traveller
-  policy: `DEY-TRV-0505-000004`, Jalali throughout (صدور ۲۹ مرداد ۱۴۰۵، اعتبار ۱۰ تا ۲۰ مهر ۱۴۰۵),
-  both insured with national codes and passports, and a premium breakdown that adds up —
-  ۳۴۷٬۱۰۰ + ۲۲۵٬۶۰۰ + ۲٬۰۰۰ + ۵۷٬۲۷۰ = ۶۳۱٬۹۷۰ تومان. The child's line is 0.65× the adult's,
-  visible on the document.
-- **2026-08-20** — Served as HTML with an `@page`/`@media print` stylesheet: the browser's own
-  print dialog produces the PDF a customer needs for a visa appointment. `renderDocument` returns
-  a string — when a real PDF matters it becomes a Buffer and callers do not change. Headless
-  Chromium would roughly triple the deployment image for something print already does.
-- **2026-08-20** — The document is `Cache-Control: private, no-store` and behind auth+ownership: it
-  contains national codes and passport numbers. Verified 401 unauthenticated.
-- **2026-08-20** — All snapshot fields are treated as optional. A policy issued a year ago was
-  written by older code; a missing field must render `—`, not crash the one document someone
-  needs at an embassy. Names are HTML-escaped — tested against `<script>` injection.
-- **2026-08-20** — The document carries an explicit «این سند نمونه است و ارزش قانونی ندارد» notice
-  while rates are placeholders. Remove it only when real rates and a real licence are in place.
-- **2026-08-20** — Policies have **three states, not two**: `UPCOMING` / `ACTIVE` / `EXPIRED`
-  («شروع نشده» / «معتبر» / «منقضی»). A trip policy bought in August for October is neither
-  expired nor in force — calling it active is a lie the customer discovers at the airport.
-  Verified with two real policies, one of each. The web tabs should group UPCOMING with ACTIVE.
-- **2026-08-20** — List and detail read titles and insurer names from **`dataSnapshot`**, falling
-  back to live rows only when a field is absent — so a policy still reads correctly after its
-  product was renamed or withdrawn from sale.
-- **2026-08-20** — Ownership verified over HTTP: another customer gets `FORBIDDEN` on the detail
-  and an empty list of their own.
-- **2026-08-20** — Local end-to-end testing hits the **per-IP OTP cap (20/hour)** because every
-  request comes from `127.0.0.1`. The guard is working; to keep testing, backdate the window:
+- [x] workspace در pnpm، اسکریپت‌های ریشه، prettier/editorconfig، Postgres با docker-compose (پورت ۵۴۳۳)
+- [x] انتقال سایت پژوهشی Astro به `apps/docs` — استقرار `insurance.zisef.ir` بدون تغییر
+- [x] اسکیمای Prisma: مدل داده کامل MVP (هویت، کاتالوگ، نرخ‌دهی، استعلام، سفارش، پرداخت، بیمه‌نامه)
+- [x] اعتبارسنج‌های ایرانی (کد ملی، موبایل، پلاک) + اسکیماهای zod محصولات، داخل API
+- [x] بدون پکیج مشترک — API صاحب اعتبارسنجی است و وب توابع نمایشی کوچک خودش را نگه می‌دارد
+- [x] راه‌اندازی API: پیکربندی محیط با اعتبارسنجی zod، PrismaModule، لاگ pino، helmet + CORS،
+      فیلتر خطای سراسری که `{ code, messageFa, requestId }` می‌دهد، ZodValidationPipe، `/health`
+- [x] نخستین migration ساخته و اعمال شد؛ `pnpm db:migrate` سرتاسر کار می‌کند
+- [x] اسکلت وب: Vite + React + TS، Tailwind v4 راست‌به‌چپ، Vazirmatn میزبانی‌شده روی خود سایت،
+      پوسته اپ موبایل (`max-w-[430px]`، safe-area، نوار تب پایین)، روتر، TanStack Query، کلاینت API
+- [x] ورودی‌های `.claude/launch.json` برای api و web؛ `README.md` ریشه
+
+## M1 — احراز هویت (موبایل + کد یک‌بارمصرف)
+
+- [x] ماژول نوتیفیکیشن: اینترفیس `SmsSender`، `ConsoleSmsSender`، ماندگاری `SmsLog`
+- [x] `POST /auth/otp/request` — کد هش‌شده با argon2، TTL دو دقیقه، محدودیت ۱ در ۶۰ ثانیه برای هر
+      شماره، ۵ در ساعت برای هر شماره، ۲۰ در ساعت برای هر IP؛ `devCode` فقط بیرون از محیط عملیاتی
+- [x] `POST /auth/otp/verify` — کد واقعی **یا** کد سراسری `1234`؛ نگهبان بوت که در محیط عملیاتی با
+      وجود `AUTH_MOCK_OTP` بالا نمی‌آید مگر `ALLOW_MOCK_AUTH_IN_PROD=true` باشد
+- [x] چرخش refresh با تشخیص استفاده مجدد در خانواده؛ `POST /auth/refresh`، `POST /auth/logout`؛
+      کوکی `Domain=.bime247.com; SameSite=Lax; Secure` در محیط عملیاتی
+- [x] `JwtAuthGuard`، `OptionalJwtGuard`، `@CurrentUser()`؛ `GET /me`، `PATCH /me`
+- [x] e2e: مسیر خوشبینانه ورود، کد اشتباه، کد منقضی، قفل شدن بعد از تلاش‌ها، محدودیت نرخ
+- [x] وب: صفحه ورود شماره موبایل `/auth`
+- [x] وب: `/auth/otp` ورود کد، شمارش معکوس ارسال دوباره، استور احراز هویت، اینترسپتور تازه‌سازی خاموش
+- [x] وب: `/auth/profile` تکمیل نخستین ورود + نگهبان مسیرهای محافظت‌شده
+
+## M2 — کاتالوگ، موتور نرخ‌دهی، استعلام‌ها
+
+- [x] ماژول کاتالوگ: `GET /catalog/products`، `/products/:slug`، `/insurers`
+- [x] داده مرجع: `GET /catalog/reference/:key` (شهرها، مدل‌های خودرو، مناطق سفر)
+- [x] اسکریپت seed (خودتکرارپذیر): شرکت‌ها، محصولات، عرضه‌ها، شهرها، جدول‌های نرخ مسافرتی —
+      هر جدول با برچسب `data.meta.source: "PLACEHOLDER"`
+- [x] هسته موتور نرخ‌دهی: رجیستری استراتژی، `rate(input, table)` خالص، ردّ `explain[]`
+- [x] استراتژی نرخ‌دهی مسافرتی + تست واحد در برابر جدول‌های آزمایشی (منطقه × مدت × سن × سقف)
+- [x] پر کردن `Product.fromAmount` از موتور نرخ‌دهی (seed آن را عمداً null می‌گذارد — قیمت تیزر
+      باید مشتق شود، نه دستی نوشته)
+- [x] `POST /quotes` + `GET /quotes/:id` — ناشناس مجاز است، انقضا، پیشنهادهای مرتب‌شده، نشان‌ها
+- [x] وب: صفحه اصلی — کارت محصولات و تیزر «از … تومان»
+- [x] وب: ویزارد مسافرتی — هر صفحه یک گروه پرسش، نوار پیشرفت، نوار اقدام چسبان
+- [x] وب: مقایسه استعلام — کارت شرکت‌ها، شمارش معکوس زنده انقضا، نشان «نمونه» برای نرخ نمونه
+- [x] وب: جزئیات پیشنهاد — جدول کامل پوشش و تفکیک حق بیمه
+
+## M3 — تسویه‌حساب، پرداخت ماک، بیمه‌نامه
+
+- [x] ماژول سفارش‌ها: ماشین حالت (گذار غیرمجاز throw می‌کند)، کلید idempotency، انقضای ۳۰ دقیقه‌ای
+- [x] اینترفیس `PaymentGateway` + `MockGateway` (رقص دومرحله‌ای به شکل زرین‌پال)
+- [x] صفحه بانک ماک به سبک شاپرک که خود API سرو می‌کند: پرداخت / ناموفق / انصراف
+- [x] بازگشت + تأیید **idempotent** — تنها جایی که سفارش PAID می‌شود
+- [x] صدور بیمه‌نامه: دنباله شماره‌گذاری برای هر شرکت، `dataSnapshot`، مسیر کد به شکل ناهمگام
+- [x] سند HTML بیمه‌نامه الکترونیک + استایل چاپ
+- [x] `GET /policies`، `GET /policies/:id` (مسیر `/document` همراه رندرکننده آمد)
+- [x] وب: تسویه‌حساب — تأیید مشخصات بیمه‌شده، خلاصه، دکمه پرداخت
+- [x] وب: صفحه نتیجه `/payment/callback` (موفق / ناموفق / در انتظار)
+- [x] وب: بیمه‌نامه‌های من (تب فعال / منقضی) + جزئیات بیمه‌نامه
+- [x] وب: نوار بیمه‌نامه‌های فعال روی صفحه اصلی (به `GET /policies` از M3 نیاز دارد)
+- [x] e2e: استعلام ← سفارش ← پرداخت ماک ← صدور بیمه‌نامه، شامل بازپخش بازگشت
+
+## M4 — شخص ثالث خودرو
+
+- [x] استراتژی نرخ‌دهی شخص ثالث: پایه دیه، ضریب گروه/کاربری، نردبان تخفیف،
+      تعهد مالی، مالیات بر ارزش افزوده و عوارض قانونی به‌صورت ردیف‌های جدا + تست واحد
+- [x] داده seed مدل‌های خودرو
+- [x] وب: کامپوننت ورودی پلاک ایرانی
+- [x] وب: ویزارد خودرو (سخت‌ترین فرم اپلیکیشن) — به فیلد پلاک بالا نیاز دارد، و دقیقاً به همین دلیل
+      این دو به این ترتیب‌اند نه به ترتیب برنامه
+- [x] وب: خودروهای ذخیره‌شده زیر پروفایل (به یک API نیاز داشت — یادداشت‌ها را ببینید)
+
+## M5 — آتش‌سوزی منزل
+
+- [x] استراتژی نرخ‌دهی آتش‌سوزی منزل + تست‌ها؛ seed منطقه زلزله شهرها (از M2 seed شده بود)
+- [x] وب: ویزارد آتش‌سوزی منزل
+
+## M6 — پرداخت نهایی و استقرار
+
+- [x] PWA: مانیفست، آیکن‌ها، قابل نصب، پوسته آفلاین
+- [x] طراحی حالت‌های خالی / خطا / آفلاین، اسکلتون لودرها، گذار بین صفحه‌ها
+- [x] Dockerfile برای API (`apps/api/Dockerfile` + `railway.json` ریشه)
+- [x] محیط عملیاتی Railway (پروژه `bime247` که هنوز نام قدیمی را با خود دارد)
+- [x] `api.bimegold.com` روی Railway — دستورالعمل اجرایی در [`DEPLOY.md`](DEPLOY.md)
+- [x] `app.bimegold.com` — به‌جای فایل‌های ایستای Cloudflare Workers که در برنامه بود، روی Railway مستقر شد
+- [x] `docs/PROJECT.md` و `MVP-PLAN.md` با آنچه واقعاً ساخته شد هماهنگ شدند
+
+## M7 — بک‌لاگ QA
+
+اجرای QA روی مسیر خرید ۲۶ نقص پیدا کرد؛ فهرست و یادداشت هر اصلاح در
+[`QA-FINDINGS.md`](QA-FINDINGS.md) است.
+
+- [x] **۳۱ مرداد ۱۴۰۵** — `C1`، `C2` و موارد کم‌اهمیت لینک مسافرتی و گذرنامه خالی
+- [x] **۲ شهریور ۱۴۰۵** — `C3`، تمام موارد `H` و `M1` تا `M9`. ۴۰۴ تست واحد و ۳۹ تست e2e، همه سبز؛
+      هر دو اپ بیلد می‌شوند. بک‌لاگ بسته شد.
+
+---
+
+## یادداشت‌ها و تصمیم‌هایی که در حین ساخت گرفته شد
+
+- **۲ شهریور ۱۴۰۵ — دوره بیمه‌نامه یک جفت روز تقویمی تهران است، نه UTC** (`M7`).
+  هرچه مشتری انتخاب می‌کند یک روز از تقویم ایرانی است؛ هرچه ذخیره می‌شود یک لحظه است. خواندن
+  `"2026-09-01"` به‌عنوان `2026-09-01T00:00:00Z` باعث می‌شد پوشش ساعت ۰۳:۳۰ محلی شروع شود، پس پرواز
+  ساعت ۰۶:۰۰ بدون بیمه انجام می‌شد — و باعث می‌شد نگهبان تاریخ گذشته در ۳ ساعت و نیم اول هر روز
+  تهران، *دیروز* را بپذیرد. حالا `common/tehran.ts` تنها جایی است که اختلاف ساعت را می‌داند (ثابت
+  ۰۳:۳۰+؛ ایران از ۲۰۲۲ ساعت تابستانی را حذف کرد). پیامدی که به‌راحتی از قلم می‌افتد:
+  **هر قالب‌بند شمسی مجبور بود با آن جابه‌جا شود**. `startsAt` ساعت ۲۰:۳۰ UTC عصر پیش از شروع پوشش
+  است، پس قالب‌بندی که به UTC سنجاق شده باشد، حالا روزِ *پیش* از انتخاب مشتری را چاپ می‌کند — در
+  سند، در کد دوره داخل شماره بیمه‌نامه، و در اپلیکیشن. سنجاق شدن وب به UTC زیر معناشناسی
+  فقط-تاریخ قبلی درست بود و زیر این یکی غلط است؛ حالا هر دو سمت `Asia/Tehran` می‌گویند، و همین
+  است که نمی‌گذارد اپلیکیشن و بیمه‌نامه چاپ‌شده با هم اختلاف داشته باشند.
+- **۲ شهریور ۱۴۰۵ — `decode()` روی هر استراتژی نرخ‌دهی از `parse()` جدا شد** (`C3`). `parse`
+  هم‌زمان به دو پرسش جواب می‌داد: «آیا این خوش‌ساخت است؟» و «آیا همین حالا می‌شود این را خرید؟».
+  فقط اولی پاسخ پایداری دارد. صدور، دوره پوشش را با صدا زدن `parse` دوباره استخراج می‌کرد، پس
+  سفارشی با حرکت همان‌روز که پرداختش بعد از نیمه‌شب تسویه می‌شد، داخل صدور throw می‌کرد و در
+  `ISSUE_FAILED` می‌نشست — پول گرفته‌شده، بیمه‌نامه‌ای در کار نیست. قاعده حالا صریح است: **صدور فقط
+  حق دارد پرسش‌هایی بپرسد که پاسخشان بعد از وجود سفارش نمی‌تواند عوض شود.** قواعد وابسته به ساعت در
+  `rating/admission.ts` زندگی می‌کنند و فقط از `parse` قابل دسترسی‌اند.
+- **۲ شهریور ۱۴۰۵ — `ISSUE_FAILED → ISSUING` بالاخره صاحب فراخوان شد.** ماشین حالت این گذار را
+  مجاز می‌دانست و کامنتش می‌گفت پشتیبانی صدور را دوباره می‌راند، اما `issueForOrder` روی
+  `status === PAID` نگهبانی می‌کرد و `verify` روی پرداخت تسویه‌شده مسیر را کوتاه می‌کرد، پس هیچ‌چیز
+  نمی‌توانست آن را براند. یک گذار قانونی بدون فراخوان، تور نجات نیست؛ یک کامنت است. حالا `verify`
+  برای هر پرداخت تسویه‌شده‌ای که بیمه‌نامه‌ای پشتش نیست صدور را دوباره می‌راند — و همین «بررسی
+  دوباره»ی خود مشتری را به مسیر بازیابی تبدیل می‌کند، بی‌آنکه بک‌آفیسی لازم باشد.
+- **۲ شهریور ۱۴۰۵ — وعده روی بیمه‌نامه و ردیف روی صورت‌حساب باید از یک فهرست بیایند**
+  (`H1`). `rate()` خطری را که مبنای نرخش صفر بود رد می‌کرد، در حالی که `coverages()` بدون شرط روی
+  درخواست نگاشت می‌زد، پس مستأجری بدون اثاثیه بیمه‌نامه‌ای می‌گرفت که رویش نوشته بود «سرقت با شکست
+  حرز: دارد» — بی‌آنکه حق بیمه‌ای گرفته شده باشد یا مبنایی برای پرداخت خسارت وجود داشته باشد. دو
+  فهرستی که جدا جدا از یک ورودی مشتق شوند، بالاخره یک روز با هم اختلاف پیدا می‌کنند؛ حالا فهرست
+  پوشش از خطرهایی ساخته می‌شود که واقعاً هزینه‌شان گرفته شده. تست قدیمی فقط نبودِ ردیف حق بیمه را
+  assert می‌کرد و هرگز به ردیف پوشش نگاه نمی‌کرد — و به همین دلیل باگ زنده ماند.
+- **۲ شهریور ۱۴۰۵ — قاعده بیمه‌شده در مالکیت API است، نه صفحه تسویه‌حساب** (`H4`، `H5`، `M3`).
+  `requiresPassport` فقط در `web/src/lib/checkout.ts` زندگی می‌کرد، و بررسی خود سرور `travelers`
+  را از ورودی می‌خواند و در نبودش زود برمی‌گشت — یعنی برای هر دو محصول تک‌نفره بی‌اثر بود. یک
+  `POST /orders` مستقیم می‌توانست ده نفر را روی بیمه‌نامه خودرو نام ببرد یا بیمه‌نامه مسافرتی‌ای
+  صادر کند که جای شماره گذرنامه‌اش «—» باشد. `products/insured-rules.ts` برای هر محصول یک جدول
+  است. تاریخ تولد را هم **بر اساس موقعیت** تطبیق می‌دهد: همان مرتب‌کردنِ پیش از مقایسه بود که
+  اجازه می‌داد سند، حق بیمه «مسافر ۱» را به نام «مسافر ۲» بچسباند، آن هم با جمع درست.
+- **۲ شهریور ۱۴۰۵ — بیمه‌نامه باید بگوید چه چیزی را بیمه کرده، نه فقط چه چیزی را می‌پردازد** (`H6`).
+  `riskSummary()` روی هر استراتژی، که موقع صدور از راه پورت lookups حل و در اسنپ‌شات قفل می‌شود —
+  هرگز موقع رندر join نمی‌شود، پس مدل خودرویی که سال بعد از کاتالوگ کنار گذاشته شود، هنوز روی
+  بیمه‌نامه‌ای که امسال فروخته شده چاپ می‌شود. به همین دلیل `RatingLookups` از دل `RatingService`
+  بیرون آمد و provider خودش شد: هم نرخ‌دهی و هم صدور به آن نیاز دارند.
+- **۲ شهریور ۱۴۰۵ — یک نقشه خطای سراسری فارسی برای zod بهتر از «یادت باشد» است** (`M8`).
+  `errors.ts` می‌گوید هر رشته فارسی در مالکیت API است، و هر سه ویزارد
+  `Object.values(error.fields)` را عیناً رندر می‌کنند — اما یک فیلد فقط وقتی فارسی حرف می‌زد که
+  کسی برایش `message` گذاشته باشد. «Number must be less than or equal to 2000» دقیقاً همان‌طور که
+  نوشته شده بود به صفحه می‌رسید. `common/zod-fa.ts` نقشه را موقع import تنظیم می‌کند و خودش توسط
+  `schemas/common.ts` وارد می‌شود که هر اسکیمای محصول از قبل واردش می‌کند؛ همین است که پارس کردن
+  یک اسکیمای محصول بدون آن را ناممکن می‌کند، حتی از دل یک تست واحد یا اسکریپت seed که هیچ‌کدام
+  `main.ts` را اجرا نمی‌کنند. پیام‌های اختصاصی هر فیلد همچنان برنده‌اند.
+  یک تله: **zod یک `.refine` را حتی وقتی بررسی قبلی روی همان رشته شکست خورده باشد هم اجرا
+  می‌کند**، پس نگهبان رفت‌وبرگشت `isoDate` مقدار `'nope'` را می‌دید و `toISOString()` یک
+  `RangeError` مستقیم از دل پایپ اعتبارسنجی پرتاب می‌کرد. refinementها باید در برابر ورودی‌ای که
+  اسکیما از قبل ردش کرده دوام بیاورند.
+- **۲ شهریور ۱۴۰۵ — نرخ‌ها را به ارقام بامعنا گرد کنید، نه به رقم اعشار** (`M6`). seed خودرو روی
+  `0.0085 × priceIndex` دستور `toFixed(3)` می‌زد که فقط یک رقم بامعنا باقی می‌گذارد: شاخص قیمت پنج
+  شرکت روی دو نرخ جمع شد، و چون جانی حدود ۸۵٪ حق بیمه است، صفحه مقایسه جفت‌هایی با قیمت یکسان نشان
+  می‌داد. حالا `toPrecision(4)`؛ هر پنج شرکت قیمت متمایز دارند.
+- **۲ شهریور ۱۴۰۵ — موقعیت ویزارد یک شناسه گام است، نه یک اندیس** (`H3`). اعمال یک موتورسیکلت
+  ذخیره‌شده اندیس را از فهرست شش‌گامیِ روی صفحه می‌گرفت، و رندر بعدی آن را به فهرست پنج‌گامی جمع
+  می‌کرد که در آن، همان اندیس پرسش دیگری بود — صفحه عدم خسارت رد می‌شد و به راکب بازگشته تا ۷۰٪
+  بالاتر از قیمت واقعی استعلام داده می‌شد، بی‌آنکه اصلاً از او پرسیده شود. اندیس روی فهرستی که طولش
+  عوض می‌شود، باگی است که منتظر عوض شدن فهرست نشسته.
+
+- **۳۰ مرداد ۱۴۰۵ — کتاب برند روی `brand.bimegold.com` منتشر شد**، فارسی با کلید تغییر به
+  انگلیسی، به‌عنوان Worker مستقل خودش (`apps/brand`). این کتاب از `brand/bime-gold/` توسط
+  `tools/brand-gold/site.py` *تولید* می‌شود، نه اینکه به‌عنوان یک صفحه نوشته شده باشد، پس نمی‌تواند
+  از خود بسته فاصله بگیرد: لوگویی که نشان می‌دهد و آرشیوی که ارائه می‌کند همان فایل‌هایند. متن‌ها
+  در `site_copy.py` هستند، هر دو زبان کنار هم.
+  دو چیز ارزش به یاد سپردن دارند. **درج مستقیم وردمارک در هر محل استفاده، ۳۲۷ کیلوبایت HTML خرج
+  برداشت** — شانزده کپی از همان ۱۹ کیلوبایت خطوط؛ یک `<symbol>` به‌علاوه `<use>` آن را به
+  ۸۲ کیلوبایت رساند (۱۳ کیلوبایت فشرده). و **راست‌به‌چپ، رشته‌های فنی لاتین را بی‌صدا برعکس
+  می‌کند**: `#D4AF37` به شکل `D4AF37#` رندر می‌شد، `4.9 : 1` به شکل `1 : 4.9`، و
+  `--color-brand-600` وارونه. الگوریتم دوسویه دقیقاً همان کاری را می‌کند که باید، چون پاراگراف
+  فارسی علامت خورده؛ راه‌حل `direction:ltr; unicode-bidi:isolate` روی کدهای هگز، توکن‌ها، نسبت‌ها
+  و اندازه‌هاست. هر چیز لاتینِ فنی داخل متن فارسی به این نیاز دارد.
+- **۳۰ مرداد ۱۴۰۵ — مونوگرام `bi` عقب کشیده شد تا فقط در تب مرورگر بماند.** قبلاً برای هر آیکن و
+  برای هدر اپلیکیشن استفاده می‌شد، یعنی محصول خودش را «bi» معرفی می‌کرد. لاک‌آپ کامل هرجا که
+  خوانده شود می‌رود. اینکه این مرز کجاست اندازه‌گیری شد، نه حدس زده: لاک‌آپ *افقی* تا ارتفاع ۱۶
+  پیکسل دوام می‌آورد چون اجازه دارد ۵۳ پیکسل پهن باشد، اما آیکن مربعی به‌جای ارتفاع، پهنا را محدود
+  می‌کند و آنجا لاک‌آپ *عمودی* تا حدود ۴۸ پیکسل دوام می‌آورد، در ۳۲ نرم می‌شود و در ۱۶ ناخواناست.
+  پس آیکن‌های اپلیکیشن، apple-touch و maskable همه لاک‌آپ عمودی را حمل می‌کنند،
+  `favicon.ico` در ۱۶ و ۳۲ مونوگرام و در ۴۸ لاک‌آپ عمودی را دارد — `.ico` تنها فرمتی است که
+  می‌تواند برای هر اندازه اثر متفاوتی نگه دارد — و فقط `favicon.svg` تنها-مونوگرام است.
+  `BrandLogo` هم مثل `BrandMark` یک کامپوننت تولیدشده است؛ درج مستقیم هر دو ۳٫۷ کیلوبایت فشرده
+  خرج برمی‌دارد و حروفی با `currentColor` می‌خرد.
+  یک تله در مسیر: یک `<svg>` که آیتم flex باشد تا تمام پهنا کش می‌آید و بعد `preserveAspectRatio`
+  اثر را داخلش وسط‌چین می‌کند — لوگوی صفحه ورود بی‌هیچ دلیل قابل مشاهده‌ای وسط‌چین به نظر می‌رسید،
+  تا وقتی `self-start` اضافه شد.
+- **۳۰ مرداد ۱۴۰۵ — `bimegold.com` بالا آمد؛ جابه‌جایی یک‌بار شکست، سر ترتیب کارها.** `app.` و
+  `api.bimegold.com` دامنه‌های اختصاصی Railway هستند و `docs.bimegold.com` یک Worker در Cloudflare.
+  اپلیکیشن با برند تازه بالا آمد و *خالی* بود: روی هر محصول «ارتباط با سرور برقرار نشد». علتش ارزش
+  به یاد سپردن دارد، چون از بیرون هیچ شباهتی به باگ CORS ندارد — preflight جواب `204` می‌دهد و
+  فقط `access-control-allow-origin` را جا می‌اندازد، پس مرورگر پاسخ را دور می‌ریزد و اپلیکیشن خطای
+  شبکه گزارش می‌کند. `VITE_API_URL` در زمان بیلد داخل ایمیج وب پخته می‌شود، در حالی که
+  `CORS_ORIGINS` را API در زمان اجرا می‌خواند، پس push کردن تغییر Dockerfile پیش از تنظیم
+  متغیرها، باندل تازه‌ای به‌جا گذاشت که میزبانی را صدا می‌زد که API برایش جواب نمی‌داد. با تنظیم
+  `WEB_URL`/`API_URL`/`CORS_ORIGINS`/`COOKIE_DOMAIN` و استقرار دوباره API درست شد. بعد **بار دوم**
+  با همان نشانه اما به دلیلی دیگر خراب شد: سرویس `web` متغیر `VITE_API_URL` مخصوص خودش را روی
+  Railway دارد، و Railway متغیرهای سرویس را به‌عنوان build arg به بیلد Docker می‌دهد، پس بی‌صدا
+  مقدار پیش‌فرض `ARG VITE_API_URL=…` در `apps/web/Dockerfile` را شکست داد. ویرایش Dockerfile هیچ
+  اثری نداشت؛ باندل همچنان `api.bime247.com` را صدا می‌زد که تازه جدا شده بود. باندل مستقرشده را
+  بخوانید، نه وضعیت استقرار را: با `curl` همان `/assets/index-*.js` را که HTML زنده نام می‌برد
+  بگیرید و برای میزبان API در آن grep بزنید. `COOKIE_DOMAIN` هم یک گام بعد همان تله است: مقداری که
+  با میزبان نخواند بی‌صدا دور ریخته می‌شود، پس ورود موفق می‌شود و نشست سرِ نخستین تازه‌سازی
+  می‌میرد — به‌جایش با خواندن `Set-Cookie` از یک ورود ماک واقعی بررسی شد
+  (`bimegold_rt=…; Domain=.bimegold.com`). نام‌های میزبان قدیمی جدا شدند. رکوردهای `app`/`api` روی
+  زون `bime247.com` حالا آویزان‌اند و باید همان‌جا حذف شوند.
+- **۳۰ مرداد ۱۴۰۵ — برند شد «Bime Gold» و دامنه شد `bimegold.com`.**
+  اثر تأییدشده یک رندر رستری است؛ `tools/brand-gold/trace.py` پس‌زمینه سفیدش را به آلفای واقعی
+  تبدیل می‌کند، حاشیه را می‌برد و آن را به وکتور trace می‌کند، بعد هر لاک‌آپ و آیکن را از همان
+  خطوط می‌سازد و هر PNG را *از روی* SVG رندر می‌کند تا رستر و وکتور نتوانند از هم فاصله بگیرند.
+  `sync.sh` بسته را در `public/brand/` هر دو اپ کپی می‌کند و
+  `apps/web/src/components/BrandMark.tsx` را دوباره می‌سازد؛ این‌ها تولیدشده‌اند، دستی ویرایششان
+  نکنید. تصمیم‌هایی که ارزش نگه‌داشتن دارند:
+  - **بدون گرادیان.** رندر یک درخشش فلزی محو دارد؛ هویت، `#D4AF37` تخت است. بازتولید آن درخشش اول
+    امتحان شد و همان چیزی است که ریاضیات حذف مات را در ابتدا شکست — یک رنگ مرکب مرجعِ ثابت باعث
+    می‌شود α < 1 داخل خطی که سایه دارد، و همین در trace سوراخ ایجاد کرد. راه‌حل این بود که رنگ
+    مرکب *به‌صورت محلی* از دل هر حرف تخمین زده شود.
+  - **طلایی رنگ متن نیست.** `#D4AF37` روی سفید ۲٫۱ به ۱ است. مقدار `--accent` در سایت مستندات در
+    حالت روشن `#8A6D1F` و در تیره `#E5C158` است؛ نردبان `--color-brand-*` اپلیکیشن رنگْ‌مایه لوگو
+    را روی ۹۰ نگه می‌دارد و روشنایی را طوری راه می‌برد که `bg-brand-600` با سفید روی ۴٫۸۷ به ۱
+    بماند. `--color-gold` همان طلایی دقیق لوگوست، فقط برای نشانه‌ها. این کار کنتراست teal قدیمی را
+    *بالا برد*، معامله‌اش نکرد.
+  - **نشانه `bi` است** — دو حرف اول به‌علاوه نقطه طلایی، که با مؤلفه همبند از دل وردمارک traceشده
+    جدا شده. لاک‌آپ کامل زیر ۱۶ پیکسل می‌میرد؛ مونوگرام در ۱۶ خواناست.
+  - **Worker مستندات حساب Cloudflare عوض کرد.** دامنه اختصاصی یک Worker باید روی همان حسابی باشد
+    که زونش هست، و `bimegold.com` روی `022e4e5b…` است در حالی که `insurance.zisef.ir` قدیمی روی
+    `45d1cc1b…` بود. پس `docs.bimegold.com` یک Worker تازه است (`bimegold-docs`)، نه یکی که
+    مسیرش عوض شده باشد. Worker قدیمی هنوز به نام میزبان قدیمی جواب می‌دهد.
+  - **`bime247` → `bimegold` همه‌جا به‌جز Postgres محلی**، که نام کاربر و دیتابیس قدیمی‌اش را نگه
+    می‌دارد تا والیوم‌های توسعه موجود همچنان mount شوند. کوکی refresh حالا `bimegold_rt` است، که
+    یک‌بار همه نشست‌ها را خارج می‌کند.
+  - **DNS در Railway گام دستی است.** خط فرمان دامنه اختصاصی را وصل می‌کند اما CNAME/TXT را
+    نمی‌نویسد، و توکن استقرار فقط `zone:read` روی Cloudflare دارد. رکوردها در
+    [`DEPLOY.md`](DEPLOY.md) هستند؛ ترتیب جابه‌جایی مهم است چون `VITE_API_URL` در زمان بیلد ایمیج
+    پخته می‌شود.
+- **۲۹ مرداد ۱۴۰۵** — `packages/shared` حذف شد. قالب‌بندی فارسی و پول فقط مال وب است،
+  `roundPremium` فقط مال API، و اعتبارسنجی محصول به API تعلق دارد که مرجع است. وب بررسی‌های سبک
+  سمت کلاینت انجام می‌دهد و خطاهای فیلدیِ API را رندر می‌کند. هیچ ترتیب بیلد بین‌پکیجی لازم نیست.
+- **۲۹ مرداد ۱۴۰۵** — Postgres روی پورت میزبان **۵۴۳۳** است تا با ۵۴۳۲ محلی تصادم نکند.
+- **۲۹ مرداد ۱۴۰۵** — `apps/web/public/brand/mark.svg` از بیرون این نشست رسید؛ تا وقتی نشانه واقعی
+  تصمیم‌گیری شود به‌عنوان نشانه کاری نگه داشته شد.
+- **۲۹ مرداد ۱۴۰۵** — `@nestjs/config` کنار گذاشته شد. یک `ConfigModule` پانزده‌خطی که یک آبجکت
+  parse‌شده با zod ارائه می‌دهد کاملاً تایپ‌دار است و به جست‌وجوی رشته‌ای `get('KEY')` نیاز ندارد.
+  برای تزریقش `ENV` را import کنید.
+- **۲۹ مرداد ۱۴۰۵** — `AppException('CODE')` تنها استثنایی است که عمداً پرتاب می‌شود. وضعیت و
+  جمله فارسی از `ERROR_STATUS` / `ERROR_MESSAGE_FA` در `common/errors.ts` می‌آیند، پس محل throw
+  فقط یک کد را نام می‌برد. کدهای تازه را همیشه به هر سه جدول با هم اضافه کنید.
+- **۲۹ مرداد ۱۴۰۵** — `loadEnv()` مموآیز شده و یک گزارش چندخطی پرتاب می‌کند که هر متغیر نامعتبر را
+  یک‌جا فهرست می‌کند. نگهبان‌های عملیاتی‌اش تست واحد دارند: کد یک‌بارمصرف ماک، اسرار نمونه، CORS خالی.
+- **۲۹ مرداد ۱۴۰۵** — Nest 11 با Express 5 موقع بوت دو هشدار
+  `Unsupported route path: "/api/v1/*"` از `setGlobalPrefix({ exclude })` چاپ می‌کند. خودش تبدیل
+  می‌کند و کار می‌کند؛ فقط ظاهری است.
+- **۲۹ مرداد ۱۴۰۵** — `/health` و `/health/ready` عمداً بیرون از پیشوند `api/v1` می‌نشینند، تا
+  کاوشگرهای Railway با بالا رفتن نسخه API هرگز نشکنند.
+- **۲۹ مرداد ۱۴۰۵** — مهاجرت `20260819232119_init` (۳۹۵ خط): ۱۷ جدول، ۵ enum. با رفت‌وبرگشت دادن
+  ردیف‌های واقعی از راه کلاینت تولیدشده بررسی شد — متن فارسی، jsonb، حذف آبشاری، و `P2002` روی
+  `Offering` تکراری، همه درست رفتار می‌کنند. چهار ایندکس یکتایی که مسیر پول به آن‌ها وابسته است
+  وجود دارند: `Order.idempotencyKey`، `Payment.authority`، `Policy.policyNumber`، `User.mobile`.
+- **۲۹ مرداد ۱۴۰۵** — `apps/api` از نوع CommonJS است، پس **اسکریپت‌های `tsx` نمی‌توانند از await
+  سطح بالا استفاده کنند**. اسکریپت seed باید بدنه‌اش را داخل `async function main()` بپیچد. این
+  بی‌صدا گاز می‌گیرد — esbuild با دیواری از خط‌های «Top-level await is currently not supported»
+  شکست می‌خورد.
+- **۲۹ مرداد ۱۴۰۵** — بلوک منسوخ `package.json#prisma` حذف شد (در Prisma 7 وجود ندارد). فقط دستور
+  seed را اعلام می‌کرد و به فایلی اشاره داشت که هنوز وجود ندارد. پیامد: `prisma migrate reset`
+  دیگر خودکار seed نمی‌کند — بعد از reset دستور `pnpm db:seed` را اجرا کنید. وقتی اسکریپت seed در
+  M2 آمد، این را درست‌وحسابی با `prisma.config.ts` راه بیندازید.
+- **۲۹ مرداد ۱۴۰۵** — برای MVP روی **Prisma 6.19** می‌مانیم گرچه ۷٫۹ بیرون آمده. Prisma 7
+  ESM-محور است و کلاینت تولیدشده را جابه‌جا می‌کند، که با بیلد CommonJS در Nest می‌جنگد. بعد از M6
+  دوباره بررسی شود.
+- **۲۹ مرداد ۱۴۰۵** — پشته وب: Vite 6 + React 19 + React Router 7 + TanStack Query 5 + Tailwind 4
+  (`@tailwindcss/vite`). توکن‌های برند در `@theme` زندگی می‌کنند؛ سطوح معنایی متغیرهای CSS ساده روی
+  `:root` هستند که از راه `@theme inline` دوباره صادر می‌شوند، پس مقادیر روشن همیشه وجود دارند و
+  فقط بلوک تیره آن‌ها را بازنویسی می‌کند.
+- **۲۹ مرداد ۱۴۰۵** — **بدون کتابخانه آیکن و بدون کتابخانه تاریخ.** شش SVG درون‌خطی کل اپلیکیشن را
+  پوشش می‌دهند، و تاریخ شمسی از `Intl.DateTimeFormat('fa-IR-u-ca-persian')` می‌آید — توکار است،
+  از قبل ارقام فارسی می‌دهد و نمی‌تواند فاصله بگیرد. با نوروز بررسی شد:
+  `2026-03-21 → ۱ فروردین ۱۴۰۵`.
+- **۲۹ مرداد ۱۴۰۵** — تایپوگرافی عدد فارسی: جداکننده هزارگان **٬** (U+066C) و اعشار **٫** (U+066B)
+  است، نه نقطه لاتین و نه ویرگول فارسی. `toFixed()` نقطه لاتین می‌دهد، پس هر قالب‌بندی اعشاری تازه
+  باید آن را نگاشت کند. هم در `apps/web/src/lib/fa.ts` و هم در `apps/api/src/common/fa.ts` درست
+  شده — این دو کپی باید با هم بمانند.
+- **۲۹ مرداد ۱۴۰۵** — خط پایه باندل: **۳۱۸ کیلوبایت جاوااسکریپت / ۱۰۲ کیلوبایت فشرده**، CSS
+  ۱۶ کیلوبایت / ۴ کیلوبایت فشرده. Vazirmatn بر اساس زیرمجموعه تقسیم شده، پس کاربر فارسی فقط فایل
+  ۴۶ کیلوبایتی عربی را می‌گیرد. حواستان به این عدد باشد.
+- **۲۹ مرداد ۱۴۰۵** — پنل مرورگر: کلیک روی یک `ref_N` وقتی پنل پنهان است تایم‌اوت می‌شود؛ هنگام
+  بررسی، `navigate()` به آدرس، راه مطمئن جابه‌جایی بین مسیرهاست.
+- **۲۹ مرداد ۱۴۰۵** — **`tsx`/esbuild نمی‌توانند NestJS را اجرا کنند.** esbuild
+  `emitDecoratorMetadata` را پیاده نکرده، پس گراف تزریق وابستگی در هر نقطه تزریق به `undefined`
+  می‌رسد. پیامدها: اسکریپت seed در M2 باید مستقیم با `PrismaClient` حرف بزند نه اینکه یک زمینه
+  Nest بالا بیاورد، و هر کاوش یکبارمصرف یکپارچه باید بعد از `nest build` روی `dist/` اجرا شود (یا
+  از راه ts-jest که متادیتا را تولید می‌کند).
+- **۲۹ مرداد ۱۴۰۵** — `SmsLog` بدنه را **ویرایش‌شده** ذخیره می‌کند. هر قالب `{ body, logBody }`
+  برمی‌گرداند؛ `OTP_LOGIN` کد را به `****` ماسک می‌کند. هش کردن کد در `OtpChallenge` بی‌معنا بود
+  اگر متن خام دو دقیقه در یک جدول حسابرسی می‌نشست. هر قالب تازه‌ای که اعتبارنامه‌ای حمل کند باید
+  `logBody` بگذارد.
+- **۲۹ مرداد ۱۴۰۵** — پیامک کد یک‌بارمصرف از **ارقام لاتین** استفاده می‌کند — تنها جای محصول که
+  چنین می‌کند. iOS و اندروید فقط برای کدهایی که می‌شناسند تکمیل خودکار تک‌ضربه‌ای ارائه می‌دهند و
+  ارقام فارسی را نمی‌شناسند. توجه کنید که برند «بیمه ۲۴۷» هنوز ارقام فارسی دارد، پس تستی که
+  assert کند «هیچ رقم فارسی در بدنه نیست» غلط است؛ به‌جایش درباره خود کد assert کنید.
+- **۲۹ مرداد ۱۴۰۵** — `NotificationsService.send()` **هرگز throw نمی‌کند**. یک سرویس‌دهنده پیامک
+  مرده نباید بیمه‌نامه صادرشده را شکست بدهد؛ شکست‌ها با `status=FAILED` در `SmsLog` می‌نشینند تا
+  تطبیق داده شوند.
+- **۲۹ مرداد ۱۴۰۵** — `ConsoleSmsSender` طبق طراحی کد زنده را در لاگ چاپ می‌کند. `SMS_PROVIDER`
+  موقع بوت اعتبارسنجی می‌شود و هرگز نباید در محیط عملیاتی `console` باشد.
+- **۲۹ مرداد ۱۴۰۵** — `POST /auth/otp/request` **هرگز کاربر را جست‌وجو نمی‌کند**. پاسخ چه شماره
+  حساب داشته باشد چه نه یکسان است، پس این نقطه پایانی نمی‌تواند مشتری‌ها را شمارش کند. ردیف `User`
+  موقع تأیید ساخته می‌شود. هنگام نوشتن verify همین‌طور نگهش دارید.
+- **۲۹ مرداد ۱۴۰۵** — `devCode` روی `NODE_ENV !== 'production'` مشروط است، **نه** روی
+  `AUTH_MOCK_OTP`. برگرداندن کد زنده روی سیم بدتر از میان‌بر کد سراسری است، پس نباید سوار همان
+  پرچم شود.
+- **۲۹ مرداد ۱۴۰۵** — صدور یک کد، هر چالش مصرف‌نشده قدیمی‌تر آن شماره را باطل می‌کند و هر دو نوشتن
+  داخل یک `$transaction` انجام می‌شوند. بدون این، هر کدی که در TTL دو دقیقه‌ای صادر شود هم‌زمان
+  معتبر می‌ماند و بودجه مؤثر حدس زدن چند برابر می‌شود.
+- **۲۹ مرداد ۱۴۰۵** — `app.set('trust proxy', true)` به‌علاوه `getClientIp()` که
+  `CF-Connecting-IP` را ترجیح می‌دهد. بدون آن، پشت مسیر Cloudflare→Railway همه کاربران یک سطل
+  محدودیت نرخ مشترک دارند. **هشدار:** آن هدر فقط تا وقتی قابل اعتماد است که مبدأ *منحصراً* از راه
+  Cloudflare در دسترس باشد — اگر روزی میزبان Railway مستقیم در معرض قرار بگیرد، محدودیت‌های هر IP
+  قابل جعل می‌شوند.
+- **۲۹ مرداد ۱۴۰۵** — باگی که با صدا زدن نقطه پایانی پیدا شد، نه با خواندن کد: پیام زمان انتظار
+  `60 ثانیه` را با ارقام لاتین رندر می‌کرد. **هر عددی داخل یک `messageFa` باید از
+  `toPersianDigits` بگذرد.** تست‌های واحدی که روی آن متن assert می‌کنند هم باید انتظار ارقام فارسی
+  داشته باشند.
+- **۲۹ مرداد ۱۴۰۵** — argon2id روی خط پایه OWASP (m=19456, t=2, p=1). یک کد چهاررقمی فقط ۱۰٬۰۰۰
+  حالت دارد، پس هش کردن نمی‌تواند حمله آفلاین را ناممکن کند — فقط جلوی این را می‌گیرد که یک جدول
+  لو رفته، کدهای زنده را مجانی تحویل بدهد. دفاع واقعی همان سوزاندن بعد از ۵ تلاش به‌علاوه TTL دو
+  دقیقه‌ای است.
+- **۲۹ مرداد ۱۴۰۵** — **کد ماک `1234` کلید اصلی نیست.** `verify()` حتی وقتی میان‌بر روشن است هم به
+  یک چالش فعال و منقضی‌نشده نیاز دارد، پس ورود همچنان یک درخواست کد یک‌بارمصرف خرج برمی‌دارد و پشت
+  کل نردبان محدودیت نرخ می‌ماند. بدون آن بررسی، `1234` به‌تنهایی هرکسی را به‌جای هرکسی وارد می‌کرد.
+- **۲۹ مرداد ۱۴۰۵** — توکن‌های refresh ۲۵۶ بیت تصادفی‌اند که با **SHA-256 هش می‌شوند، نه argon2**.
+  argon2 برای گران کردن اسرارِ *قابل حدس* است؛ در برابر این حجم آنتروپی چیزی نمی‌خرد و به هر
+  تازه‌سازی حدود ۵۰ میلی‌ثانیه اضافه می‌کند. بررسی شد: مقدار ذخیره‌شده `sha256(cookie)` است، پس
+  نشت دیتابیس هیچ نشست قابل استفاده‌ای نمی‌دهد.
+- **۲۹ مرداد ۱۴۰۵** — کوکی refresh: `HttpOnly; SameSite=Lax; Path=/api/v1/auth`، با `Secure` فقط
+  در محیط عملیاتی و انقضای ۳۰ روزه. `Lax` ممکن است چون app و api دامنه ثبت‌شده `bime247.com` را
+  مشترک دارند. محدود کردن مسیر یعنی این کوکی هرگز به نقطه‌های پایانی کاتالوگ یا استعلام فرستاده
+  نمی‌شود.
+- **۲۹ مرداد ۱۴۰۵** — `AuthResponse.isNewUser` به کلاینت اجازه می‌دهد ورود بار اول را بدون یک
+  رفت‌وبرگشت اضافه، مستقیم به تکمیل پروفایل ببرد.
+- **۲۹ مرداد ۱۴۰۵** — DTO تأیید، ارقام فارسی را نرمال می‌کند، پس `۱۲۳۴` تایپ‌شده با کیبورد فارسی
+  کار می‌کند. سرتاسر بررسی شد.
+- **۲۹ مرداد ۱۴۰۵** — توکن‌های refresh **یک‌بارمصرف‌اند**. ارائه دوباره یکی یعنی کسی کپی‌ای دارد که
+  نباید داشته باشد — و هیچ راهی نیست بفهمیم مال کاربر بوده یا دزد — پس کل خانواده باطل می‌شود و هر
+  دو مجبورند دوباره وارد شوند. روی HTTP بررسی شد: A→B→C درست چرخید، بازپخش A مقدار ۴۰۱ برگرداند
+  *و* C را هم کشت که یک ثانیه قبل معتبر بود. هر سه ردیف باطل می‌شوند.
+- **۲۹ مرداد ۱۴۰۵** — ادعای چرخش یک `updateMany` اتمی است که روی `revokedAt: null` نگهبانی
+  می‌شود. دو تب که هم‌زمان تازه‌سازی کنند هر دو توکن را زنده می‌خوانند؛ هرکدام صفر ردیف به‌روز کند
+  بازپخش حساب می‌شود. بدون آن نگهبان، هر دو می‌چرخیدند و دو توکن زنده در یک خانواده باقی می‌ماند.
+- **۲۹ مرداد ۱۴۰۵** — تازه‌سازی ناموفق **کوکی را پاک می‌کند**، تا نشست مرده کوکی‌ای به‌جا نگذارد که
+  در هر درخواست بعدی شکست بخورد.
+- **۲۹ مرداد ۱۴۰۵** — `POST /auth/logout` کل خانواده را باطل می‌کند و idempotent است: `204`
+  می‌دهد چه توکن زنده باشد، چه از قبل باطل شده باشد، چه اصلاً نباشد.
+- **۲۹ مرداد ۱۴۰۵** — `JwtAuthGuard` فقط **امضا** را بررسی می‌کند و کاربر را بار نمی‌کند، پس حساب
+  حذف‌شده یا مسدود تا انقضای توکن دسترسی‌اش کار می‌کند — حداکثر ۱۵ دقیقه. معامله‌اش یک کوئری کمتر
+  در هر درخواست احرازشده است. اگر روزی مسدودسازی فوری لازم شد، جست‌وجو را در
+  `JwtAuthGuard.verify` اضافه کنید.
+- **۲۹ مرداد ۱۴۰۵** — `OptionalJwtGuard` توکن **نامعتبر** را مثل نبود توکن می‌بیند، نه مثل رد
+  کردن. همین است که اجازه می‌دهد ویزارد استعلام ناشناس اجرا شود: یک توکن کهنه در تبی که مدت‌ها باز
+  مانده هرگز نباید استعلام ناشناس را بشکند. این همان گاردی است که نقطه‌های پایانی استعلام در M2
+  لازم دارند.
+- **۲۹ مرداد ۱۴۰۵** — `@CurrentUser()` وقتی `req.user` نباشد `UNAUTHORIZED` پرتاب می‌کند، پس
+  فراموش کردن `@UseGuards` در همان درخواست اول با صدای بلند شکست می‌خورد به‌جای اینکه `undefined`
+  به هندلر بدهد. در مسیرهایی که نبودن کاربر پاسخ مشروعی است از `@OptionalUser()` استفاده کنید.
+- **۲۹ مرداد ۱۴۰۵** — `JwtModule.register({ global: true })` در `AuthModule`، تا گاردهای بیرون آن
+  ماژول بتوانند `JwtService` را تزریق کنند بدون آنکه `UsersModule` ↔ `AuthModule` به import
+  دوری تبدیل شود.
+- **۲۹ مرداد ۱۴۰۵** — تکمیل پروفایل همه-یا-هیچ است: اسکیما هر فیلد را لازم می‌داند، پس
+  `isProfileComplete` صرفاً true می‌شود. تسویه‌حساب به همین پرچم وابسته است و پروفایل نیمه‌پرشده در
+  بدترین لحظه ممکن شکست می‌خورد.
+- **۲۹ مرداد ۱۴۰۵** — `birthDate` از نوع `@db.Date` است و به شکل `1990-05-20` بدون رانش منطقه
+  زمانی رفت‌وبرگشت می‌کند. هم روی HTTP و هم در خود ردیف بررسی شد.
+- **۲۹ مرداد ۱۴۰۵** — بستر e2e در `apps/api/test/` است. با `pnpm test:e2e` (از ریشه) اجرا می‌شود —
+  به Postgres بالا نیاز دارد. `globalSetup` در صورت نبودن **`bime247_test`** را می‌سازد (با گرفتن
+  `42P04`) و `migrate deploy` را رویش اجرا می‌کند؛ `env-setup.ts` مقدار `DATABASE_URL` را در هر
+  worker *پیش از* اجرای `loadEnv()` تغییر می‌دهد. مجموعه بین تست‌ها `TRUNCATE` می‌کند، پس هرگز
+  نباید به دیتابیس توسعه اشاره کند — بررسی شد: ۴ کاربر در `bime247`، صفر در `bime247_test`.
+- **۲۹ مرداد ۱۴۰۵** — e2e همان `AppModule` واقعی را با همان میدل‌ور و پیشوند `main.ts` بالا
+  می‌آورد، پس همان چیزی را تمرین می‌دهد که پروسه مستقرشده اجرا می‌کند، نه یک بدل.
+- **۲۹ مرداد ۱۴۰۵** — محدودیت‌های وابسته به زمان با **عقب بردن `createdAt`** تست می‌شوند، نه با
+  خوابیدن، و همین کل مجموعه را حدود ۳ ثانیه نگه می‌دارد.
+- **۲۹ مرداد ۱۴۰۵** — باگی که خود مجموعه پیدا کرد، در کمک‌تابع تست بود نه در اپلیکیشن:
+  `cookieFrom` بررسی truthiness می‌کرد، پس کوکی *پاک‌شده* (`name=` با مقدار خالی) مثل «اصلاً کوکی
+  نیست» خوانده می‌شد. به یک `!== undefined` صریح نیاز دارد. هرجا مقدار رشته خالی معنا دارد به یاد
+  داشته باشید.
+- **۲۹ مرداد ۱۴۰۵** — واحد و e2e عمداً دو دستور جدا هستند: `pnpm test` به هیچ‌چیز نیاز ندارد،
+  `pnpm test:e2e` به Docker نیاز دارد. CI می‌تواند هر دو را اجرا کند؛ یک حلقه سریع محلی فقط به
+  اولی نیاز دارد.
+- **۲۹ مرداد ۱۴۰۵** — ورودی تلفن مقدار را با **ارقام لاتین** نگه می‌دارد و با **فارسی** رندر
+  می‌کند. نگاشت یک‌به‌یک و بدون جداکننده گروه است، پس طول رشته هرگز عوض نمی‌شود و مکان‌نما وسط عدد
+  نمی‌پرد — و دقیقاً همین چیزی است که اگر روزی به این فیلد جداکننده اضافه کنید می‌شکند.
+- **۲۹ مرداد ۱۴۰۵** — اعتبارسنجی سمت کلاینت عمداً نازک است (`lib/mobile.ts`): آن‌قدر که بازخورد
+  فوری بدهد، با API به‌عنوان مرجع. پیام فیلدی که از API بیاید همیشه بر راهنمای محلی می‌چربد. زنده
+  تأیید شد — جمله سرور «برای دریافت کد جدید ۴۱ ثانیه صبر کنید.» عیناً و با ارقام فارسی رندر
+  می‌شود، بدون هیچ ساخت رشته‌ای سمت کلاینت.
+- **۲۹ مرداد ۱۴۰۵** — صفحه‌های احراز هویت **بیرون** از `AppShell` زندگی می‌کنند، تا در یک کار خطی
+  نوار تب پایین نباشد. `AuthLayout` قاب مشترک هر سه صفحه احراز هویت است.
+- **۲۹ مرداد ۱۴۰۵** — نکته پنل مرورگر: `computer left_click` روی یک `ref` وقتی پنل پنهان است
+  تایم‌اوت می‌شود. `form.requestSubmit()` از راه `javascript_tool` همان هندلر را تمرین می‌دهد و کار
+  می‌کند. برای مقداردهی ورودی‌های کنترل‌شده React از
+  `Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set` استفاده کنید —
+  مقداردهی مستقیم `.value` به React خبر نمی‌دهد.
+- **۲۹ مرداد ۱۴۰۵** — **تازه‌سازی خاموش باید تک‌پروازه باشد، و این اختیاری نیست.** API وقتی یک
+  توکن refresh دو بار ارائه شود کل خانواده را باطل می‌کند، پس دو کامپوننت که با هم به ۴۰۱ بخورند —
+  یا StrictMode در React که `AuthProvider` را در محیط توسعه دوبار mount می‌کند — دقیقاً شبیه
+  بازپخش توکن دزدیده‌شده به نظر می‌رسند و کاربر را خارج می‌کنند. `refreshSession()` در `lib/api.ts`
+  یک promise را بین همه فراخوان‌ها به اشتراک می‌گذارد. بررسی شد: بارگذاری کامل صفحه **دقیقاً یک**
+  `/auth/refresh` می‌فرستد. هر چیزی که مسیر تازه‌سازی دومی اضافه کند باید از همان تابع بگذرد.
+- **۲۹ مرداد ۱۴۰۵** — توکن دسترسی در یک متغیر ماژول زندگی می‌کند، هرگز در `localStorage`، تا یک
+  باگ XSS نتواند نشستی ۳۰ روزه را با خود ببرد. نشست از بارگذاری دوباره جان سالم به در می‌برد چون
+  کوکی refresh با httpOnly چنین می‌کند — بررسی شد، از جمله اینکه خروج با بارگذاری دوباره
+  **زنده نمی‌شود**.
+- **۲۹ مرداد ۱۴۰۵** — بارگذاری سرد ناشناس همیشه یک `/auth/refresh` خرج می‌کند که ۴۰۱ می‌گیرد.
+  پذیرفته شده: جایگزینش یک پرچم «احتمالاً وارد شده» در localStorage است، که حالتی است که می‌تواند
+  دروغ بگوید.
+- **۲۹ مرداد ۱۴۰۵** — ورود کد **یک ورودی با `autocomplete="one-time-code"`** است، نه چهار جعبه.
+  چهار جعبه قشنگ‌تر است و تکمیل خودکار تک‌ضربه‌ای پیامک را روی iOS و اندروید از کاربر می‌گیرد؛ به
+  همین دلیل هم کد با ارقام لاتین فرستاده می‌شود. روی رقم چهارم خودکار ثبت می‌شود، با یک ref
+  نگهبانی‌شده تا رندر دوباره یا رویداد تکمیل خودکار نتواند دوبار شلیکش کند.
+- **۲۹ مرداد ۱۴۰۵** — بعد از ورود، صفحه کد به `/` می‌رود. ریدایرکت تکمیل پروفایل به نگهبان مسیر
+  در وظیفه بعدی مربوط است، نه به این صفحه.
+- **۲۹ مرداد ۱۴۰۵** — **M1 کامل شد.** ورود سرتاسر در مرورگر کار می‌کند: ورود شماره ← کد ← تکمیل
+  پروفایل ← صفحه‌های محافظت‌شده، با نشستی که از بارگذاری دوباره جان سالم به در می‌برد.
+- **۲۹ مرداد ۱۴۰۵** — تبدیل شمسی↔میلادی (`lib/jalali.ts`) از **`Intl` به‌عنوان منبع حقیقت استفاده
+  می‌کند و به دنبال معکوسش می‌گردد** به‌جای اینکه تقویم هجری شمسی را بار دوم پیاده کند. دو پیاده‌سازی
+  دستی بالاخره سر یک سال کبیسه با هم اختلاف پیدا می‌کنند؛ این یکی نمی‌تواند فاصله بگیرد. بررسی شد:
+  ۱۴۶۲ روز در ۱۳۹۹، ۱۴۰۰، ۱۴۰۳ و ۱۴۰۵ دقیقاً رفت‌وبرگشت کردند، اسفند در ۱۳۹۹ سی روز و در ۱۴۰۰
+  بیست‌ونه روز است، و `1400/12/30` درست مقدار null برمی‌گرداند. `۲ خرداد ۱۳۶۹ → 1990-05-23` در
+  دیتابیس تأیید شد.
+- **۲۹ مرداد ۱۴۰۵** — تاریخ تولد **سه کنترل** است (ورودی روز، انتخاب *نام* ماه، ورودی سال)، نه یک
+  فیلد متنی با جداکننده. پارس کردن تاریخ آزاد روی کیبورد گوشی یعنی جنگیدن با جداکننده‌ها و
+  نظام‌های رقمی، بی‌هیچ فایده‌ای؛ و آدم‌ها نام ماه را به یاد می‌آورند، نه شماره‌اش را.
+- **۲۹ مرداد ۱۴۰۵** — `RequireAuth` تا وقتی `status === 'loading'` است اسپینر رندر می‌کند.
+  ریدایرکت در پنجره بازیابی کوکی، کاربر واردشده را در هر بارگذاری دوباره به صفحه ورود پرت می‌کرد.
+  روی خود `/auth/profile` مقدار `requireCompleteProfile={false}` است، وگرنه ریدایرکت دنبال دم
+  خودش می‌دود.
+- **۲۹ مرداد ۱۴۰۵** — باگی که هنگام سیم‌کشی گرفته شد: `TextField` مقدار `{...props}` را *پیش از*
+  `className` خودش پخش می‌کرد و بی‌صدا هر className که فراخوان می‌داد را دور می‌ریخت. حالا ادغام
+  می‌کند. در هر کامپوننت wrapper تازه حواستان به این باشد.
+- **۲۹ مرداد ۱۴۰۵** — `Product.fromAmount` اضافه شد (مهاجرت `20260820123526_product_from_amount`):
+  ارزان‌ترین حق بیمه منتشرشده به ریال، برای تیزر «از … تومان». **عمداً نرمال‌زدایی شده** — نرخ دادن
+  هر محصول در برابر هر شرکت فقط برای کشیدن یک کارت در صفحه اصلی مسخره بود. seed باید هر وقت
+  جدول‌های نرخ عوض شدند پرش کند، و به‌جای نشان دادن قیمت ساختگی، null می‌ماند.
+- **۲۹ مرداد ۱۴۰۵** — کاتالوگ عمومی و بدون احراز هویت است (مرور باید پیش از ورود کار کند) و
+  `Cache-Control: public, max-age=60, stale-while-revalidate=300` را با خود دارد، پس پشت
+  Cloudflare صفحه اصلی به‌جای یک کوئری برای هر بازدیدکننده، یک hit روی لبه است.
+- **۲۹ مرداد ۱۴۰۵** — محصول **غیرفعال** مقدار ۴۰۴ می‌دهد، غیرقابل تشخیص از محصول ناموجود، و
+  شرکت‌های غیرفعال از فهرست شرکت‌های یک محصول فیلتر می‌شوند. با حضور هم‌زمان یک محصول غیرفعال و یک
+  شرکت غیرفعال در جدول بررسی شد.
+- **۲۹ مرداد ۱۴۰۵** — `faq` از نوع jsonb است، پس به شکل `unknown` می‌رسد. ورودی‌های بدشکل دور
+  ریخته می‌شوند، هرگز throw نمی‌شود — یک ردیف خراب نباید صفحه محصول را از کار بیندازد. در برابر یک
+  رشته، یک null و یک آرایه آشغال تست شد.
+- **۲۹ مرداد ۱۴۰۵** — نکته: **`docker exec` به `-i` نیاز دارد** تا heredoc را به `psql` برساند.
+  بدون آن، SQL بی‌صدا دور ریخته می‌شود و psql با کد صفر خارج می‌شود، پس گام seed «موفق» می‌شود در
+  حالی که هیچ‌چیز درج نکرده. یک دور گیج‌کننده از پاسخ‌های خالی API خرج برداشت.
+- **۲۹ مرداد ۱۴۰۵** — یک نقطه پایانی، یازده کلید، یک شکل
+  `ReferenceItem { value, labelFa, groupFa?, meta? }` — تا وب هر دراپ‌داون را با یک کامپوننت رندر
+  کند. فهرست‌ها یکجا برمی‌گردند نه صفحه‌بندی‌شده: یک‌بار گرفتن، کش کردن و فیلتر محلی بهتر از یک
+  درخواست به‌ازای هر کلید روی گوشی است. `q` برای فهرست‌هایی است که از این ظرفیت بزرگ‌تر می‌شوند؛
+  نتایج روی ۵۰۰ سقف دارند.
+- **۲۹ مرداد ۱۴۰۵** — **ترتیب الفبایی فارسی، ترتیب کدپوینت یونیکد نیست.** پ برابر U+067E و س
+  برابر U+0633 است، پس Postgres `سمند` را پیش از `پژو ۲۰۶` مرتب می‌کرد — برعکسِ آنچه هر
+  فارسی‌زبانی می‌داند. مرتب‌سازی حالا در اپلیکیشن با `Intl.Collator('fa')` انجام می‌شود که فارغ از
+  collation دیتابیس درست است (Postgres روی Railway لوکال فارسی نخواهد داشت). **هر فهرست تازه‌ای که
+  کاربر می‌بیند باید همین‌طور مرتب شود، نه فقط با `ORDER BY`.**
+- **۲۹ مرداد ۱۴۰۵** — عبارت‌های جست‌وجو از `normalizeFa` می‌گذرند، پس `كرمان` که با کاف عربی تایپ
+  شده با `کرمان` که با کاف فارسی ذخیره شده تطبیق می‌خورد. روی HTTP بررسی شد. همین قاعده برای هر
+  جست‌وجوی متنی آینده روی ستون‌های فارسی هم صادق است.
+- **۲۹ مرداد ۱۴۰۵** — `city.meta.quakeZone` همراه گزینه شهر سوار می‌شود، چون افزوده زلزله در
+  آتش‌سوزی منزل از رویش قیمت می‌خورد و فرم نباید به جست‌وجوی دومی نیاز داشته باشد.
+- **۲۹ مرداد ۱۴۰۵** — seed **خودتکرارپذیر** است: هر نوشتن روی یک کلید یکتای طبیعی upsert می‌کند.
+  با سه بار اجرا بررسی شد — ۵ شرکت، ۳ محصول، ۱۳ عرضه، ۵ جدول نرخ، ۴۰ شهر، ۳۰ مدل خودرو، در هر
+  اجرا بدون تغییر. برای انتشار مجموعه تازه‌ای از نرخ‌ها به‌جای بازنویسی v1، مقدار
+  `RATE_TABLE_VERSION` در `seed.ts` را بالا ببرید.
+- **۲۹ مرداد ۱۴۰۵** — **نام واقعی شرکت‌ها seed شده است** (پاسارگاد، سامان، کارآفرین، دی، البرز)
+  چون صفحه مقایسه‌ای پر از نام ساختگی قابل ارزیابی نیست. **هیچ رابطه تجاری‌ای با هیچ‌کدامشان وجود
+  ندارد.** ارقام توانگری و رضایت هم موقت‌اند. اگر پیش از امضای شراکت‌ها این مسئله‌ساز شد،
+  `seed-data/insurers.ts` تنها فایلی است که باید عوض شود. ← همچنان پرسش باز شماره ۲ در MVP-PLAN.
+- **۲۹ مرداد ۱۴۰۵** — شکل جدول نرخ مسافرتی (`seed-data/travel-rates.ts`) که موتور نرخ‌دهی مصرفش
+  می‌کند: `zoneBase × durationBand × ageBand × coverageFactor`، بعد `taxRate`، بعد `fees[]` ثابت
+  به‌عنوان ردیف‌های جدا. به‌علاوه `limits` برای رد قطعی و `coverages[]` برای نمایش. هر شرکت یک
+  `priceIndex` و `elderlyLoading` دارد، تا ارزان‌ترین گزینه واقعاً با سن مسافر عوض شود نه اینکه
+  همیشه یک شرکت برنده باشد.
+- **۲۹ مرداد ۱۴۰۵** — هر عددی در جدول‌های نرخ ساختگی است. `meta.source: "PLACEHOLDER"` روی هر ردیف
+  هست و رابط کاربری باید تا وقتی جدول‌های واقعی شرکت‌ها جایشان را نگرفته‌اند نشان «نمونه» را نشان
+  بدهد.
+- **۲۹ مرداد ۱۴۰۵** — مقادیر `City.quakeZone` تقریبی‌اند، **نه** پهنه‌بندی رسمی استاندارد ۲۸۰۰.
+  پیش از آنکه پوشش زلزله آتش‌سوزی منزل واقعاً قیمت بخورد، آن جدول باید تأمین شود.
+- **۲۹ مرداد ۱۴۰۵** — هسته موتور نرخ‌دهی: `RatingStrategy` (تابع خالص
+  `rate(input, table, ctx)`، با ساعتی که از بیرون داده می‌شود تا استعلام بازتولیدپذیر بماند)،
+  `RatingRegistry` (برای هر نوع محصول یک استراتژی، روی تکراری throw می‌کند)، `RatingService`
+  (جدول مؤثر هر عرضه را بار می‌کند و هر شرکت را قیمت می‌زند)، و `PremiumBuilder`/`pickBand`
+  به‌عنوان اولیه‌های مشترک پول.
+- **۲۹ مرداد ۱۴۰۵** — **باگی که تست خودش گرفت: `netPremium` گرد می‌شد اما `totalAmount` ردیف‌های
+  گردنشده را جمع می‌کرد**، پس حق بیمه اعلام‌شده و مبلغ دریافتی ۴۰۰ ریال اختلاف داشتند. گرد کردن
+  حالا **هنگام افزوده شدن هر ردیف** انجام می‌شود، هرگز روی جمع، تا آنچه به مشتری نشان داده می‌شود
+  همیشه با آنچه می‌پردازد جور دربیاید. یک تست پارامتری هست که
+  `Σ lineItems === totalAmount` را assert می‌کند — حذفش نکنید.
+- **۲۹ مرداد ۱۴۰۵** — مالیات در زمان `build()` حساب می‌شود، نه وقتی `withTax()` صدا زده می‌شود، تا
+  افزودن یک ردیف حق بیمه بعد از اعلام مالیات نتواند بی‌صدا کم‌دریافتی بسازد. تله ترتیبی به‌جای
+  مستند شدن، با خود طراحی حذف شده است.
+- **۲۹ مرداد ۱۴۰۵** — رد کردن یک **نتیجه** است، نه استثنا: `ineligible(reasonFa)` نتیجه‌ای با
+  قیمت صفر برمی‌گرداند که رابط کاربری آن را کنار موارد قیمت‌خورده رندر می‌کند. رد کردن یک شرکت
+  هرگز نباید مقایسه را بشکند.
+- **۲۹ مرداد ۱۴۰۵** — شرکتی که جدول نرخ مؤثر ندارد **با یک هشدار رد می‌شود**، نه با خطا — یک شرکت
+  نیمه‌پیکربندی‌شده نباید کل مقایسه را از کار بیندازد. `NO_ELIGIBLE_OFFERS` فقط وقتی است که اصلاً
+  هیچ‌چیز قابل قیمت‌گذاری نباشد.
+- **۲۹ مرداد ۱۴۰۵** — ورودی **یک‌بار** پارس می‌شود، پیش از نرخ‌دهی هر شرکت، تا یک تاریخ بدشکل به
+  شکل یک خطای اعتبارسنجی خوانده شود نه «همه شرکت‌ها شما را رد کردند».
+- **۲۹ مرداد ۱۴۰۵** — در برابر جدول‌های seed شده بررسی شد: یک سفر ۱۰ روزه شنگن در هر پنج شرکت
+  قیمت می‌خورد (دی ۳۸۳٬۸۱۰ تومان … کارآفرین ۴۶۵٬۳۲۰ تومان)، `isSampleRates` برابر true است، ردّ
+  explain پر است و ردیف‌ها دقیقاً به جمع کل می‌رسند.
+- **۲۹ مرداد ۱۴۰۵** — استراتژی مسافرتی در برابر جدول‌های seed شده قیمت خورد. مقایسه واقعاً با سن
+  جابه‌جا می‌شود: در ۳۶ سالگی دی ارزان‌ترین است (۳۸۳٬۸۱۰ تومان) و کارآفرین گران‌ترین؛ در ۷۲ سالگی
+  این **وارونه** می‌شود — کارآفرین ارزان‌ترین (۱٬۰۶۲٬۹۵۰) و دی گران‌ترین. در ۸۲ سالگی سامان و دی با
+  حدود خودشان رد می‌کنند در حالی که سه شرکت هنوز قیمت می‌دهند. `elderlyLoading` در seed دقیقاً
+  برای همین است.
+- **۲۹ مرداد ۱۴۰۵** — نرخ مسافرتی بر اساس **سن در روز حرکت** است، نه سن امروز: تولدی که بین
+  استعلام و سفر بیفتد قیمت را عوض می‌کند، و `ageOnDeparture` دقیقاً روی مرز روز تولد تست شده است.
+- **۲۹ مرداد ۱۴۰۵** — `parse()` حالا `RatingContext` می‌گیرد، پس «سفر در گذشته شروع می‌شود» یک
+  `VALIDATION_FAILED` روی `startDate` است، نه پنج کارت یکسانِ «واجد شرایط نیست» که مثل رد شدن
+  توسط پنج شرکت خوانده می‌شود.
+- **۲۹ مرداد ۱۴۰۵** — جدول نرخ بدشکل **فقط همان یک شرکت** را از دور خارج می‌کند (اعتبارسنجی zod
+  در زمان نرخ‌دهی)، هرگز استثنا نمی‌شود. یک ردیف خراب در دیتابیس نباید مقایسه را سفید کند.
+- **۲۹ مرداد ۱۴۰۵** — `toPersianNumber()` اضافه شد: ارقام فارسی **و** جداکننده اعشار فارسی ٫
+  (U+066B). `toPersianDigits` به‌تنهایی نقطه لاتین را باقی می‌گذارد، پس ضریب‌ها به شکل
+  `ضریب ۱.۵` چاپ می‌شدند. **برای هر عددی که ممکن است صحیح نباشد از `toPersianNumber` استفاده
+  کنید.** تست قدیمی فقط «هیچ رقم لاتینی نیست» را assert می‌کرد که نقطه لاتین از آن رد می‌شود —
+  حالا `.` را صریحاً رد می‌کند.
+- **۲۹ مرداد ۱۴۰۵** — `RatingService.refreshTeaserPrices()` مقدار «از … تومان» را از جدول‌های زنده
+  مشتق می‌کند؛ seed آن را آخر از همه صدا می‌زند. مسافرتی به **۱۳۹٬۵۰۰ تومان** (دی، آسیا) می‌رسد
+  که بررسی شد برابر ارزان‌ترین قیمت واقعاً قابل استعلام برای آن سبد است. خودرو و آتش‌سوزی منزل
+  `null` هستند — هنوز استراتژی ندارند، و هیچ قیمتی بهتر از قیمت غلط است.
+- **۲۹ مرداد ۱۴۰۵** — استراتژی‌ها `teaserInputs()` را در معرض می‌گذارند که **چند سبد کاندید**
+  برمی‌گرداند، یکی برای هر منطقه، تا ارزان‌ترین *پیدا* شود نه فرض. هاردکد کردن «آسیا ارزان‌ترین
+  است» با نخستین تغییر جدول نرخ کهنه می‌شد.
+- **۲۹ مرداد ۱۴۰۵** — سبد تیزر یک **آدم معمولی ۳۵ ساله در سفر ۷ روزه با کمترین پوشش** است —
+  قیمتی که مشتری واقعی می‌تواند بپردازد. نرخ دادنش با ضریب سنی ۰٫۶۵ یک نوزاد، تیتری می‌ساخت که
+  هیچ‌کس هرگز به آن نمی‌رسید. تستی هست که assert می‌کند سن ۳۵ است و هر سبد همچنان پارس می‌شود
+  (یعنی هرگز در گذشته حرکت نمی‌کند).
+- **۲۹ مرداد ۱۴۰۵** — بعد از **هر** تغییر جدول نرخ، `pnpm db:seed` را دوباره اجرا کنید وگرنه تیزر
+  کهنه می‌شود. `RatingService` دقیقاً به این دلیل آرگومان‌های سازنده ساده می‌گیرد که seed بتواند
+  بدون تزریق وابستگی Nest بسازدش، چون آن زیر tsx اجرا نمی‌شود.
+- **۲۹ مرداد ۱۴۰۵** — **قفل بودن قیمت اثبات شده است، نه فرض.** نرخ پایه شنگن دی در دیتابیس دو
+  برابر شد و یک استعلام موجود دوباره خوانده شد: همچنان ۳٬۸۳۸٬۱۰۰ ریال و همچنان ارزان‌ترین، در
+  حالی که یک استعلام *تازه* دی را از سه تای اول بیرون انداخت و سامان را بالا آورد. سفارش‌ها به
+  `QuoteOffer` ارجاع می‌دهند، پس هیچ‌چیز نمی‌تواند وسط تسویه‌حساب قیمت مشتری را عوض کند.
+- **۲۹ مرداد ۱۴۰۵** — `Quote.isSampleRates` اضافه شد (مهاجرت `20260820131631_quote_sample_rates`).
+  باید همراه استعلام قفل شود: جدول‌ها می‌توانند بعد از دیدن قیمت توسط مشتری عوض شوند، پس جست‌وجوی
+  آن در زمان خواندن، آنچه واقعاً به او نشان داده شده را غلط گزارش می‌کرد.
+- **۲۹ مرداد ۱۴۰۵** — TTL استعلام **۳۰ دقیقه** است. `GET` روی استعلام منقضی همچنان آن را با
+  `isExpired: true` برمی‌گرداند به‌جای خطا — رابط کاربری برای «منقضی شده، دوباره استعلام بگیرید»
+  به چیزی برای رندر نیاز دارد. رد کردن *سفارش* کار M3 است.
+- **۲۹ مرداد ۱۴۰۵** — نشان‌ها از قواعد شفاف حساب می‌شوند و **هرگز فروخته نمی‌شوند**: `CHEAPEST`
+  کمترین جمع است و `RECOMMENDED` بهترین سابقه خسارت در میان پیشنهادهایی است که تا ۲۰٪ بالاتر از
+  آن باشند. عمداً **هیچ `BEST_COVERAGE`ای وجود ندارد** — همه شرکت‌های مسافرتی کلیدهای پوشش یکسانی
+  می‌دهند، پس نشانی می‌شد بی‌پشتوانه. وقتی پوشش‌های یک محصول واقعاً فرق کردند اضافه‌اش کنید.
+- **۲۹ مرداد ۱۴۰۵** — شرکت‌هایی که رد کرده‌اند در فهرست می‌مانند، آخر مرتب می‌شوند و نشان
+  نمی‌گیرند. «این شرکت مسافر ۸۲ ساله را پوشش نمی‌دهد» اطلاعاتی است که مشتری می‌خواهد؛ پنهان کردنش
+  مقایسه را ناقص جلوه می‌دهد.
+- **۲۹ مرداد ۱۴۰۵** — استعلام ناشناس **توسط نخستین فراخوان واردشده‌ای که شناسه‌اش را ارائه کند
+  تصاحب می‌شود**. همین است که «اول استعلام، بعد ورود» را از دیوار کد یک‌بارمصرف سرِ تسویه‌حساب
+  عبور می‌دهد. بررسی شد: هنگام خواندن تصاحب می‌شود، و بعد از آن هم برای کاربر دیگر و هم برای
+  فراخوان ناشناس `QUOTE_NOT_YOURS` می‌دهد.
+- **۲۹ مرداد ۱۴۰۵** — صفحه اصلی تمام شد: کارت محصولات، تیزر مشتق‌شده، نشان «نرخ نمونه»، اسکلتون‌ها
+  و یک حالت خطای واقعی. **نوار بیمه‌نامه‌های فعال جدا شد** — به `GET /policies` نیاز دارد که تا M3
+  وجود ندارد، و نواری بدون منبع داده یعنی رابط کاربری موقت.
+- **۲۹ مرداد ۱۴۰۵** — `Product.fromAmountIsSample` اضافه شد (مهاجرت `20260820132256_...`)، کنار
+  همان عددی که توصیفش می‌کند. قیمت تیتر و «آیا این واقعی است» باید با هم سفر کنند، وگرنه تیزر
+  بعد از تعویض نرخ‌های پشتش همچنان ادعای واقعی بودن می‌کند. این پرچم همان پیشنهادی را دنبال
+  می‌کند که واقعاً تیزر را **برده**، نه هر پیشنهادی در مجموعه.
+- **۲۹ مرداد ۱۴۰۵** — محصولی که `fromAmount === null` دارد به شکل «به‌زودی» رندر می‌شود و لینک
+  نیست. این از داده مشتق می‌شود — موتور واقعاً هنوز نمی‌تواند خودرو یا آتش‌سوزی منزل را استعلام
+  کند — نه از فهرست هاردکد محصولات «آماده»، پس کارت‌ها به‌محض آمدن یک استراتژی خودشان روشن می‌شوند.
+- **۲۹ مرداد ۱۴۰۵** — **گذرا:** کارت مسافرتی به `/p/travel/form` لینک می‌دهد که وظیفه بعدی
+  می‌سازدش. تا آن موقع ۴۰۴ می‌دهد.
+- **۲۹ مرداد ۱۴۰۵** — `Cache-Control` کاتالوگ یعنی صفحه اصلی تا حدود ۶۰ ثانیه بعد از مرگ API
+  همچنان از کش مرورگر رندر می‌شود — رفتار خوبی است، اما حالت خطا را پنهان می‌کند. برای بررسی
+  رابط خطا، `VITE_API_URL` را به یک پورت مرده نشانه بگیرید و Vite را دوباره راه بیندازید؛ متوقف
+  کردن API کافی نیست.
+- **۲۹ مرداد ۱۴۰۵** — **استعلام دیگر هویت نمی‌پرسد.** ورودی مسافرتی برای *دیدن قیمت* نام، کد ملی و
+  شماره گذرنامه می‌خواست؛ هیچ‌کس برای گرفتن استعلام شماره گذرنامه تایپ نمی‌کند، پس قیف در گام اول
+  می‌مرد. حالا `travelInputSchema.travelers` برابر `[{ birthDate }]` است — نرخ‌دهی به سن نیاز دارد
+  و به هیچ‌چیز دیگر. هویت سرِ تسویه‌حساب و روی سفارش گرفته می‌شود، جایی که واقعاً برای صدور لازم
+  است. ردیف‌های حق بیمه شماره‌دارند («حق بیمه — مسافر ۱») چون مسافرها در زمان استعلام ناشناس‌اند.
+  **همین قاعده را برای خودرو و آتش‌سوزی منزل هم اعمال کنید: فقط چیزی را بپرسید که قیمت را عوض
+  می‌کند.**
+- **۲۹ مرداد ۱۴۰۵** — ویزارد مسافرتی: ۴ گام (مقصد ← تاریخ ← مسافران ← سقف پوشش)، نوار پیشرفت،
+  نوار اقدام چسبان، بازگشت به گام قبل. سرتاسر در مرورگر بررسی شد — یک استعلام واقعی ساخت و به
+  `/quotes/:id` رفت.
+- **۲۹ مرداد ۱۴۰۵** — ورود تاریخ شمسی داخل ویزارد بررسی شد: ۱۰ مهر ۱۴۰۵ ← `2026-10-02` و
+  ۲۰ مهر ← `2026-10-12`، با خلاصه زنده «مدت سفر: ۱۰ روز».
+- **۲۹ مرداد ۱۴۰۵** — دو مسافر ۳۶ و ۷۲ ساله در هر پنج شرکت قیمت خوردند
+  (کارآفرین ۱٬۵۲۶٬۲۷۰ … دی ۱٬۷۲۳٬۹۴۰ تومان)، با ضریب‌های سنی ۱ و ۲٫۶/۳٫۰۷ که در ردّ explain
+  ذخیره‌شده دیده می‌شوند.
+- **۲۹ مرداد ۱۴۰۵** — **گذرا:** ویزارد روی `/quotes/:id` می‌نشیند که وظیفه بعدی می‌سازدش.
+- **۲۹ مرداد ۱۴۰۵** — نکته هنگام بازرسی دستی داده: Postgres یک بولین **الحاق‌شده** را به شکل
+  `true`/`false` رندر می‌کند، نه `t`/`f`. مقایسه با `'t'` بعد از `||` بی‌صدا شاخه اشتباه را
+  می‌گیرد — همین باعث شد پیشنهادهای درست، رد شده به نظر برسند. از `::int` یا یک ستون جدا استفاده
+  کنید.
+- **۲۹ مرداد ۱۴۰۵** — **شرایط رقابتی اصلاح شد، و می‌توانست هر صفحه احرازشده‌ای را بشکند.** React
+  افکت‌های فرزند را *پیش از* افکت‌های والد اجرا می‌کند، پس یک `useQuery` داخل درخت، درخواستش را پیش
+  از آنکه `AuthProvider` بتواند نشست را بازیابی کند می‌فرستاد. درخواست ناشناس بیرون می‌رفت و API
+  درست جواب می‌داد — ۴۰۳ روی استعلام کسی دیگر. حالا بازیابی نشست در **زمان بارگذاری ماژول** در
+  `lib/api.ts` شروع می‌شود (`sessionBootstrap`) و هر درخواست منتظرش می‌ماند. اصلاح آن به‌ازای هر
+  کوئری، همان تله را برای صفحه بعدی باقی می‌گذاشت.
+  `AuthProvider` هم به‌جای صدا زدن دوباره `refreshSession()` منتظر همان promise می‌ماند — یک
+  تازه‌سازی دوم توکن را بی‌دلیل می‌چرخاند.
+- **۲۹ مرداد ۱۴۰۵** — صفحه مقایسه: خلاصه سفر با «ویرایش»، شمارش معکوس زنده (تیک خوردن
+  ۲۹:۳۰ ← ۲۹:۲۸ بررسی شد)، اعلان «نمونه»، نشان‌های «ارزان‌ترین»/«پیشنهاد ما»، توانگری و رضایت از
+  خسارت به‌عنوان نشانه‌های اعتماد، و ردها با دلیل خودشان («این شرکت مسافر بالای ۸۰ سال را پوشش
+  نمی‌دهد»).
+- **۲۹ مرداد ۱۴۰۵** — شمارش معکوس در هر تیک از روی مهلت دوباره حساب می‌شود نه اینکه کم شود، پس
+  تبی که در پس‌زمینه رفته و تیک‌ها را از دست داده، وقتی کاربر برمی‌گردد باز هم حقیقت را نشان
+  می‌دهد.
+- **۲۹ مرداد ۱۴۰۵** — استعلام منقضی: بنر + «استعلام دوباره»، شمارش معکوس پنهان، پیشنهادها کم‌رنگ و
+  با `pointer-events: none` — برای مرجع دیده می‌شوند اما قابل خرید نیستند. در مرورگر بررسی شد.
+- **۲۹ مرداد ۱۴۰۵** — **گذرا:** کارت پیشنهادها به `/quotes/:id/offers/:offerId` لینک می‌دهند که
+  وظیفه بعدی می‌سازدش.
+- **۲۹ مرداد ۱۴۰۵** — **M2 کامل شد.** بازدیدکننده می‌تواند اپ را باز کند، محصولی انتخاب کند،
+  ویزارد مسافرتی را اجرا کند، پنج شرکت واقعی را روی قیمت‌های قفل‌شده مقایسه کند و تفکیک کامل حق
+  بیمه را ببیند.
+- **۲۹ مرداد ۱۴۰۵** — جزئیات پیشنهاد، صورت‌حساب را همان‌طور نشان می‌دهد که یک صورت‌حساب واقعی
+  خوانده می‌شود: یک ردیف حق بیمه برای هر مسافر، عوارض و مالیات به‌عنوان ردیف‌های خودشان، بعد جمع
+  قابل پرداخت. روی صفحه بررسی شد که
+  ۴۲۱٬۲۰۰ + ۱٬۸۵۳٬۳۰۰ + ۲٬۰۰۰ + ۲۲۷٬۴۵۰ = ۲٬۵۰۳٬۹۵۰ — یعنی تغییرناپذیر
+  `Σ lineItems === totalAmount` تا سطح پیکسل برقرار است.
+- **۲۹ مرداد ۱۴۰۵** — صفحه جزئیات شرکتی که رد کرده، دلیل را نشان می‌دهد و **نه قیمتی دارد نه دکمه
+  خریدی** — چیزی برای فروش نیست، پس چیزی هم پیشنهاد نمی‌شود.
+- **۲۹ مرداد ۱۴۰۵** — دکمه خرید **با یک یادداشت صادقانه غیرفعال است** («پرداخت آنلاین به‌زودی
+  فعال می‌شود») چون سفارش تا M3 وجود ندارد. دکمه‌ای که ۴۰۴ می‌دهد بدتر از دکمه‌ای است که می‌گوید
+  چرا هنوز کار نمی‌کند. در وظیفه تسویه‌حساب M3 فعالش کنید.
+- **۲۹ مرداد ۱۴۰۵** — ماشین حالت سفارش یک **جدول** است، نه `if`های پراکنده (`order-status.ts`).
+  رد می‌کند: صدور بدون پرداخت، برگرداندن از پرداخت، لغو سفارش پرداخت‌شده یا صادرشده، و صدور دوباره.
+  دو تلاش دوباره‌ای که مهم‌اند را اجازه می‌دهد — `PAYMENT_FAILED → PENDING_PAYMENT` (کارت رد شده
+  یعنی تلاش دوباره) و `ISSUE_FAILED → ISSUING` (پول گرفته شده و پشتیبانی باید بتواند دوباره
+  براند). یک تست assert می‌کند که **هر وضعیت غیرپایانی راه خروجی دارد**، تا سفارش پرداخت‌شده هرگز
+  به بن‌بست نرسد.
+- **۲۹ مرداد ۱۴۰۵** — `transition()` مقدار `updateMany` خودش را روی وضعیت **فعلی** نگهبانی
+  می‌کند، پس دو فراخوان هم‌زمان نمی‌توانند هر دو یک سفارش را جابه‌جا کنند؛ بازنده صفر ردیف به‌روز
+  می‌کند و رد می‌شود. بازگشت‌های پرداخت خیلی بیشتر از آنچه فکر می‌کنید دوبار می‌رسند.
+- **۲۹ مرداد ۱۴۰۵** — **idempotency پیش از هر اعتبارسنجی بررسی می‌شود.** درخواستی که دوباره تلاش
+  شده باید سفارش اصلی را برگرداند حتی اگر استعلام از آن موقع منقضی شده باشد، وگرنه یک شبکه ناپایدار
+  یک خرید را به خطایی تبدیل می‌کند که مشتری نمی‌تواند حلش کند. بررسی شد: دو POST یکسان ← یک ردیف
+  سفارش.
+- **۲۹ مرداد ۱۴۰۵** — **بیمه‌شده باید دقیقاً همان کسی باشد که قیمت خورده** — همان تعداد، همان
+  تاریخ‌های تولد (بدون حساسیت به ترتیب). سن محرک حق بیمه است، پس استعلام گرفتن برای یک ۳۰ ساله و
+  بیمه کردن یک ۸۰ ساله یعنی فروختن پوششی که شرکت هرگز با آن موافقت نکرده. روی HTTP بررسی شد.
+- **۲۹ مرداد ۱۴۰۵** — TTL سفارش (۳۰ دقیقه) مستقل از TTL استعلام است. وقتی کسی به خرید متعهد شد،
+  قیمت روی `QuoteOffer` قفل است، پس منقضی شدن استعلام وسط پرداخت بی‌ضرر است. `isExpired` فقط تا
+  وقتی که هنوز `PENDING_PAYMENT` است اعمال می‌شود.
+- **۲۹ مرداد ۱۴۰۵** — سفارش‌ها مستقیم در `PENDING_PAYMENT` ساخته می‌شوند؛ `DRAFT` تولیدکننده‌ای
+  ندارد و برای یک جریان «ذخیره کن و برگرد» در آینده رزرو شده است.
+- **۲۹ مرداد ۱۴۰۵** — تله داده تست که دو بار هنگام بررسی دستی خورد: `insuredPersonSchema` برای
+  `passportNo` دست‌کم ۵ کاراکتر و برای نام‌ها دست‌کم ۲ کاراکتر می‌خواهد، پس `'A1'` یا نام کوچک
+  تک‌حرفی *پیش از* اجرای بررسی‌های کسب‌وکاری در zod شکست می‌خورد و شبیه خطای اشتباه به نظر می‌رسد.
+- **۲۹ مرداد ۱۴۰۵** — **درگاه ماک عمداً پارامتر `Status` بازگشت را نادیده می‌گیرد.** مرورگر
+  مشتری صاحب آن آدرس است، پس درگاهی که `Status=OK` را باور کند به هرکسی که بتواند یک query string
+  ویرایش کند بیمه‌نامه مجانی می‌دهد. `verify()` نتیجه‌ای را می‌خواند که صفحه بانک ماک سمت سرور ثبت
+  کرده — همان جای دفتر PSP که یک `verify` واقعی از آن می‌پرسد. دو تست این را سنجاق می‌کنند:
+  `Status=OK` روی پرداخت تسویه‌نشده یا ردشده همچنان رد می‌شود، و `Status=NOK` روی پرداختی که
+  واقعاً انجام شده همچنان تأیید می‌شود. **هر آداپتور IPG واقعی باید همین ویژگی را نگه دارد.**
+- **۲۹ مرداد ۱۴۰۵** — Authorityها به شکل زرین‌پال‌اند (۳۶ کاراکتر با `A` در ابتدا)، پس وقتی درگاه
+  واقعی جای ماک را بگیرد هیچ‌چیز پایین‌دستی عوض نمی‌شود. یکتا بودنشان روی ۵۰ درخواست هم‌زمان بررسی
+  شد.
+- **۲۹ مرداد ۱۴۰۵** — `POST /orders/:id/pay` **چند تلاش برای هر سفارش** را اجازه می‌دهد — کارت رد
+  شده نباید استعلام مشتری را از او بگیرد. هر تلاش ردیف `Payment` خودش را با authority خودش دارد،
+  پس تاریخچه قابل حسابرسی می‌ماند. `PAYMENT_FAILED` هنگام تلاش دوباره به `PENDING_PAYMENT`
+  برمی‌گردد. بررسی شد: دو تلاش ← دو ردیف، یک سفارش.
+- **۲۹ مرداد ۱۴۰۵** — از دریافت وجه برای سفارشی که از قبل پرداخت‌شده یا صادرشده است
+  (`ORDER_ALREADY_PAID`)، وسط صدور یا لغوشده (`ORDER_INVALID_TRANSITION`)، منقضی (`ORDER_EXPIRED`)
+  یا مال کس دیگری (`FORBIDDEN` — روی HTTP بررسی شد) خودداری می‌کند.
+- **۲۹ مرداد ۱۴۰۵** — مبالغ به **ریال** به درگاه می‌روند. بعضی PSPهای ایرانی تومان می‌گیرند؛ هنگام
+  جایگزینی با درگاه واقعی واحد را بررسی کنید وگرنه هر برداشت ۱۰ برابر غلط است.
+- **۲۹ مرداد ۱۴۰۵** — صفحه بانک ماک روی `GET /mock-gateway?Authority=…` (بیرون از پیشوند
+  `api/v1`)، که با یک POST فرم ساده به `/mock-gateway/settle` تسویه می‌کند. هر سه نتیجه بررسی
+  شدند: PAID یک `refId` و کارت ماسک‌شده می‌نویسد و `Status=OK` برمی‌گرداند؛ FAILED و CANCELLED
+  رسیدی نمی‌نویسند و `Status=NOK` می‌دهند. authority ناشناس یا غایب ← ۴۰۴.
+- **۲۹ مرداد ۱۴۰۵** — **فیلدهای کارت عمداً فقط‌خواندنی و با مقادیر جعلی‌اند.** صفحه بانک ماکی که
+  ورودی کارت بپذیرد یک بدهی است: دیر یا زود کسی وسط دمو یک شماره کارت واقعی داخلش تایپ می‌کند و
+  در لاگ درخواست‌ها می‌نشیند. صفحه باید *شبیه* شاپرک باشد، نه اینکه چیزی جمع کند. همین‌طور نگهش
+  دارید.
+- **۲۹ مرداد ۱۴۰۵** — **نگهبان بوت تازه در محیط عملیاتی: `PAYMENT_GATEWAY=mock` بالا نمی‌آید**
+  مگر `ALLOW_MOCK_PAYMENT_IN_PROD=true` باشد. همان شکل ریسک کد یک‌بارمصرف سراسری — هرکسی که به
+  صفحه بانک برسد می‌تواند «پرداخت موفق» را بزند و بدون پرداخت بیمه‌نامه بگیرد. بررسی شد: نگهبان با
+  محیط عملیاتی گاز می‌گیرد و محیط توسعه همچنان بالا می‌آید. استقرار دموی M6 باید آن پرچم را عمداً
+  ست کند.
+- **۲۹ مرداد ۱۴۰۵** — `express.urlencoded` حالا در `main.ts` نصب شده؛ صفحه بانک یک فرم عادی HTML
+  می‌فرستد نه JSON.
+- **۲۹ مرداد ۱۴۰۵** — **گذرا:** تسویه به `${WEB_URL}/payment/callback` ریدایرکت می‌کند که اپ وب
+  هنوز مسیرش را ندارد — وظیفه بازگشت/تأیید می‌سازدش.
+- **۲۹ مرداد ۱۴۰۵** — `POST /payments/verify` **تنها** جایی است که سفارش PAID می‌شود، و **عمداً
+  بدون احراز هویت** است. پول جابه‌جا شده، چه مرورگر مشتری برگشته باشد چه نه — ممکن است تب را بسته
+  باشد، آنتن نداشته باشد، یا در اپ بانکی پرداخت کرده باشد که هرگز برنمی‌گردد. authority یک
+  قابلیتِ غیرقابل‌حدس است، پس تلاش دوباره، یک تب دوم، یا یک کار تطبیق در آینده همگی می‌توانند همان
+  مسیر را برانند. این نقطه پایانی گزارش می‌دهد درگاه چه تصمیمی گرفت؛ نمی‌تواند پرداختی را موفق
+  کند.
+- **۲۹ مرداد ۱۴۰۵** — روی HTTP بررسی شد، چهار حالتی که اهمیت دارند:
+  · `Status=OK` جعلی **پیش از** پرداخت ← FAILED، بدون بیمه‌نامه
+  · پرداخت واقعی که **سه بار** تأیید شد ← هر بار همان refId، سفارش یک‌بار PAID، یک ردیف پرداخت
+  · بانک رد کرد و بعد `Status=OK` جعلی ← FAILED، سفارش **قابل تلاش دوباره** ماند
+  · دو بازگشت هم‌زمان در مسابقه ← هر دو همان refId را گزارش کردند، سفارش یک‌بار PAID شد
+- **۲۹ مرداد ۱۴۰۵** — ادعای اتمی یک `updateMany` است که روی CREATED/REDIRECTED بودنِ پرداخت
+  نگهبانی می‌شود. بازنده به‌جای جابه‌جا کردن دوباره سفارش، نتیجه برنده را می‌خواند — و همین است که
+  جلوی صدور دو بیمه‌نامه توسط بازگشت دوتایی را می‌گیرد.
+- **۲۹ مرداد ۱۴۰۵** — پرداخت ردشده سفارش را در `PAYMENT_FAILED` می‌گذارد، نه لغوشده، تا مشتری
+  بتواند کارت دیگری امتحان کند. یک در معرض بودن جزئی و شناخته‌شده: کسی که یک authority داشته باشد
+  می‌تواند این وضعیت را تحمیل کند — اما غیرقابل حدس است و سفارش قابل تلاش دوباره، پس اثرش صفر است.
+- **۲۹ مرداد ۱۴۰۵** — `OrdersModule` ↔ `PaymentsModule` یک دور واقعی است (سفارش‌ها `/pay` را
+  عرضه می‌کنند و پرداخت‌ها سفارش‌ها را جابه‌جا می‌کنند). با `forwardRef` در هر دو سمت حل شد.
+- **۲۹ مرداد ۱۴۰۵** — verify فعلاً روی PAID متوقف می‌شود؛ صدور وظیفه بعدی است و همان‌جا قلاب
+  می‌شود.
+- **۲۹ مرداد ۱۴۰۵** — **حالا یک مشتری می‌تواند سرتاسر یک بیمه‌نامه بخرد.** سه خرید بررسی شد:
+  `DEY-TRV-0505-000001/2/3`، پوشش `2026-10-02 → 2026-10-12` (خودِ سفر، نه امروز)، شمارنده روی ۳،
+  و پیامک با شماره بیمه‌نامه تحویل داده شد.
+- **۲۹ مرداد ۱۴۰۵** — شماره بیمه‌نامه `INSURER-PRODUCT-yymm-NNNNNN` روی دوره **شمسی** است، و
+  دنباله با یک `INSERT … ON CONFLICT DO UPDATE … RETURNING` روی `PolicyCounter` رزرو می‌شود.
+  خواندن-سپس-نوشتن بالاخره به دو صدور هم‌زمان یک شماره می‌داد، و شماره بیمه‌نامه تکراری از آن
+  چیزهایی است که شرکت بیمه متوجهش می‌شود. دنباله با صفر پر می‌شود تا شماره‌ها لغت‌نامه‌ای مرتب شوند.
+- **۲۹ مرداد ۱۴۰۵** — تاریخ‌های پوشش از `RatingStrategy.coveragePeriod(input)` می‌آیند — محصول
+  مدت خودش را می‌داند. مسافرتی به اندازه سفر اجرا می‌شود؛ خودرو یک سال از تاریخ شروعش.
+  **هر استراتژی تازه‌ای باید این را پیاده کند.**
+- **۲۹ مرداد ۱۴۰۵** — `Policy.dataSnapshot` محصول، شرکت، بیمه‌شده، پوشش‌ها، ردیف‌ها و جمع‌ها را کپی
+  می‌کند. جدول‌های نرخ عوض می‌شوند و پروفایل‌ها ویرایش می‌شوند؛ بیمه‌نامه صادرشده باید دقیقاً همان
+  چیزی را که فروخته شده نشان بدهد.
+- **۲۹ مرداد ۱۴۰۵** — **شکست صدور، پاسخ پرداخت را شکست نمی‌دهد.** پول از قبل گرفته شده، پس
+  `verify` مقدار SUCCEEDED گزارش می‌کند و سفارش برای پشتیبانی در `ISSUE_FAILED` پارک می‌شود. گفتن
+  اینکه پرداختشان ناموفق بوده دروغی است که رسیدشان را هم از آن‌ها می‌گیرد.
+- **۲۹ مرداد ۱۴۰۵** — صدور idempotent است: سفارشی که از قبل بیمه‌نامه دارد همان را دست‌نخورده
+  برمی‌گرداند، و بازگشتِ بازپخش‌شده هرگز دوباره صادر نمی‌کند.
+- **۲۹ مرداد ۱۴۰۵** — `issueWithInsurer()` عمداً ناهمگام است و مسیر شکست خودش را دارد، تا فراخوان
+  واقعی شرکت بیمه/سنهاب بدون بازساختاردهی هیچ‌چیزِ اطرافش جا بیفتد.
+- **۲۹ مرداد ۱۴۰۵** — نکته شکل تست: قالب تگ‌شده `$queryRaw` در Prisma **خودِ آرایه رشته‌ها** را
+  به‌عنوان نخستین آرگومان ماک می‌فرستد — هیچ ویژگی `.strings`ای برای خواندن وجود ندارد.
+- **۲۹ مرداد ۱۴۰۵** — بیمه‌نامه الکترونیک **فقط از `dataSnapshot`** رندر می‌شود، هرگز از join
+  زنده. اگر روزی رندرکننده به جدول دیگری نیاز پیدا کرد، یعنی اسنپ‌شات چیزی کم دارد. روی یک
+  بیمه‌نامه واقعی دو مسافره بررسی شد: `DEY-TRV-0505-000004`، سرتاسر شمسی (صدور ۲۹ مرداد ۱۴۰۵،
+  اعتبار ۱۰ تا ۲۰ مهر ۱۴۰۵)، هر دو بیمه‌شده با کد ملی و گذرنامه، و تفکیک حق بیمه‌ای که جمع
+  می‌خورد — ۳۴۷٬۱۰۰ + ۲۲۵٬۶۰۰ + ۲٬۰۰۰ + ۵۷٬۲۷۰ = ۶۳۱٬۹۷۰ تومان. ردیف کودک ۰٫۶۵ برابر بزرگسال
+  است و روی سند دیده می‌شود.
+- **۲۹ مرداد ۱۴۰۵** — به شکل HTML با استایل `@page`/`@media print` سرو می‌شود: خودِ پنجره چاپ
+  مرورگر همان PDFی را می‌سازد که مشتری برای وقت سفارت لازم دارد. `renderDocument` یک رشته
+  برمی‌گرداند — وقتی PDF واقعی اهمیت پیدا کرد Buffer می‌شود و فراخوان‌کننده‌ها عوض نمی‌شوند.
+  Chromium بدون رابط، ایمیج استقرار را برای کاری که چاپ از قبل انجام می‌دهد تقریباً سه برابر
+  می‌کرد.
+- **۲۹ مرداد ۱۴۰۵** — سند `Cache-Control: private, no-store` دارد و پشت احراز هویت و مالکیت است:
+  کد ملی و شماره گذرنامه دارد. ۴۰۱ بدون احراز هویت بررسی شد.
+- **۲۹ مرداد ۱۴۰۵** — همه فیلدهای اسنپ‌شات اختیاری فرض می‌شوند. بیمه‌نامه‌ای که یک سال پیش صادر
+  شده با کد قدیمی‌تر نوشته شده؛ فیلد غایب باید `—` رندر شود، نه اینکه تنها سندی را که کسی لازم
+  دارد از کار بیندازد. نام‌ها HTML-escape می‌شوند — در برابر تزریق `<script>` تست شده.
+- **۲۹ مرداد ۱۴۰۵** — سند تا وقتی نرخ‌ها موقت‌اند یک اعلان صریح
+  «این سند نمونه است و ارزش قانونی ندارد» را با خود دارد. فقط وقتی حذفش کنید که نرخ واقعی و مجوز
+  واقعی سر جایشان باشند.
+- **۲۹ مرداد ۱۴۰۵** — بیمه‌نامه‌ها **سه حالت دارند، نه دو**: `UPCOMING` / `ACTIVE` / `EXPIRED`
+  («شروع نشده» / «معتبر» / «منقضی»). بیمه‌نامه سفری که در مرداد برای مهر خریده شده نه منقضی است
+  نه در جریان — فعال نامیدنش دروغی است که مشتری در فرودگاه کشفش می‌کند. با دو بیمه‌نامه واقعی، از
+  هر کدام یکی، بررسی شد. تب‌های وب باید UPCOMING را با ACTIVE گروه کنند.
+- **۲۹ مرداد ۱۴۰۵** — فهرست و جزئیات، عنوان و نام شرکت را از **`dataSnapshot`** می‌خوانند و فقط
+  وقتی فیلدی غایب باشد به ردیف‌های زنده برمی‌گردند — تا بیمه‌نامه بعد از تغییر نام یا کنار گذاشته
+  شدن محصولش هم درست خوانده شود.
+- **۲۹ مرداد ۱۴۰۵** — مالکیت روی HTTP بررسی شد: مشتری دیگر روی صفحه جزئیات `FORBIDDEN` می‌گیرد و
+  فهرست خودش خالی است.
+- **۲۹ مرداد ۱۴۰۵** — تست سرتاسری محلی به **سقف کد یک‌بارمصرف هر IP (۲۰ در ساعت)** می‌خورد چون هر
+  درخواست از `127.0.0.1` می‌آید. نگهبان کارش را می‌کند؛ برای ادامه تست پنجره را عقب ببرید:
   `UPDATE "OtpChallenge" SET "createdAt" = "createdAt" - interval '2 hours' WHERE ip = '127.0.0.1';`
-  Do not weaken the limit for convenience.
-- **2026-08-20** — **"Quote before login" now works end to end in the browser**: quoted anonymously,
-  tapped buy, hit the OTP wall, signed in, and landed **back on checkout** with the anonymous
-  quote claimed — not on the home screen.
-- **2026-08-20** — `from` is threaded through **login and profile completion**. Previously a
-  first-time buyer went auth → profile → `/` and had to start the whole wizard again. That is a
-  funnel killer, and it only shows up when you test as a *new* customer rather than a signed-in
-  one. `RequireAuth` sets it, `OtpPage` forwards it through profile completion, and
-  `ProfileCompletionPage` returns to it.
-- **2026-08-20** — Checkout prefills the buyer from their profile and shows each insured's birth
-  date **read-only** («متولد ۲ خرداد ۱۳۶۹») straight from the quote. Age set the price, so an
-  editable field here could only ever produce a server rejection.
-- **2026-08-20** — The idempotency key is generated **once** in a ref and reused across retries. A
-  regenerated key would defeat the server's guard and let a flaky connection create two orders.
-- **2026-08-20** — Checkout errors now repeat the API's own `messageFa` — «این استعلام متعلق به
-  حساب شما نیست» instead of a vague "not available". The API already knows why.
-- **2026-08-20** — Verified: checkout → `POST /orders` → `POST /orders/:id/pay` → real redirect to
-  the bank page. After paying, the order correctly stays `PENDING_PAYMENT` until `/payments/verify`
-  runs — that is the callback screen's job, the next task.
-- **2026-08-20** — **A customer can now buy a policy entirely in the browser.** Full run:
-  anonymous quote → login → checkout → bank page → «پرداخت موفق» → callback →
-  «بیمه‌نامه شما صادر شد» with ۳۸۳٬۸۱۰ تومان and receipt ۶۱۶۹۴۰۴۳۸. Database confirms
-  `ISSUED / SUCCEEDED / DEY-TRV-0505-000007`.
-- **2026-08-20** — **Verification is a `useQuery`, not a `useMutation` fired from an effect.**
-  A mutation's result is discarded when StrictMode unmounts, so the screen sat on
-  «در حال بررسی پرداخت…» *after the request had already returned 200* — the worst possible place
-  to hang, since the customer has paid. Verification is idempotent, so it has query semantics;
-  keyed by authority it survives remounts and refuses to fire twice. **Do not model it as a
-  mutation again.**
-- **2026-08-20** — `verify` now also returns `quoteId`, `quoteOfferId`, `productTitleFa` and
-  `amount`, so a declined payment can offer «پرداخت دوباره» straight back to checkout. Verified:
-  the retry link lands on the right checkout URL. A failure screen with no route forward just
-  loses the sale.
-- **2026-08-20** — Three outcomes, all distinct: succeeded+policy → «بیمه‌نامه شما صادر شد»;
-  succeeded+no policy (ISSUE_FAILED) → «پرداخت انجام شد … در حال صدور» rather than a false
-  success; declined → the bank's own reason plus a retry.
-- **2026-08-20** — The callback route sits outside `RequireAuth` deliberately: it must work when
-  the session did not survive the round trip through a banking app.
-- **2026-08-20** — **Transient:** «مشاهده بیمه‌نامه» links to `/policies/:id`, which the next
-  task builds.
-- **2026-08-20** — **Timezone bug caught and fixed, and it would have hit every Iranian customer.**
-  The app showed «تا ۲۱ مهر» while the policy document said «۲۰ مهر» — same policy, two end dates.
-  The API renders dates in UTC; the web was formatting in local time, and `endsAt` is
-  `…T23:59:59Z`, which rolls to the next day anywhere east of Greenwich. Iran is UTC+3:30, so
-  **every** policy would have displayed a wrong end date in the app. `lib/fa.ts` now formats
-  Jalali in UTC. **Every date the API sends is date-only in meaning — never format it locally.**
-  (The test browser was Asia/Yerevan, UTC+4, which is what surfaced it.)
-- **2026-08-20** — My-policies groups **UPCOMING with ACTIVE** under «معتبر»: the customer has
-  bought them and they will run. Only EXPIRED goes under «منقضی».
-- **2026-08-20** — The e-policy cannot be a plain `<a href>` — the route needs an Authorization
-  header, so a link arrives unauthenticated. `apiFetchText` fetches it with the token and the
-  page opens it as a blob URL. Verified from inside the app: 4 KB of real HTML, right policy
-  number, print CSS, sample notice.
-- **2026-08-20** — When a popup blocker returns null from `window.open`, the document opens in the
-  **same tab** instead. Telling a customer to change a browser setting is a bad answer when the
-  SPA's back button already returns them where they were.
-- **2026-08-20** — Policy detail sits **outside** `AppShell`: it brings its own full-height layout
-  and sticky action bar, which would fight the bottom tab bar.
+  محدودیت را برای راحتی ضعیف نکنید.
+- **۲۹ مرداد ۱۴۰۵** — **«اول استعلام، بعد ورود» حالا سرتاسر در مرورگر کار می‌کند**: ناشناس استعلام
+  گرفته شد، دکمه خرید زده شد، به دیوار کد یک‌بارمصرف خورد، وارد شد و **برگشت روی تسویه‌حساب** با
+  استعلام ناشناسِ تصاحب‌شده — نه روی صفحه اصلی.
+- **۲۹ مرداد ۱۴۰۵** — مقدار `from` از دل **ورود و تکمیل پروفایل** رشته می‌شود. قبلاً خریدار بار
+  اول مسیر احراز هویت ← پروفایل ← `/` را می‌رفت و باید کل ویزارد را از نو شروع می‌کرد. این قاتل
+  قیف است، و فقط وقتی خودش را نشان می‌دهد که به‌عنوان مشتری *تازه* تست کنید نه واردشده.
+  `RequireAuth` مقدارش می‌دهد، `OtpPage` آن را از دل تکمیل پروفایل عبور می‌دهد و
+  `ProfileCompletionPage` به آن برمی‌گردد.
+- **۲۹ مرداد ۱۴۰۵** — تسویه‌حساب خریدار را از پروفایلش پیش‌پر می‌کند و تاریخ تولد هر بیمه‌شده را
+  **فقط‌خواندنی** («متولد ۲ خرداد ۱۳۶۹») مستقیم از استعلام نشان می‌دهد. سن قیمت را ساخته، پس فیلد
+  قابل ویرایش اینجا فقط می‌توانست به رد شدن از سمت سرور ختم شود.
+- **۲۹ مرداد ۱۴۰۵** — کلید idempotency **یک‌بار** در یک ref ساخته می‌شود و در تلاش‌های دوباره
+  استفاده می‌شود. کلیدی که دوباره ساخته شود نگهبان سرور را بی‌اثر می‌کند و به یک اتصال ناپایدار
+  اجازه می‌دهد دو سفارش بسازد.
+- **۲۹ مرداد ۱۴۰۵** — خطاهای تسویه‌حساب حالا `messageFa` خود API را تکرار می‌کنند — «این استعلام
+  متعلق به حساب شما نیست» به‌جای یک «در دسترس نیست» مبهم. API از قبل می‌داند چرا.
+- **۲۹ مرداد ۱۴۰۵** — بررسی شد: تسویه‌حساب ← `POST /orders` ← `POST /orders/:id/pay` ← ریدایرکت
+  واقعی به صفحه بانک. بعد از پرداخت، سفارش درست تا اجرای `/payments/verify` روی
+  `PENDING_PAYMENT` می‌ماند — این کار صفحه بازگشت است، یعنی وظیفه بعدی.
+- **۲۹ مرداد ۱۴۰۵** — **حالا یک مشتری می‌تواند کاملاً در مرورگر بیمه‌نامه بخرد.** اجرای کامل:
+  استعلام ناشناس ← ورود ← تسویه‌حساب ← صفحه بانک ← «پرداخت موفق» ← بازگشت ←
+  «بیمه‌نامه شما صادر شد» با ۳۸۳٬۸۱۰ تومان و رسید ۶۱۶۹۴۰۴۳۸. دیتابیس
+  `ISSUED / SUCCEEDED / DEY-TRV-0505-000007` را تأیید می‌کند.
+- **۲۹ مرداد ۱۴۰۵** — **تأیید یک `useQuery` است، نه یک `useMutation` که از دل یک افکت شلیک شود.**
+  نتیجه یک mutation وقتی StrictMode آن را unmount می‌کند دور ریخته می‌شود، پس صفحه روی
+  «در حال بررسی پرداخت…» می‌ماند *بعد از اینکه درخواست از قبل ۲۰۰ برگردانده* — بدترین جای ممکن
+  برای گیر کردن، چون مشتری پول داده است. تأیید idempotent است، پس معناشناسی query دارد؛ با کلید
+  authority از remountها جان سالم به در می‌برد و از شلیک دوباره خودداری می‌کند. **دیگر آن را
+  به‌عنوان mutation مدل نکنید.**
+- **۲۹ مرداد ۱۴۰۵** — `verify` حالا `quoteId`، `quoteOfferId`، `productTitleFa` و `amount` را هم
+  برمی‌گرداند، تا پرداخت ردشده بتواند «پرداخت دوباره» را مستقیم به تسویه‌حساب پیشنهاد کند. بررسی
+  شد: لینک تلاش دوباره روی آدرس درست تسویه‌حساب می‌نشیند. صفحه شکستی که راهی به جلو ندارد فقط
+  فروش را از دست می‌دهد.
+- **۲۹ مرداد ۱۴۰۵** — سه نتیجه، هر سه متمایز: موفق + بیمه‌نامه ← «بیمه‌نامه شما صادر شد»؛
+  موفق + بدون بیمه‌نامه (ISSUE_FAILED) ← «پرداخت انجام شد … در حال صدور» به‌جای موفقیت دروغین؛
+  ردشده ← دلیل خود بانک به‌علاوه تلاش دوباره.
+- **۲۹ مرداد ۱۴۰۵** — مسیر بازگشت عمداً بیرون از `RequireAuth` است: باید وقتی نشست از رفت‌وبرگشت
+  در اپ بانکی جان سالم به در نبرده هم کار کند.
+- **۲۹ مرداد ۱۴۰۵** — **گذرا:** «مشاهده بیمه‌نامه» به `/policies/:id` لینک می‌دهد که وظیفه بعدی
+  می‌سازدش.
+- **۲۹ مرداد ۱۴۰۵** — **باگ منطقه زمانی گرفته و اصلاح شد، و به هر مشتری ایرانی می‌خورد.**
+  اپلیکیشن «تا ۲۱ مهر» نشان می‌داد در حالی که سند بیمه‌نامه «۲۰ مهر» می‌گفت — یک بیمه‌نامه، دو
+  تاریخ پایان. API تاریخ‌ها را در UTC رندر می‌کند و وب در زمان محلی قالب‌بندی می‌کرد، و `endsAt`
+  برابر `…T23:59:59Z` است که هر جای شرق گرینویچ به روز بعد می‌غلتد. ایران UTC+3:30 است، پس **هر**
+  بیمه‌نامه‌ای در اپلیکیشن تاریخ پایان غلط نشان می‌داد. حالا `lib/fa.ts` تاریخ شمسی را در UTC
+  قالب‌بندی می‌کند. **هر تاریخی که API می‌فرستد از نظر معنا فقط-تاریخ است — هرگز محلی قالب‌بندی‌اش
+  نکنید.** (مرورگر تست روی Asia/Yerevan یعنی UTC+4 بود، و همین رویش را آشکار کرد.)
+- **۲۹ مرداد ۱۴۰۵** — بیمه‌نامه‌های من، **UPCOMING را با ACTIVE** زیر «معتبر» گروه می‌کند: مشتری
+  آن‌ها را خریده و اجرا خواهند شد. فقط EXPIRED زیر «منقضی» می‌رود.
+- **۲۹ مرداد ۱۴۰۵** — بیمه‌نامه الکترونیک نمی‌تواند یک `<a href>` ساده باشد — آن مسیر هدر
+  Authorization لازم دارد، پس لینک بدون احراز هویت می‌رسد. `apiFetchText` آن را با توکن می‌گیرد و
+  صفحه با یک blob URL بازش می‌کند. از داخل اپلیکیشن بررسی شد: ۴ کیلوبایت HTML واقعی، شماره
+  بیمه‌نامه درست، CSS چاپ، و اعلان نمونه.
+- **۲۹ مرداد ۱۴۰۵** — وقتی مسدودکننده پاپ‌آپ از `window.open` مقدار null برگرداند، سند در **همان
+  تب** باز می‌شود. گفتن به مشتری که تنظیمات مرورگرش را عوض کند پاسخ بدی است، وقتی دکمه بازگشت
+  خود SPA او را همان‌جا که بود برمی‌گرداند.
+- **۲۹ مرداد ۱۴۰۵** — جزئیات بیمه‌نامه **بیرون** از `AppShell` می‌نشیند: چیدمان تمام‌ارتفاع و نوار
+  اقدام چسبان خودش را می‌آورد که با نوار تب پایین می‌جنگید.
 
-- **2026-08-20** — Home active-policy strip (`ActivePolicyStrip`). Shares the `['policies']`
-  query key with `/policies`, so arriving on the home screen after visiting the tab costs no
-  second request. Shows non-expired policies only, the same `status !== 'EXPIRED'` rule the
-  «معتبر» tab uses, so an upcoming policy appears in both places or neither. Renders `null`
-  while pending or on error — the home screen belongs to the product list, and a spinner or an
-  error card above it would push the thing people came for off the fold. Cards are `w-[82%]`
-  in a snap-scroll row so the next one peeks past the edge; on a touch-only screen that peek is
-  the only scroll affordance there is.
-- **2026-08-20** — `queryClient.clear()` added to `signOut`. Found while building the strip:
-  TanStack's `enabled: false` stops the *fetch*, not the cache read, so a disabled query still
-  returns whatever the previous session cached. Every screen that reads user data was behind
-  `RequireAuth` until the strip, which renders on a public route — so a signed-out phone showed
-  the previous user's policies on the home screen. The strip also gates on `status` directly;
-  the two together mean neither fix alone is load-bearing.
-- **2026-08-20** — `daysUntil` in `fa.ts` reduces both ends to their **UTC calendar date**
-  before subtracting, rather than differencing the raw timestamps. Policies end at `23:59:59`,
-  so a timestamp subtraction measures the leftover part-day and `Math.ceil` turned a policy
-  twelve calendar days out into «۱۳ روز». Same date-only reasoning as the Jalali formatters
-  directly above it.
+- **۲۹ مرداد ۱۴۰۵** — نوار بیمه‌نامه‌های فعال روی صفحه اصلی (`ActivePolicyStrip`). کلید کوئری
+  `['policies']` را با `/policies` مشترک دارد، پس رسیدن به صفحه اصلی بعد از دیدن آن تب، درخواست
+  دومی خرج برنمی‌دارد. فقط بیمه‌نامه‌های منقضی‌نشده را نشان می‌دهد، با همان قاعده
+  `status !== 'EXPIRED'` که تب «معتبر» استفاده می‌کند، تا بیمه‌نامه‌ای که هنوز شروع نشده یا در هر
+  دو جا بیاید یا در هیچ‌کدام. هنگام انتظار یا خطا `null` رندر می‌کند — صفحه اصلی متعلق به فهرست
+  محصولات است، و یک اسپینر یا کارت خطا بالای آن، چیزی را که مردم برایش آمده‌اند از دید بیرون
+  می‌راند. کارت‌ها `w-[82%]` در یک ردیف snap-scroll هستند تا کارت بعدی از لبه سرک بکشد؛ روی صفحه
+  فقط-لمسی، همین سرک کشیدن تنها نشانه اسکرول است.
+- **۲۹ مرداد ۱۴۰۵** — `queryClient.clear()` به `signOut` اضافه شد. هنگام ساخت همین نوار پیدا شد:
+  مقدار `enabled: false` در TanStack جلوی *fetch* را می‌گیرد نه خواندن از کش، پس کوئری غیرفعال هم
+  هرچه نشست قبلی کش کرده بود را برمی‌گرداند. هر صفحه‌ای که داده کاربر می‌خواند تا پیش از این نوار
+  پشت `RequireAuth` بود، و این نوار روی یک مسیر عمومی رندر می‌شود — پس گوشیِ خارج‌شده از حساب،
+  بیمه‌نامه‌های کاربر قبلی را روی صفحه اصلی نشان می‌داد. خود نوار هم مستقیم روی `status` نگهبانی
+  می‌کند؛ این دو با هم یعنی هیچ‌کدام از دو اصلاح به‌تنهایی بار را حمل نمی‌کند.
+- **۲۹ مرداد ۱۴۰۵** — `daysUntil` در `fa.ts` پیش از تفریق، هر دو سر را به **تاریخ تقویمی UTC**
+  خودشان تقلیل می‌دهد، به‌جای تفریق مهرهای زمانی خام. بیمه‌نامه‌ها در `23:59:59` تمام می‌شوند، پس
+  تفریق مهر زمانی، باقی‌مانده بخشی از روز را می‌سنجد و `Math.ceil` بیمه‌نامه‌ای دوازده روز تقویمی
+  آن‌طرف‌تر را «۱۳ روز» می‌کرد. همان استدلال فقط-تاریخ قالب‌بندهای شمسی درست بالای آن.
 
-- **2026-08-20** — `test/checkout.e2e-spec.ts`, 15 cases over the whole funnel: quote signed
-  out → order → `/orders/:id/pay` → the mock bank page → settle → verify → policy → document.
-  Two setup changes it needed: `global-setup.ts` now runs `prisma/seed.ts` against the test
-  database (catalog and rate tables are *reference* data, which is why `resetDatabase` already
-  left them standing), and `test/helpers/app.ts` had drifted from `main.ts` — it was missing
-  `mock-gateway` from the prefix exclusions, so the bank routes only worked in production.
-- **2026-08-20** — **Concurrent callbacks may legitimately answer `policyId: null`.** Three
-  simultaneous verifies produce exactly one policy and one `POLICY_ISSUED` SMS, and all three
-  callers are told `SUCCEEDED` — but a loser can reply before the winner's issuance has
-  committed, so it reports the payment without the policy. That is the pending branch of the
-  callback screen, not a bug; the first assertion written here demanded all three carry the id
-  and was wrong. The invariant to hold onto: **never two different policy ids**, and a later
-  read always sees the issued one.
+- **۲۹ مرداد ۱۴۰۵** — `test/checkout.e2e-spec.ts`، ۱۵ حالت روی کل قیف: استعلام خارج از حساب ←
+  سفارش ← `/orders/:id/pay` ← صفحه بانک ماک ← تسویه ← تأیید ← بیمه‌نامه ← سند.
+  دو تغییر راه‌اندازی لازم داشت: `global-setup.ts` حالا `prisma/seed.ts` را روی دیتابیس تست اجرا
+  می‌کند (کاتالوگ و جدول‌های نرخ داده *مرجع*اند، و به همین دلیل `resetDatabase` از قبل دست‌نخورده
+  رهایشان می‌کرد)، و `test/helpers/app.ts` از `main.ts` فاصله گرفته بود — `mock-gateway` را از
+  استثناهای پیشوند جا انداخته بود، پس مسیرهای بانک فقط در محیط عملیاتی کار می‌کردند.
+- **۲۹ مرداد ۱۴۰۵** — **بازگشت‌های هم‌زمان می‌توانند به‌درستی `policyId: null` جواب بدهند.** سه
+  تأیید هم‌زمان دقیقاً یک بیمه‌نامه و یک پیامک `POLICY_ISSUED` تولید می‌کنند و به هر سه فراخوان
+  `SUCCEEDED` گفته می‌شود — اما بازنده می‌تواند پیش از commit شدن صدورِ برنده جواب بدهد، پس
+  پرداخت را بدون بیمه‌نامه گزارش می‌کند. این همان شاخه «در انتظار» صفحه بازگشت است، نه یک باگ؛
+  نخستین assert که اینجا نوشته شد می‌خواست هر سه شناسه را داشته باشند و غلط بود. تغییرناپذیری که
+  باید نگه داشت: **هرگز دو شناسه بیمه‌نامه متفاوت**، و خواندن بعدی همیشه صادرشده را می‌بیند.
 
-- **2026-08-20** — Motor TPL rating strategy, 29 unit tests against a round fixture table.
-  **Everything derives from `diyeAmount`**: the bodily premium is a fraction of دیه, and the
-  property limit is a regulator-set percentage of the same figure, so next year's tables change
-  one number. Premiums are rounded to 1,000 Rial *before* their discounts come off, which is
-  what makes each discount line an exact percentage of the line above it — discounting the
-  unrounded figure leaves an invoice whose own arithmetic does not check out. The صندوق levy
-  rides on the **discounted** bodily premium, so a no-claims record reduces it too.
-  Not modelled, deliberately: دیه rises by a third in the four ماه‌های حرام — a real rule that
-  would only look authoritative sitting on top of invented numbers.
-- **2026-08-20** — `productionYear` is a **Jalali** year (it is what the green sheet says), so
-  vehicle age uses `jalaliYear()` off `Intl`, never a Gregorian subtraction — that would age
-  every car by 621. Age is taken at the policy start date, not today.
-- **2026-08-20** — `seedTravelRates` generalised to `seedRateTables(productSlug, entries, …)`;
-  motor tables seeded from `seed-data/motor-tpl-rates.ts` for the same five insurers. The
-  motorcycle group factor was tuned from 0.22 to 0.08 after the first seed put the teaser at
-  ۳٬۱۵۶٬۱۰۰ تومان — roughly triple a real motorcycle third-party premium, and it is the headline
-  number on the home screen. Now ۱٬۱۷۴٬۳۸۰ تومان.
-- **2026-08-20** — **`hasWizard()` in the web** (`src/lib/wizards.ts`). Seeding motor rates gave
-  the product a `fromAmount`, which made its home card a link to `/p/motor-tpl/form` — a route
-  that does not exist until the wizard task. Priceability is the API's business and follows the
-  data; whether a *form* exists is this app's business, and the two ship in different releases.
-  The router builds its wizard routes from the same list, typed so adding a wizard to one and
-  forgetting the other is a compile error. **Add `'motor-tpl'` to `WIZARD_SLUGS` when the motor
-  wizard lands** — until then the card correctly reads «به‌زودی».
+- **۲۹ مرداد ۱۴۰۵** — استراتژی نرخ‌دهی شخص ثالث خودرو، ۲۹ تست واحد در برابر یک جدول آزمایشی رند.
+  **همه‌چیز از `diyeAmount` مشتق می‌شود**: حق بیمه جانی کسری از دیه است و سقف مالی درصدی است که
+  تنظیم‌گر روی همان عدد تعیین می‌کند، پس جدول‌های سال بعد یک عدد عوض می‌کنند. حق بیمه‌ها *پیش از*
+  کسر تخفیف به ۱٬۰۰۰ ریال گرد می‌شوند، و همین است که هر ردیف تخفیف را دقیقاً درصدی از ردیف بالایش
+  می‌کند — تخفیف دادن روی عدد گردنشده صورت‌حسابی می‌سازد که حساب‌وکتاب خودش جور درنمی‌آید. عوارض
+  صندوق روی حق بیمه جانیِ **تخفیف‌خورده** سوار می‌شود، پس سابقه عدم خسارت آن را هم کم می‌کند.
+  عمداً مدل نشده: دیه در چهار ماه حرام یک‌سوم بالا می‌رود — قاعده‌ای واقعی که نشستنش روی عددهای
+  ساختگی فقط ظاهر معتبر می‌سازد.
+- **۲۹ مرداد ۱۴۰۵** — `productionYear` یک سال **شمسی** است (چیزی که در برگ سبز نوشته)، پس سن
+  خودرو از `jalaliYear()` روی `Intl` می‌آید، هرگز از تفریق میلادی — که هر خودرو را ۶۲۱ سال پیرتر
+  می‌کرد. سن در تاریخ شروع بیمه‌نامه گرفته می‌شود، نه امروز.
+- **۲۹ مرداد ۱۴۰۵** — `seedTravelRates` به `seedRateTables(productSlug, entries, …)` تعمیم داده
+  شد؛ جدول‌های خودرو از `seed-data/motor-tpl-rates.ts` برای همان پنج شرکت seed شدند. ضریب گروه
+  موتورسیکلت از ۰٫۲۲ به ۰٫۰۸ تنظیم شد، بعد از آنکه seed اول تیزر را روی ۳٬۱۵۶٬۱۰۰ تومان گذاشت —
+  تقریباً سه برابر حق بیمه واقعی شخص ثالث موتورسیکلت، و این عدد تیتر صفحه اصلی است. حالا
+  ۱٬۱۷۴٬۳۸۰ تومان است.
+- **۲۹ مرداد ۱۴۰۵** — **`hasWizard()` در وب** (`src/lib/wizards.ts`). seed کردن نرخ‌های خودرو به
+  آن محصول یک `fromAmount` داد، که کارت صفحه اصلی‌اش را به لینکی به `/p/motor-tpl/form` تبدیل
+  کرد — مسیری که تا وظیفه ویزارد وجود ندارد. قابل قیمت‌گذاری بودن کار API است و از داده پیروی
+  می‌کند؛ اینکه *فرمی* وجود دارد یا نه کار این اپلیکیشن است، و این دو در انتشارهای متفاوت
+  می‌آیند. روتر مسیرهای ویزاردش را از همان فهرست می‌سازد، با تایپی که اضافه کردن ویزارد به یکی و
+  فراموش کردن دیگری را به خطای کامپایل تبدیل می‌کند. **وقتی ویزارد خودرو آمد `'motor-tpl'` را به
+  `WIZARD_SLUGS` اضافه کنید** — تا آن موقع کارت درست «به‌زودی» می‌خواند.
 
-- **2026-08-20** — Vehicle catalog grown from 30 rows to **115 across 24 brands**. Thirty was a
-  sample; the wizard needs a catalog, because `vehicleGroup` is a rate driver and so there is no
-  free-text escape hatch by design — a customer who cannot find their car has nowhere to go.
-  Hence the trim-level tail (پراید ۱۱۱ as well as ۱۳۱) and the legacy models still on the road.
-  **Every one of the original 30 keys was preserved verbatim**: the seed upserts on
-  `(brandFa, modelFa)`, so renaming a row creates a second one and orphans any `Vehicle`
-  pointing at the first. Verified against the live table before re-seeding.
-- **2026-08-20** — `prisma/seed-data/vehicle-models.spec.ts` guards the data itself: unique
-  keys, every `group` a real `VehicleGroup`, every group reachable, no Latin digits in a Persian
-  label («پژو 206»), no stray whitespace. Hand-written Persian data is exactly what drifts, and
-  nothing else in the build was looking at it.
-- **2026-08-20** — **`tsconfig.typecheck.json` added, and `typecheck` now points at it.** The
-  build config pins `rootDir: ./src` so `dist/main.js` lands where the start script expects —
-  which also meant `tsc` never saw `prisma/` *or* `test/`. The e2e specs had been going
-  uncompiled until ts-jest reached them at run time. The new config checks src + prisma + test
-  and emits nothing; the build keeps its narrow rootDir, verified by `dist/main.js` still
-  landing in the right place. `jest.config.js` rooted at the package for the same reason.
+- **۲۹ مرداد ۱۴۰۵** — کاتالوگ خودرو از ۳۰ ردیف به **۱۱۵ ردیف در ۲۴ برند** رشد کرد. سی تا نمونه
+  بود؛ ویزارد به کاتالوگ نیاز دارد، چون `vehicleGroup` محرک نرخ است و بنابراین طبق طراحی هیچ راه
+  فرار متن‌آزادی وجود ندارد — مشتری‌ای که خودرویش را پیدا نکند جایی برای رفتن ندارد. به همین دلیل
+  دنباله تیپ‌ها (پراید ۱۱۱ در کنار ۱۳۱) و مدل‌های قدیمی که هنوز در خیابان‌اند هم آمده‌اند.
+  **هر ۳۰ کلید اصلی عیناً حفظ شدند**: seed روی `(brandFa, modelFa)` مقدار upsert می‌کند، پس تغییر
+  نام یک ردیف، ردیف دومی می‌سازد و هر `Vehicle` که به اولی اشاره دارد را یتیم می‌کند. پیش از seed
+  دوباره، در برابر جدول زنده بررسی شد.
+- **۲۹ مرداد ۱۴۰۵** — `prisma/seed-data/vehicle-models.spec.ts` از خود داده محافظت می‌کند: یکتایی
+  کلیدها، اینکه هر `group` یک `VehicleGroup` واقعی باشد، اینکه هر گروه قابل دسترسی باشد، نبود
+  ارقام لاتین در برچسب فارسی («پژو 206»)، و نبود فاصله اضافی. داده فارسی دستی‌نوشته دقیقاً همان
+  چیزی است که فاصله می‌گیرد، و هیچ‌چیز دیگری در بیلد به آن نگاه نمی‌کرد.
+- **۲۹ مرداد ۱۴۰۵** — **`tsconfig.typecheck.json` اضافه شد و `typecheck` حالا به آن اشاره
+  می‌کند.** پیکربندی بیلد `rootDir: ./src` را سنجاق می‌کند تا `dist/main.js` جایی بنشیند که
+  اسکریپت start انتظارش را دارد — که همین باعث می‌شد `tsc` هرگز `prisma/` *یا* `test/` را نبیند.
+  اسپک‌های e2e تا زمانی که ts-jest در زمان اجرا به آن‌ها می‌رسید کامپایل‌نشده مانده بودند.
+  پیکربندی تازه src و prisma و test را بررسی می‌کند و چیزی تولید نمی‌کند؛ بیلد rootDir باریکش را
+  نگه می‌دارد، که با نشستن `dist/main.js` در جای درست بررسی شد. `jest.config.js` هم به همین دلیل
+  ریشه‌اش روی پکیج است.
 
-- **2026-08-20** — **The plate component was moved ahead of the motor wizard.** The wizard has
-  to collect a plate, so building it first would have meant either a stub field or quietly doing
-  the next task inside this one. Swapping two adjacent lines was the smaller change.
-- **2026-08-20** — `PlateField` draws the **plate**, not four labelled inputs, and is `dir="ltr"`
-  inside an otherwise RTL app. Nobody reads their plate as «دو رقم، حرف، سه رقم، کد استان» — they
-  copy the object in their hand, left to right, so the boxes have to sit where the characters
-  sit. Reading order would put the province code first and quietly invite a wrong plate. Focus
-  advances as each box fills and Backspace on an empty box steps back, so the whole plate is one
-  uninterrupted run on the numeric keypad. Verified in the browser: `12` → `ج` → `678` → `99`
-  typed straight through with no taps between fields.
-- **2026-08-20** — The plate's white body and black text are **literal colours, not tokens**,
-  and stay white in dark mode. A physical licence plate does not have a dark mode; theming it
-  would make it stop reading as the object being copied.
-- **2026-08-20** — Red border is reserved for a real `error`. The first version went red as soon
-  as any box had content and stayed red until the last one filled — telling the user they were
-  failing for the entire time they were succeeding. A half-typed plate now gets a grey hint that
-  names the missing part («حرف پلاک را انتخاب کنید») instead.
-- **2026-08-20** — `src/lib/plate.ts` duplicates the letter list and validity rules from the API,
-  which MVP-PLAN §10 explicitly sanctions for plate logic. The alphabet is frozen by regulation,
-  and a select that cannot populate without a round-trip is a worse form. `D`, `S` and
-  `تشریفات` are correct as written — diplomatic and service plates, not transliteration slips.
-- **2026-08-20** — **The web still has no test runner, on purpose.** MVP-PLAN §12 puts unit
-  tests on the rating strategies and supertest on the funnel; web work is verified in the
-  browser. Adding vitest for `plate.ts` would have been a tooling decision this task did not
-  carry — flagging it rather than making it unilaterally.
+- **۲۹ مرداد ۱۴۰۵** — **کامپوننت پلاک جلوتر از ویزارد خودرو آورده شد.** ویزارد باید پلاک بگیرد،
+  پس ساختنش اول یعنی یا یک فیلد استاب یا انجام بی‌سروصدای وظیفه بعدی داخل این یکی. جابه‌جا کردن
+  دو خط مجاور تغییر کوچک‌تری بود.
+- **۲۹ مرداد ۱۴۰۵** — `PlateField` خودِ **پلاک** را می‌کشد، نه چهار ورودی برچسب‌دار، و داخل
+  اپلیکیشنی که وگرنه راست‌به‌چپ است `dir="ltr"` دارد. هیچ‌کس پلاکش را به شکل «دو رقم، حرف، سه رقم،
+  کد استان» نمی‌خواند — آن‌ها شیئی را که در دست دارند از چپ به راست کپی می‌کنند، پس جعبه‌ها باید
+  همان‌جایی باشند که کاراکترها هستند. ترتیب خواندن راست‌به‌چپ، کد استان را اول می‌گذاشت و بی‌صدا
+  پلاک غلط دعوت می‌کرد. با پر شدن هر جعبه فوکوس جلو می‌رود و Backspace روی جعبه خالی عقب می‌رود،
+  پس کل پلاک یک ران بی‌وقفه روی کیبورد عددی است. در مرورگر بررسی شد: `12` ← `ج` ← `678` ← `99`
+  پشت سر هم و بدون هیچ ضربه‌ای بین فیلدها تایپ شد.
+- **۲۹ مرداد ۱۴۰۵** — بدنه سفید و متن سیاه پلاک **رنگ‌های لفظی‌اند، نه توکن**، و در حالت تیره هم
+  سفید می‌مانند. پلاک فیزیکی حالت تیره ندارد؛ تم دادن به آن باعث می‌شود دیگر مثل شیئی که کپی
+  می‌شود خوانده نشود.
+- **۲۹ مرداد ۱۴۰۵** — حاشیه قرمز فقط برای `error` واقعی رزرو شده است. نسخه اول به‌محض پر شدن هر
+  جعبه قرمز می‌شد و تا پر شدن آخری قرمز می‌ماند — یعنی در تمام مدتی که کاربر موفق بود به او
+  می‌گفت شکست خورده. حالا پلاک نیمه‌تایپ‌شده یک راهنمای خاکستری می‌گیرد که بخش گم‌شده را نام می‌برد
+  («حرف پلاک را انتخاب کنید»).
+- **۲۹ مرداد ۱۴۰۵** — `src/lib/plate.ts` فهرست حروف و قواعد اعتبار را از API تکرار می‌کند، که
+  §۱۰ در MVP-PLAN صریحاً برای منطق پلاک مجازش می‌داند. الفبا با مقررات منجمد شده، و selectی که
+  بدون رفت‌وبرگشت نتواند پر شود فرم بدتری است. مقادیر `D`، `S` و `تشریفات` همان‌طور که نوشته
+  شده‌اند درست‌اند — پلاک‌های سیاسی و خدماتی‌اند، نه اشتباه در حرف‌نویسی.
+- **۲۹ مرداد ۱۴۰۵** — **وب هنوز عمداً اجراکننده تست ندارد.** §۱۲ در MVP-PLAN تست‌های واحد را روی
+  استراتژی‌های نرخ‌دهی و supertest را روی قیف می‌گذارد؛ کار وب در مرورگر بررسی می‌شود. افزودن
+  vitest برای `plate.ts` تصمیمی درباره ابزار بود که این وظیفه حملش نمی‌کرد — پس علامتش می‌زنم
+  به‌جای اینکه یک‌طرفه بگیرمش.
 
-- **2026-08-20** — Motor wizard shipped; `'motor-tpl'` added to `WIZARD_SLUGS`, so the home card
-  is now a live link and only home fire still reads «به‌زودی».
-- **2026-08-20** — **The step list is built per render, not a constant.** A motorcycle can only
-  be insured for personal use, so the wizard drops the کاربری screen entirely for one and runs
-  five steps instead of six — a disabled step or a one-option list would leave the progress bar
-  lying about how much is left. `stepIndex` is clamped on read, because choosing a motorcycle on
-  the *first* screen pulls a later step out from under the current index.
-- **2026-08-20** — `SearchableOptions` fetches all 115 models once and filters in the browser.
-  Search folds Arabic ي/ك onto Persian ی/ک and strips the ZWNJ: a phone keyboard may send
-  either code point, and without folding «كوير» finds nothing while «کویر» finds the models.
-  Options keep their brand heading while filtered — «جک S3» means nothing without «کرمان موتور»
-  above it, and more than one brand sells an S3.
-- **2026-08-20** — **`QuotePage` crashed on the first motor quote.** `QuoteBody` cast
-  `quote.input as TravelInput` and read `input.travelers.length` off it, so a motor quote took
-  the whole comparison screen down with `undefined.length`; the edit link was a hardcoded
-  `/p/travel/form` in three places. Now `QuoteSummary` switches on `productType` and falls
-  through to the product title rather than guessing, and the edit link is
-  `/p/${quote.productSlug}/form`. **Home fire will need a branch here too.**
-- **2026-08-20** — The plate is `dir="ltr"` in the *input* and plain RTL in *prose*, and that is
-  not an inconsistency. The widget mimics a physical object that is read left to right; the
-  summary strip is running Persian, where a plate is written «۴۴ ص ۸۲۱ ایران ۱۱» and read right
-  to left with everything around it. Forcing LTR there reordered the leading digits to the far
-  end — «ص ۸۲۱ ایران ۱۱ ۴۴».
+- **۲۹ مرداد ۱۴۰۵** — ویزارد خودرو تحویل شد؛ `'motor-tpl'` به `WIZARD_SLUGS` اضافه شد، پس کارت
+  صفحه اصلی حالا لینک زنده است و فقط آتش‌سوزی منزل هنوز «به‌زودی» می‌خواند.
+- **۲۹ مرداد ۱۴۰۵** — **فهرست گام‌ها در هر رندر ساخته می‌شود، ثابت نیست.** موتورسیکلت فقط برای
+  کاربری شخصی بیمه می‌شود، پس ویزارد صفحه کاربری را برایش کاملاً حذف می‌کند و به‌جای شش گام پنج گام
+  اجرا می‌کند — گام غیرفعال یا فهرست تک‌گزینه‌ای، نوار پیشرفت را درباره باقی‌مانده کار به دروغ
+  وامی‌داشت. `stepIndex` هنگام خواندن کلمپ می‌شود، چون انتخاب موتورسیکلت در *نخستین* صفحه، یک گام
+  بعدی را از زیر اندیس فعلی بیرون می‌کشد.
+- **۲۹ مرداد ۱۴۰۵** — `SearchableOptions` هر ۱۱۵ مدل را یک‌بار می‌گیرد و در مرورگر فیلتر می‌کند.
+  جست‌وجو ي و ك عربی را روی ی و ک فارسی تا می‌زند و ZWNJ را حذف می‌کند: کیبورد گوشی ممکن است هر
+  کدام از این کدپوینت‌ها را بفرستد، و بدون این تا زدن، «كوير» چیزی پیدا نمی‌کند در حالی که «کویر»
+  مدل‌ها را می‌آورد. گزینه‌ها هنگام فیلتر شدن هم سرتیتر برندشان را نگه می‌دارند — «جک S3» بدون
+  «کرمان موتور» بالایش معنایی ندارد، و بیش از یک برند S3 می‌فروشد.
+- **۲۹ مرداد ۱۴۰۵** — **`QuotePage` روی نخستین استعلام خودرو کرش کرد.** `QuoteBody` مقدار
+  `quote.input` را `as TravelInput` کست می‌کرد و `input.travelers.length` را از رویش می‌خواند، پس
+  یک استعلام خودرو کل صفحه مقایسه را با `undefined.length` از کار انداخت؛ لینک ویرایش هم در سه
+  جا یک `/p/travel/form` هاردکد بود. حالا `QuoteSummary` روی `productType` سوئیچ می‌کند و به‌جای
+  حدس زدن به عنوان محصول می‌افتد، و لینک ویرایش `/p/${quote.productSlug}/form` است.
+  **آتش‌سوزی منزل هم اینجا به یک شاخه نیاز خواهد داشت.**
+- **۲۹ مرداد ۱۴۰۵** — پلاک در *ورودی* مقدار `dir="ltr"` دارد و در *نثر* راست‌به‌چپ ساده است، و
+  این ناسازگاری نیست. ویجت از شیئی فیزیکی تقلید می‌کند که از چپ به راست خوانده می‌شود؛ نوار خلاصه
+  متن جاری فارسی است، جایی که پلاک به شکل «۴۴ ص ۸۲۱ ایران ۱۱» نوشته می‌شود و همراه هرچه دورش هست
+  از راست خوانده می‌شود. تحمیل چپ‌به‌راست آنجا ارقام ابتدایی را به انتهای دور پرت می‌کرد —
+  «ص ۸۲۱ ایران ۱۱ ۴۴».
 
-- **2026-08-20** — Saved vehicles. The `Vehicle` table had been in the schema since M0 but had
-  **no API at all**, so this task was half backend: new `VehiclesModule` serving
-  `GET/POST/DELETE /me/vehicles`, 10 unit tests, then the web on top. Not a separate PROGRESS
-  line because a "web" task whose endpoint does not exist is not a web task.
-- **2026-08-20** — **The group is copied from the catalog, never accepted from the client.**
-  `group` is a rate driver, so a caller who could assert it could put a truck in the motorcycle
-  band. `POST /me/vehicles` takes `vehicleModelId` and reads the group off the model row.
-- **2026-08-20** — Saving the same **plate** twice updates the row instead of adding a second.
-  The plate is what identifies a car to its owner, not the row id, and a customer re-quoting the
-  same car should not accumulate duplicates. Deliberately still allowed once the 20-vehicle cap
-  is reached — otherwise a full list would lock someone out of correcting a car already saved.
-  `plate` is jsonb so this cannot be a DB unique constraint; the match is done in memory on the
-  four canonical fields, because Postgres does not normalise `jsonb` key order for equality.
-- **2026-08-20** — A saved vehicle is a **convenience copy, not a source of truth**. The wizard
-  still sends every field explicitly on every quote, so a stale saved row can never silently
-  move a price. For the same reason the save after a successful quote is fire-and-forget: it
-  must not delay or fail the prices the customer just waited for, and a failure costs them one
-  retyped plate rather than the quote.
-- **2026-08-20** — Picking a saved vehicle jumps the wizard straight to **سابقه عدم خسارت**,
-  skipping the three screens it just answered. The steps after it are cover choices, which are
-  per-policy and not per-car, so they are always asked. Deleting takes two taps — a stored plate
-  is tedious to retype and there is no undo.
+- **۲۹ مرداد ۱۴۰۵** — خودروهای ذخیره‌شده. جدول `Vehicle` از M0 در اسکیما بود اما **اصلاً API
+  نداشت**، پس این وظیفه نیمی بک‌اند بود: `VehiclesModule` تازه که
+  `GET/POST/DELETE /me/vehicles` را سرو می‌کند، ۱۰ تست واحد، و بعد وب رویش. خط جداگانه‌ای در
+  PROGRESS ندارد چون وظیفه‌ای «وب» که نقطه پایانی‌اش وجود ندارد، وظیفه وب نیست.
+- **۲۹ مرداد ۱۴۰۵** — **گروه از کاتالوگ کپی می‌شود، هرگز از کلاینت پذیرفته نمی‌شود.** `group`
+  محرک نرخ است، پس فراخوانی که بتواند ادعایش کند می‌تواند یک کامیون را در باند موتورسیکلت
+  بگذارد. `POST /me/vehicles` مقدار `vehicleModelId` می‌گیرد و گروه را از ردیف مدل می‌خواند.
+- **۲۹ مرداد ۱۴۰۵** — ذخیره کردن یک **پلاک** برای بار دوم، همان ردیف را به‌روز می‌کند نه اینکه
+  دومی اضافه کند. آنچه خودرویی را برای صاحبش مشخص می‌کند پلاک است، نه شناسه ردیف، و مشتری‌ای که
+  برای همان خودرو دوباره استعلام می‌گیرد نباید تکراری انباشت کند. عمداً حتی بعد از رسیدن به سقف
+  ۲۰ خودرو هم مجاز است — وگرنه فهرست پر، کسی را از اصلاح خودرویی که قبلاً ذخیره کرده قفل می‌کرد.
+  `plate` از نوع jsonb است پس این نمی‌تواند قید یکتای دیتابیس باشد؛ تطبیق در حافظه روی چهار فیلد
+  متعارف انجام می‌شود، چون Postgres ترتیب کلیدهای `jsonb` را برای برابری نرمال نمی‌کند.
+- **۲۹ مرداد ۱۴۰۵** — خودروی ذخیره‌شده یک **کپی برای راحتی است، نه منبع حقیقت**. ویزارد همچنان در
+  هر استعلام هر فیلد را صریحاً می‌فرستد، پس یک ردیف ذخیره‌شده کهنه هرگز نمی‌تواند بی‌صدا قیمتی را
+  جابه‌جا کند. به همین دلیل ذخیره کردن بعد از استعلام موفق «بفرست و فراموش کن» است: نباید
+  قیمت‌هایی را که مشتری همین حالا منتظرشان مانده به تأخیر بیندازد یا شکست بدهد، و شکستش برای او
+  یک پلاکِ دوباره تایپ‌شده خرج دارد نه خودِ استعلام.
+- **۲۹ مرداد ۱۴۰۵** — انتخاب خودروی ذخیره‌شده ویزارد را مستقیم به **سابقه عدم خسارت** می‌پراند و
+  سه صفحه‌ای را که همین حالا جواب داده رد می‌کند. گام‌های بعدش انتخاب پوشش‌اند که برای هر
+  بیمه‌نامه است نه هر خودرو، پس همیشه پرسیده می‌شوند. حذف کردن دو ضربه می‌خواهد — پلاک ذخیره‌شده
+  تایپ کردنش خسته‌کننده است و undo وجود ندارد.
 
-- **2026-08-20** — Home fire rating strategy, 25 unit tests. The quake-zone half of this task
-  was already done — `cities.ts` has carried `quakeZone` for all 40 cities since M2.
-- **2026-08-20** — **`RatingLookups` + an optional `prepare()` hook on the strategy interface.**
-  Home fire rates on the seismic zone of the city the customer picked, which lives in the
-  database — but `rate()` must stay pure, and letting the client send the zone would let them
-  choose their own price band (the same rule as `vehicleGroup`). So `prepare()` resolves it
-  **once per quote, before any insurer is priced**, through a narrow port; strategies never see
-  Prisma. `TPrepared` defaults to `TInput`, so travel and motor needed no changes.
-  `teaserInputs` gained the same port — a home-fire teaser basket has to name a real city by id,
-  and it returns one basket per *zone* rather than per city.
-- **2026-08-20** — **Fire is rated on the sum insured, not floor area.** A 200m² flat full of
-  nothing is a smaller loss than a 60m² one full of everything. `areaSqm` is an eligibility
-  limit only, and there is a test asserting the premium does not move with it.
-- **2026-08-20** — Each add-on peril attaches to the half of the sum insured it can actually
-  damage: THEFT is contents-only (thieves take belongings, not walls), earthquake and flood are
-  both. A peril whose basis the customer insured for nothing is silently skipped rather than
-  charged at zero. The premium floor is a **visible top-up line**, not a silent replacement of
-  the total — a customer comparing insurers is entitled to see they are paying a minimum.
-- **2026-08-20** — Home fire is sold by **three** insurers, not five (`products.ts` decides).
-  The first rate tables listed all five and the seed died on Prisma's "No record was found for
-  an update", which names neither product nor insurer. `seedRateTables` now fails with the pair
-  and what to do about it.
+- **۲۹ مرداد ۱۴۰۵** — استراتژی نرخ‌دهی آتش‌سوزی منزل، ۲۵ تست واحد. نیمه مربوط به منطقه زلزله این
+  وظیفه از قبل انجام شده بود — `cities.ts` از M2 برای هر ۴۰ شهر `quakeZone` را حمل می‌کرد.
+- **۲۹ مرداد ۱۴۰۵** — **`RatingLookups` به‌علاوه یک قلاب اختیاری `prepare()` روی اینترفیس
+  استراتژی.** آتش‌سوزی منزل بر اساس منطقه لرزه‌ای شهری که مشتری انتخاب کرده نرخ می‌خورد که در
+  دیتابیس است — اما `rate()` باید خالص بماند، و اجازه دادن به کلاینت برای فرستادن منطقه یعنی
+  اجازه دادن به او برای انتخاب باند قیمت خودش (همان قاعده `vehicleGroup`). پس `prepare()` آن را
+  **یک‌بار در هر استعلام و پیش از قیمت‌خوردن هر شرکت** از راه یک پورت باریک resolve می‌کند؛
+  استراتژی‌ها هرگز Prisma را نمی‌بینند. مقدار پیش‌فرض `TPrepared` برابر `TInput` است، پس مسافرتی و
+  خودرو به هیچ تغییری نیاز نداشتند. `teaserInputs` هم همان پورت را گرفت — سبد تیزر آتش‌سوزی منزل
+  باید یک شهر واقعی را با شناسه نام ببرد، و به‌جای هر شهر، برای هر *منطقه* یک سبد برمی‌گرداند.
+- **۲۹ مرداد ۱۴۰۵** — **آتش‌سوزی بر اساس سرمایه بیمه‌شده نرخ می‌خورد، نه متراژ زیربنا.** یک آپارتمان
+  ۲۰۰ متری خالی، خسارت کوچک‌تری از ۶۰ متری پر است. `areaSqm` فقط یک حد پذیرش است، و تستی هست که
+  assert می‌کند حق بیمه با آن جابه‌جا نمی‌شود.
+- **۲۹ مرداد ۱۴۰۵** — هر خطر افزوده به همان نیمه‌ای از سرمایه بیمه‌شده می‌چسبد که واقعاً می‌تواند
+  آسیبش بزند: سرقت فقط روی اثاثیه است (دزد وسایل را می‌برد نه دیوار را) و زلزله و سیل روی هر دو.
+  خطری که مشتری مبنایش را اصلاً بیمه نکرده، به‌جای اینکه صفر هزینه بخورد بی‌صدا رد می‌شود. کف حق
+  بیمه یک **ردیف مکمل قابل مشاهده** است، نه جایگزینی خاموش برای جمع کل — مشتری‌ای که شرکت‌ها را
+  مقایسه می‌کند حق دارد ببیند دارد حداقل را می‌پردازد.
+- **۲۹ مرداد ۱۴۰۵** — آتش‌سوزی منزل را **سه** شرکت می‌فروشند، نه پنج (`products.ts` تصمیم
+  می‌گیرد). نخستین جدول‌های نرخ هر پنج شرکت را فهرست کرده بودند و seed با پیام «No record was
+  found for an update» در Prisma مرد که نه محصول را نام می‌برد نه شرکت را. حالا `seedRateTables`
+  با همان جفت و توضیح اینکه چه باید کرد شکست می‌خورد.
 
-- **2026-08-20** — Home fire wizard, five steps. **M5 done: all three products now quote from
-  the UI**, `WIZARD_SLUGS` holds all three slugs and no product card reads «به‌زودی» any more.
-  `QuoteSummary` gained its HOME_FIRE branch — the one the MOTOR_TPL note said would be needed.
-- **2026-08-20** — `MoneyField` asks in **Toman and stores Rial**, because nobody says a number
-  in Rial out loud. It groups digits as they are typed and echoes a compact form underneath
-  («۱٫۸ میلیارد تومان»): a customer who insures their home for the wrong power of ten will not
-  notice from the digits alone, and that echo is the only representation where a stray zero is
-  obvious at a glance.
-- **2026-08-20** — **`MultiOptionList` reports what was tapped, not the next array.** The first
-  version computed `values.includes(v) ? … : …` inside the component, which reads a prop that is
-  one render stale whenever two toggles land in the same React batch — the second toggle then
-  silently undid the first. Caught by clicking زلزله and سرقت in one tick and getting only
-  سرقت. The parent now owns the set and merges with a functional update.
-- **2026-08-20** — `formatTomanCompact` no longer prints a trailing `٫۰`. «۴۰۰ میلیون» is how
-  the number is said; «۴۰۰٫۰ میلیون» reads like a measurement. Affects every call site.
+- **۲۹ مرداد ۱۴۰۵** — ویزارد آتش‌سوزی منزل، پنج گام. **M5 تمام شد: حالا هر سه محصول از دل رابط
+  کاربری استعلام می‌گیرند**، `WIZARD_SLUGS` هر سه slug را دارد و هیچ کارت محصولی دیگر «به‌زودی»
+  نمی‌خواند. `QuoteSummary` شاخه HOME_FIRE خودش را گرفت — همان که یادداشت MOTOR_TPL گفته بود لازم
+  می‌شود.
+- **۲۹ مرداد ۱۴۰۵** — `MoneyField` به **تومان می‌پرسد و ریال ذخیره می‌کند**، چون هیچ‌کس عددی را با
+  ریال به زبان نمی‌آورد. ارقام را هم‌زمان با تایپ گروه‌بندی می‌کند و زیرش شکل فشرده را بازتاب
+  می‌دهد («۱٫۸ میلیارد تومان»): مشتری‌ای که خانه‌اش را با توان اشتباهی از ده بیمه می‌کند، فقط از
+  روی ارقام متوجه نمی‌شود، و آن بازتاب تنها نمایشی است که در آن یک صفر اضافی در نگاه اول آشکار
+  است.
+- **۲۹ مرداد ۱۴۰۵** — **`MultiOptionList` گزارش می‌دهد چه چیزی لمس شد، نه آرایه بعدی چیست.** نسخه
+  اول داخل کامپوننت `values.includes(v) ? … : …` را حساب می‌کرد، که هر وقت دو toggle در یک batch
+  از React بیفتند، یک propِ یک‌رندر کهنه را می‌خواند — و بعد toggle دوم بی‌صدا اولی را خنثی
+  می‌کرد. با کلیک روی زلزله و سرقت در یک تیک و گرفتن فقط سرقت گیر افتاد. حالا والد صاحب مجموعه
+  است و با به‌روزرسانی تابعی ادغام می‌کند.
+- **۲۹ مرداد ۱۴۰۵** — `formatTomanCompact` دیگر `٫۰` انتهایی چاپ نمی‌کند. «۴۰۰ میلیون» همان‌طوری
+  است که عدد گفته می‌شود؛ «۴۰۰٫۰ میلیون» مثل یک اندازه‌گیری خوانده می‌شود. روی هر محل استفاده اثر
+  دارد.
 
-- **2026-08-20** — **`express` was imported but never declared.** `main.ts` does
-  `import express from 'express'` for `express.urlencoded()` — a *value* import, unlike the
-  `import type { Request, Response }` everywhere else, which erases at compile time. With
-  `shamefully-hoist=false` the package sat in the pnpm store as a transitive of
-  `@nestjs/platform-express` and was not linked into `apps/api`, so `node dist/main.js` died on
-  `Cannot find module 'express'`. **The built API could not boot at all** — `nest start` never
-  showed it because the dev server resolves through a different tree. Fixed by declaring
-  `express@^5.2.1` in `apps/api/package.json`, which is what `.npmrc`'s "a package can only
-  import what it declares" was there to catch.
-- **2026-08-20** — `apps/api/Dockerfile` builds **from the repo root**, not from `apps/api`: the
-  lockfile and `pnpm-workspace.yaml` live at the root. All three workspace manifests are copied
-  before the install because pnpm reads `pnpm-workspace.yaml` before it applies `--filter`, and a
-  missing sibling manifest fails the install. `.dockerignore` therefore excludes `apps/web` and
-  `apps/docs` but re-includes their `package.json`.
-- **2026-08-20** — The runtime stage keeps **the whole `node_modules`** rather than pruning to
-  prod deps. `start:prod` runs `prisma migrate deploy`, so the Prisma CLI — a devDependency — has
-  to survive, and the generated client lives in `node_modules/.prisma` from the build stage.
-  Pruning and re-generating in the runner buys little and adds a second generate. Worth
-  revisiting only if image size becomes a real cost.
-- **2026-08-20** — **`node:22-slim` ships without libssl**, and Prisma's query engine links
-  against it. The first image built fine and then logged "Prisma failed to detect the
-  libssl/openssl version" and could not connect. The base stage installs `openssl` and
-  `ca-certificates`. Verified end to end against the local Postgres: migrations applied,
-  `/health/ready` returned `{"status":"ok","database":"up"}`, catalog served Persian rows.
-- **2026-08-20** — Health check is **`/health/ready`**, not `/health`. `/health` answers before
-  the database is reachable, so Railway would route traffic at a container that 500s every query.
-- **2026-08-20** — **Provisioning is blocked on a Railway incident, not on this repo.** `railway
-  init` fails with "Deploys have been paused due to an upstream issue"; status.railway.com reports
-  a Google Cloud problem from 14:53 UTC congesting the deployment pipeline. Nothing exists on
-  Railway yet — no project, no Postgres, no service.
-- **2026-08-20** — When the deploy does happen, `NODE_ENV=production` **forces both mock
-  escape hatches on**: `env.ts` refuses to boot with `AUTH_MOCK_OTP` set unless
-  `ALLOW_MOCK_AUTH_IN_PROD=true`, and refuses `PAYMENT_GATEWAY=mock` unless
-  `ALLOW_MOCK_PAYMENT_IN_PROD=true` — and the enum admits no other gateway. So the first Railway
-  deploy is **a public URL where OTP `1234` logs in as any mobile number and the bank page issues
-  policies for free**. That is the MVP working as designed, but it must not carry
-  `api.bime247.com` or be shared beyond the people building it until a real gateway and SMS
-  provider land.
+- **۲۹ مرداد ۱۴۰۵** — **`express` وارد شده بود اما هرگز اعلام نشده بود.** فایل `main.ts` برای
+  `express.urlencoded()` دستور `import express from 'express'` را دارد — یک import از نوع
+  *مقدار*، برخلاف `import type { Request, Response }` در بقیه جاها که هنگام کامپایل پاک می‌شود.
+  با `shamefully-hoist=false` این پکیج به‌عنوان وابستگی غیرمستقیم `@nestjs/platform-express` در
+  انبار pnpm نشسته بود و به `apps/api` لینک نشده بود، پس `node dist/main.js` با
+  `Cannot find module 'express'` می‌مرد. **API بیلدشده اصلاً نمی‌توانست بالا بیاید** — و
+  `nest start` هرگز نشانش نمی‌داد چون سرور توسعه از درخت دیگری resolve می‌کند. با اعلام
+  `express@^5.2.1` در `apps/api/package.json` درست شد، که دقیقاً همان چیزی است که قاعده «هر پکیج
+  فقط می‌تواند چیزی را import کند که اعلامش کرده» در `.npmrc` برای گرفتنش آنجاست.
+- **۲۹ مرداد ۱۴۰۵** — `apps/api/Dockerfile` **از ریشه مخزن** بیلد می‌شود، نه از `apps/api`:
+  فایل قفل و `pnpm-workspace.yaml` در ریشه‌اند. هر سه مانیفست workspace پیش از نصب کپی می‌شوند
+  چون pnpm فایل `pnpm-workspace.yaml` را پیش از اعمال `--filter` می‌خواند، و نبود مانیفست یک
+  همسایه، نصب را شکست می‌دهد. پس `.dockerignore` مقدار `apps/web` و `apps/docs` را کنار می‌گذارد
+  اما `package.json` آن‌ها را دوباره وارد می‌کند.
+- **۲۹ مرداد ۱۴۰۵** — مرحله اجرا **کل `node_modules`** را نگه می‌دارد به‌جای هرس کردن به
+  وابستگی‌های عملیاتی. `start:prod` دستور `prisma migrate deploy` را اجرا می‌کند، پس CLI مربوط به
+  Prisma — که یک devDependency است — باید زنده بماند، و کلاینت تولیدشده هم از مرحله بیلد در
+  `node_modules/.prisma` می‌نشیند. هرس کردن و تولید دوباره در مرحله اجرا کم می‌خرد و یک generate
+  اضافه می‌کند. فقط اگر اندازه ایمیج هزینه واقعی شد دوباره بررسی شود.
+- **۲۹ مرداد ۱۴۰۵** — **`node:22-slim` بدون libssl می‌آید**، و موتور کوئری Prisma به آن لینک
+  می‌شود. نخستین ایمیج درست بیلد شد و بعد «Prisma failed to detect the libssl/openssl version»
+  را لاگ کرد و نتوانست وصل شود. مرحله پایه `openssl` و `ca-certificates` را نصب می‌کند. سرتاسر در
+  برابر Postgres محلی بررسی شد: مهاجرت‌ها اعمال شدند، `/health/ready` مقدار
+  `{"status":"ok","database":"up"}` برگرداند و کاتالوگ ردیف‌های فارسی را سرو کرد.
+- **۲۹ مرداد ۱۴۰۵** — بررسی سلامت **`/health/ready`** است، نه `/health`. مسیر `/health` پیش از
+  در دسترس بودن دیتابیس جواب می‌دهد، پس Railway ترافیک را به کانتینری می‌فرستاد که روی هر کوئری
+  ۵۰۰ می‌دهد.
+- **۲۹ مرداد ۱۴۰۵** — **تأمین منابع به‌خاطر یک حادثه در Railway مسدود است، نه به‌خاطر این مخزن.**
+  دستور `railway init` با پیام «Deploys have been paused due to an upstream issue» شکست
+  می‌خورد؛ status.railway.com از مشکلی در Google Cloud از ساعت ۱۴:۵۳ UTC خبر می‌دهد که خط لوله
+  استقرار را شلوغ کرده. هنوز هیچ‌چیز روی Railway وجود ندارد — نه پروژه، نه Postgres، نه سرویس.
+- **۲۹ مرداد ۱۴۰۵** — وقتی استقرار انجام شود، `NODE_ENV=production` **هر دو دریچه فرار ماک را
+  مجبور می‌کند روشن باشند**: `env.ts` با وجود `AUTH_MOCK_OTP` بالا نمی‌آید مگر
+  `ALLOW_MOCK_AUTH_IN_PROD=true` باشد، و `PAYMENT_GATEWAY=mock` را نمی‌پذیرد مگر
+  `ALLOW_MOCK_PAYMENT_IN_PROD=true` باشد — و enum هیچ درگاه دیگری را قبول نمی‌کند. پس نخستین
+  استقرار Railway **یک آدرس عمومی است که در آن کد `1234` هر شماره موبایلی را وارد می‌کند و صفحه
+  بانک مجانی بیمه‌نامه صادر می‌کند**. این همان MVP است که طبق طراحی کار می‌کند، اما تا وقتی درگاه
+  و سرویس‌دهنده پیامک واقعی نیامده‌اند نباید `api.bime247.com` را حمل کند یا بیرون از تیم سازنده
+  به اشتراک گذاشته شود.
 
-- **2026-08-20** — PWA. The manifest and the icon set already existed from the brand build;
-  what was missing was that **`index.html` never linked the manifest**, so nothing was ever
-  installable. Added the manifest link, `apple-touch-icon` and the iOS standalone meta.
-- **2026-08-20** — **`public/sw.js` is hand-written, not generated by a plugin**, because the
-  rule that matters here is a judgement no default strategy makes: **nothing from the API is
-  ever cached**. This app quotes insurance — a price is good for minutes, an OTP for two, a
-  session until it rotates. A cached one shows a customer a number they can no longer buy at.
-  The worker leaves every non-same-origin and every `/api/` request completely alone: no read,
-  no write, no handler. Being offline has to read as offline.
-  Shell: navigations are **network-first** so a deploy lands on the next load, falling back to
-  the cached document; `/assets/*` is cache-first because Vite hashes every filename.
-- **2026-08-20** — **Service workers do not register in the Claude browser pane.** A three-line
-  worker fails there identically to the real one — «An unknown error occurred when fetching the
-  script» — with correct MIME, 200 status and valid syntax. Verified in real Chrome instead:
-  registered, activated, shell precached, `/assets` filled on reload, **no API response in any
-  cache**. Then killed the preview server outright and reloaded `/policies`: the app booted from
-  cache, the router ran, and `RequireAuth` sent it to `/auth` because the session refresh could
-  not reach the network. That is the offline shell working, not a simulation of it.
-- **2026-08-20** — Manifest `theme_color`/`background_color` and the two `theme-color` metas
-  were all stale — none matched the tokens. Measured the real page colours off the running app
-  (`#f4f5f7` light, `#0f1216` dark) rather than eyeballing, and aligned all four. A splash
-  screen in the wrong shade flashes a different colour before first paint.
+- **۲۹ مرداد ۱۴۰۵** — PWA. مانیفست و مجموعه آیکن از بیلد برند وجود داشتند؛ آنچه کم بود این بود که
+  **`index.html` هرگز مانیفست را لینک نکرده بود**، پس هیچ‌وقت چیزی قابل نصب نبود. لینک مانیفست،
+  `apple-touch-icon` و متای standalone مربوط به iOS اضافه شدند.
+- **۲۹ مرداد ۱۴۰۵** — **`public/sw.js` دستی نوشته شده، نه تولیدشده با یک پلاگین**، چون قاعده‌ای که
+  اینجا اهمیت دارد قضاوتی است که هیچ استراتژی پیش‌فرضی نمی‌کند: **هیچ‌چیز از API هرگز کش نمی‌شود**.
+  این اپلیکیشن بیمه استعلام می‌کند — قیمت چند دقیقه اعتبار دارد، کد یک‌بارمصرف دو دقیقه، و نشست تا
+  چرخش بعدی. نسخه کش‌شده، عددی را به مشتری نشان می‌دهد که دیگر نمی‌تواند با آن بخرد. worker هر
+  درخواست غیرهم‌مبدأ و هر درخواست `/api/` را کاملاً به حال خود می‌گذارد: نه خواندن، نه نوشتن، نه
+  هندلر. آفلاین بودن باید آفلاین خوانده شود.
+  پوسته: پیمایش‌ها **شبکه-اول** هستند تا استقرار در بارگذاری بعدی بنشیند و در صورت شکست به سند
+  کش‌شده برگردند؛ `/assets/*` کش-اول است چون Vite هر نام فایل را هش می‌کند.
+- **۲۹ مرداد ۱۴۰۵** — **سرویس‌ورکرها در پنل مرورگر Claude ثبت نمی‌شوند.** یک worker سه‌خطی هم
+  آنجا دقیقاً مثل نسخه واقعی شکست می‌خورد — «An unknown error occurred when fetching the
+  script» — با MIME درست، وضعیت ۲۰۰ و نحو معتبر. به‌جایش در کروم واقعی بررسی شد: ثبت شد، فعال شد،
+  پوسته پیش‌کش شد، `/assets` با بارگذاری دوباره پر شد، و **هیچ پاسخ APIای در هیچ کشی نبود**. بعد
+  سرور پیش‌نمایش کاملاً کشته شد و `/policies` دوباره بارگذاری شد: اپلیکیشن از کش بالا آمد، روتر
+  اجرا شد، و `RequireAuth` آن را به `/auth` فرستاد چون تازه‌سازی نشست به شبکه نمی‌رسید. این یعنی
+  پوسته آفلاین کار می‌کند، نه شبیه‌سازی آن.
+- **۲۹ مرداد ۱۴۰۵** — مقادیر `theme_color`/`background_color` مانیفست و آن دو متای `theme-color`
+  همه کهنه بودند — هیچ‌کدام با توکن‌ها نمی‌خواندند. رنگ‌های واقعی صفحه از روی اپلیکیشن در حال اجرا
+  اندازه‌گیری شدند (`#f4f5f7` روشن، `#0f1216` تیره) نه با چشم، و هر چهار هماهنگ شدند. صفحه شروع
+  در سایه اشتباه، پیش از نخستین رنگ‌آمیزی رنگ دیگری چشمک می‌زند.
 
-- **2026-08-20** — **Three screens reported a failed fetch through `EmptyState`, which has no
-  action.** A customer whose policies or vehicles did not load had nothing to tap and no way
-  back but guessing at the tab bar. New `ErrorState` carries the retry itself rather than
-  leaving each caller to remember one, and it prints the API's `messageFa` — the API owns the
-  Persian wording, and a generic «خطایی رخ داد» throws away a sentence written to be read.
-  `HomePage`'s private `ErrorCard` and `QuotePage`'s private `ErrorState` (which also carried
-  yet another hardcoded `/p/travel/form`) are both gone.
-- **2026-08-20** — `OfflineBanner` + `useOnline`. **`navigator.onLine` is only trustworthy in
-  one direction**: `false` means definitely offline, `true` merely means an interface is up —
-  captive hotel wifi reports `true` and routes nothing. So it drives a *banner* and never a
-  decision to skip a request. Requests still go out and still fail honestly; the banner only
-  explains why. It sits above the content rather than floating over it, because a bar that
-  covers the header is a bar people dismiss without reading.
-- **2026-08-20** — Skeletons consolidated: **zero ad-hoc `animate-pulse` left in `routes/`**.
-  The shared `Skeleton` box is `aria-hidden` and the `SkeletonScreen` wrapper carries one
-  `role="status"` for the whole region — twenty pulsing rectangles announced individually is
-  worse than silence. Bespoke shapes stayed bespoke: a skeleton that mirrors the real layout is
-  the entire point, so only the box and the announcement were shared.
-- **2026-08-20** — Screen transition: 8px and 180ms, keyed on `pathname` so React remounts and
-  replays it. Deliberately small — a tabbed app changes screens constantly and anything showier
-  is a tax paid on every tap. Under `prefers-reduced-motion` the translate is dropped entirely
-  and only opacity remains; verified the rule ships in the built CSS, not just in source.
+- **۲۹ مرداد ۱۴۰۵** — **سه صفحه شکست دریافت داده را از راه `EmptyState` گزارش می‌کردند که هیچ
+  اقدامی ندارد.** مشتری‌ای که بیمه‌نامه‌ها یا خودروهایش بار نمی‌شد چیزی برای زدن نداشت و راهی برای
+  برگشتن جز حدس زدن روی نوار تب. `ErrorState` تازه، خودش تلاش دوباره را حمل می‌کند به‌جای اینکه
+  هر فراخوان یادش باشد یکی بگذارد، و `messageFa` خود API را چاپ می‌کند — API صاحب جمله فارسی است
+  و یک «خطایی رخ داد» عمومی، جمله‌ای را که برای خوانده شدن نوشته شده دور می‌ریزد. `ErrorCard`
+  خصوصی در `HomePage` و `ErrorState` خصوصی در `QuotePage` (که یک `/p/travel/form` هاردکد دیگر هم
+  با خود داشت) هر دو حذف شدند.
+- **۲۹ مرداد ۱۴۰۵** — `OfflineBanner` و `useOnline`. **`navigator.onLine` فقط در یک جهت قابل
+  اعتماد است**: مقدار `false` یعنی قطعاً آفلاین، اما `true` صرفاً یعنی یک اینترفیس بالاست — وای‌فای
+  هتل با صفحه ورود، `true` گزارش می‌دهد و هیچ‌چیز را مسیردهی نمی‌کند. پس این مقدار یک *بنر* را
+  می‌راند و هرگز تصمیم به رد کردن یک درخواست را. درخواست‌ها همچنان بیرون می‌روند و صادقانه شکست
+  می‌خورند؛ بنر فقط توضیح می‌دهد چرا. بالای محتوا می‌نشیند نه شناور روی آن، چون نواری که هدر را
+  می‌پوشاند نواری است که مردم بی‌خواندن می‌بندندش.
+- **۲۹ مرداد ۱۴۰۵** — اسکلتون‌ها یکپارچه شدند: **هیچ `animate-pulse` موردی در `routes/` باقی
+  نمانده**. جعبه مشترک `Skeleton` مقدار `aria-hidden` دارد و پوشش `SkeletonScreen` یک
+  `role="status"` برای کل ناحیه حمل می‌کند — بیست مستطیل تپنده که جداجدا اعلام شوند بدتر از سکوت
+  است. شکل‌های سفارشی سفارشی ماندند: اسکلتونی که چیدمان واقعی را آینه می‌کند تمام نکته ماجراست،
+  پس فقط جعبه و اعلام مشترک شدند.
+- **۲۹ مرداد ۱۴۰۵** — گذار صفحه: ۸ پیکسل و ۱۸۰ میلی‌ثانیه، کلیدخورده روی `pathname` تا React
+  دوباره mount کند و پخشش کند. عمداً کوچک است — اپلیکیشن تب‌دار مدام صفحه عوض می‌کند و هر چیزی
+  پرزرق‌وبرق‌تر، مالیاتی است که در هر ضربه پرداخت می‌شود. زیر `prefers-reduced-motion` جابه‌جایی
+  کاملاً حذف می‌شود و فقط شفافیت می‌ماند؛ بررسی شد که این قاعده در CSS بیلدشده هم می‌آید، نه فقط
+  در سورس.
 
-- **2026-08-20** — Docs reconciled with reality. `PROJECT.md` still described the monorepo move
-  in the **future tense** and documented `npm run dev` from a repo root that no longer holds the
-  Astro site; its paths are now relative to `apps/docs/` and its commands are the workspace ones
-  — and I ran `pnpm --filter @bime247/docs build` to check, which caught that I had first
-  written the filter as `docs` rather than the package's real name.
-- **2026-08-20** — `MVP-PLAN.md`: five stale references to `packages/shared` / `packages/config`
-  corrected (neither exists — §10 decided against them), the §5 strategy interface replaced with
-  the one that shipped (`parse`/`prepare`/`rate`/`teaserInputs`/`coveragePeriod`), and §4.3
-  extended with `/me/vehicles` and the two `mock-gateway` routes that live outside the API prefix.
-- **2026-08-20** — New **§16, "What the build changed"**: the decisions that came out of building
-  and were not foreseen in the plan, plus an explicit *not built, and why* table
-  (`/me/insured-persons`, ماه‌های حرام, web unit tests, Sentry). A plan that quietly disagrees
-  with the code is worse than no plan.
-- **2026-08-20** — Recorded a live inconsistency rather than hiding it: the brand book says the
-  brand colour is `#0b7c7c`, while `apps/web/src/styles.css` resolves `--color-brand-600` to
-  `#00897b` and calls itself a placeholder. The docs site and the app are **not** currently the
-  same teal. One token block reconciles them.
+- **۲۹ مرداد ۱۴۰۵** — مستندات با واقعیت تطبیق داده شدند. `PROJECT.md` هنوز انتقال مونوریپو را با
+  **زمان آینده** توصیف می‌کرد و `npm run dev` را از ریشه مخزنی مستند می‌کرد که دیگر سایت Astro را
+  ندارد؛ مسیرهایش حالا نسبت به `apps/docs/` هستند و دستورهایش همان دستورهای workspace — و برای
+  بررسی `pnpm --filter @bime247/docs build` را اجرا کردم، که همین نشان داد اول فیلتر را به‌جای نام
+  واقعی پکیج، `docs` نوشته بودم.
+- **۲۹ مرداد ۱۴۰۵** — `MVP-PLAN.md`: پنج ارجاع کهنه به `packages/shared` / `packages/config`
+  اصلاح شد (هیچ‌کدام وجود ندارند — §۱۰ علیه‌شان تصمیم گرفت)، اینترفیس استراتژی §۵ با همانی که
+  تحویل شد جایگزین شد (`parse`/`prepare`/`rate`/`teaserInputs`/`coveragePeriod`)، و §۴.۳ با
+  `/me/vehicles` و آن دو مسیر `mock-gateway` که بیرون از پیشوند API زندگی می‌کنند گسترش یافت.
+- **۲۹ مرداد ۱۴۰۵** — **§۱۶ تازه، «ساخت چه چیزی را عوض کرد»**: تصمیم‌هایی که از دل ساختن بیرون
+  آمدند و در برنامه پیش‌بینی نشده بودند، به‌علاوه یک جدول صریح *ساخته نشد و چرا*
+  (`/me/insured-persons`، ماه‌های حرام، تست واحد وب، Sentry). برنامه‌ای که بی‌صدا با کد اختلاف
+  دارد بدتر از نداشتن برنامه است.
+- **۲۹ مرداد ۱۴۰۵** — یک ناسازگاری زنده به‌جای پنهان شدن ثبت شد: کتاب برند می‌گوید رنگ برند
+  `#0b7c7c` است، در حالی که `apps/web/src/styles.css` مقدار `--color-brand-600` را به `#00897b`
+  می‌رساند و خودش را موقت می‌نامد. سایت مستندات و اپلیکیشن فعلاً **یک** teal نیستند. یک بلوک توکن
+  آشتی‌شان می‌دهد.
 
-- **2026-08-20** — **Deployed.** Project `bime247`, environment `production`, two services: `api`
-  (Dockerfile, source `roboticsexpert/insurance` @ `main`) and `Postgres` (`postgres-ssl:18`).
-  Live on `https://api-production-21b4.up.railway.app` — `/health/ready` returns
-  `{"status":"ok","database":"up"}` from outside, and the catalog serves the seeded Persian rows.
-  Railway's own reachability from inside Iran is still **unverified**; that check is what the
-  Cloudflare proxy in MVP-PLAN §12 exists for.
-- **2026-08-20** — The service deploys **from GitHub, not from `railway up`**. An upload deploy
-  makes whatever is on a laptop the source of truth; the repo has to be. A push to `main` is a
-  deploy.
-- **2026-08-20** — **The runtime image carries `src/` and `tsconfig.json` purely for the seed.**
-  `prisma/seed.ts` imports the rating strategies from `../src` — it builds the real teaser prices
-  by running the strategies rather than hardcoding them — and tsx needs the tsconfig for
-  `experimentalDecorators`. The first seed attempt inside the container failed twice for exactly
-  these two reasons. The alternative was exposing Postgres on a public TCP proxy to seed from a
-  laptop, which is a worse trade than 660K of TypeScript in the image.
-- **2026-08-20** — `COOKIE_DOMAIN` is deliberately **empty**. The API is on `*.up.railway.app`
-  and the web is destined for `app.bime247.com`; a browser rejects a `.bime247.com` cookie set
-  from a railway.app host, so the refresh cookie is host-only until the real domain is attached.
-  Setting it early would have failed silently — the cookie is simply not stored, and every
-  refresh 401s.
+- **۲۹ مرداد ۱۴۰۵** — **مستقر شد.** پروژه `bime247`، محیط `production`، دو سرویس: `api`
+  (با Dockerfile، سورس `roboticsexpert/insurance` روی `main`) و `Postgres` (`postgres-ssl:18`).
+  روی `https://api-production-21b4.up.railway.app` بالاست — `/health/ready` از بیرون مقدار
+  `{"status":"ok","database":"up"}` برمی‌گرداند و کاتالوگ ردیف‌های فارسی seed شده را سرو می‌کند.
+  در دسترس بودن خود Railway از داخل ایران همچنان **تأییدنشده** است؛ پراکسی Cloudflare در §۱۲ از
+  MVP-PLAN دقیقاً برای همین بررسی وجود دارد.
+- **۲۹ مرداد ۱۴۰۵** — سرویس **از گیت‌هاب مستقر می‌شود، نه با `railway up`.** استقرار آپلودی، هرچه
+  روی یک لپ‌تاپ هست را منبع حقیقت می‌کند؛ منبع باید مخزن باشد. یک push روی `main` یعنی یک استقرار.
+- **۲۹ مرداد ۱۴۰۵** — **ایمیج اجرا فقط به‌خاطر seed مقدار `src/` و `tsconfig.json` را حمل
+  می‌کند.** فایل `prisma/seed.ts` استراتژی‌های نرخ‌دهی را از `../src` وارد می‌کند — قیمت‌های تیزر
+  واقعی را با اجرای خود استراتژی‌ها می‌سازد نه با هاردکد کردن — و tsx برای
+  `experimentalDecorators` به tsconfig نیاز دارد. نخستین تلاش seed داخل کانتینر دقیقاً به همین
+  دو دلیل دو بار شکست خورد. جایگزینش قرار دادن Postgres روی یک پراکسی عمومی TCP برای seed کردن از
+  لپ‌تاپ بود، که معامله بدتری از ۶۶۰ کیلوبایت تایپ‌اسکریپت داخل ایمیج است.
+- **۲۹ مرداد ۱۴۰۵** — `COOKIE_DOMAIN` عمداً **خالی** است. API روی `*.up.railway.app` است و وب
+  مقصدش `app.bime247.com` است؛ مرورگر کوکی `.bime247.com` که از میزبان railway.app ست شود را رد
+  می‌کند، پس کوکی refresh تا وصل شدن دامنه واقعی فقط-میزبان است. ست کردنش زودتر بی‌صدا شکست
+  می‌خورد — کوکی صرفاً ذخیره نمی‌شود و هر تازه‌سازی ۴۰۱ می‌گیرد.
 
-- **2026-08-20** — **The web is published: `app.bime247.com`, Cloudflare Workers assets.** It is
-  *not* on Railway and never should be — Railway carries the API and Postgres only (MVP-PLAN §12).
-  `apps/web/wrangler.jsonc` mirrors the docs site's config with one deliberate difference below.
-- **2026-08-20** — **`bime247.com` is on a different Cloudflare account than `insurance.zisef.ir`.**
-  The zone belongs to `022e4e5b87a14dc3d0e17772f66b5d6b`; `apps/docs` deploys to
-  `45d1cc1b84fce346e3b17965f6669181`. Copying the docs site's `account_id` looked right and would
-  have failed at the custom-domain step — a Workers custom domain has to sit on the account that
-  owns the zone.
-- **2026-08-20** — `not_found_handling: "single-page-application"`, not the docs site's
-  `404-page`. Without it a hard refresh on `/p/travel/form` 404s at the edge before react-router
-  ever loads.
-- **2026-08-20** — `VITE_API_URL` is baked in **at build time** (`apps/web/src/lib/api.ts` reads
-  `import.meta.env`). Changing the API host means rebuilding and redeploying the web, not editing
-  a runtime variable. Built with `https://api.bime247.com/api/v1`.
-- **2026-08-20** — With both hosts finally under `bime247.com`, `COOKIE_DOMAIN` moved from empty
-  to `.bime247.com` and `API_URL` to the custom domain. This is the arrangement
-  `token.service.ts` was written for: `SameSite=Lax` is same-site across `app.` and `api.`
-  because they share the registrable domain. Verified: preflight from `https://app.bime247.com`
-  returns `access-control-allow-credentials: true`, and an unknown origin gets no
-  `access-control-allow-origin` at all.
-- **2026-08-20** — **Untested: the login round-trip.** Requesting an OTP writes rows, and that was
-  not mine to do unasked on the live database. CORS, TLS, DNS and the catalog are verified;
-  `POST /auth/otp/request` → verify → refresh is not.
+- **۲۹ مرداد ۱۴۰۵** — **وب منتشر شد: `app.bime247.com`، روی فایل‌های ایستای Cloudflare Workers.**
+  روی Railway *نیست* و هرگز نباید باشد — Railway فقط API و Postgres را حمل می‌کند (§۱۲ در
+  MVP-PLAN). فایل `apps/web/wrangler.jsonc` پیکربندی سایت مستندات را آینه می‌کند، با یک تفاوت
+  عمدی که در پایین می‌آید.
+- **۲۹ مرداد ۱۴۰۵** — **`bime247.com` روی حساب Cloudflare دیگری است، نه همان
+  `insurance.zisef.ir`.** زون متعلق به `022e4e5b87a14dc3d0e17772f66b5d6b` است؛ `apps/docs` روی
+  `45d1cc1b84fce346e3b17965f6669181` مستقر می‌شود. کپی کردن `account_id` سایت مستندات درست به نظر
+  می‌رسید و در گام دامنه اختصاصی شکست می‌خورد — دامنه اختصاصی یک Worker باید روی حسابی باشد که
+  صاحب زون است.
+- **۲۹ مرداد ۱۴۰۵** — `not_found_handling: "single-page-application"`، نه `404-page` سایت
+  مستندات. بدون آن، بارگذاری مستقیم `/p/travel/form` پیش از آنکه react-router اصلاً بار شود، در
+  لبه ۴۰۴ می‌گیرد.
+- **۲۹ مرداد ۱۴۰۵** — `VITE_API_URL` **در زمان بیلد** پخته می‌شود (`apps/web/src/lib/api.ts`
+  مقدار `import.meta.env` را می‌خواند). عوض کردن میزبان API یعنی بیلد و استقرار دوباره وب، نه
+  ویرایش یک متغیر زمان اجرا. با `https://api.bime247.com/api/v1` بیلد شد.
+- **۲۹ مرداد ۱۴۰۵** — با قرار گرفتن نهایی هر دو میزبان زیر `bime247.com`، مقدار `COOKIE_DOMAIN`
+  از خالی به `.bime247.com` و `API_URL` به دامنه اختصاصی منتقل شد. این همان ترتیبی است که
+  `token.service.ts` برایش نوشته شده بود: `SameSite=Lax` بین `app.` و `api.` هم‌سایت است چون
+  دامنه ثبت‌شده مشترکی دارند. بررسی شد: preflight از `https://app.bime247.com` مقدار
+  `access-control-allow-credentials: true` برمی‌گرداند، و مبدأ ناشناس اصلاً
+  `access-control-allow-origin` نمی‌گیرد.
+- **۲۹ مرداد ۱۴۰۵** — **تست‌نشده: رفت‌وبرگشت ورود.** درخواست کد یک‌بارمصرف ردیف می‌نویسد، و این
+  کاری نبود که ناخواسته روی دیتابیس زنده انجام دهم. CORS، TLS، DNS و کاتالوگ بررسی شده‌اند؛
+  `POST /auth/otp/request` ← تأیید ← تازه‌سازی، نه.
 
-- **2026-08-20** — **The web moved from Cloudflare Workers to Railway**, on request, reversing
-  MVP-PLAN §12. Recorded because the plan's reasoning still stands and this is the trade being
-  accepted: Cloudflare's edge is *proven* reachable from inside Iran (`insurance.zisef.ir`),
-  Railway's is **unverified** — §12 calls that the single biggest deployment risk. Everything now
-  rides on one platform whose reachability has not been tested from the market being sold to.
-  `apps/web/wrangler.jsonc` is kept until the DNS cutover is verified, so the move is reversible
-  with one `wrangler deploy`.
-- **2026-08-20** — **The root `railway.json` had to go.** Railway reads it for *every* service in
-  the project, so the moment a second service existed the web would have built
-  `apps/api/Dockerfile`. Each service now names its own file through a `RAILWAY_DOCKERFILE_PATH`
-  variable. Casualty: the API's `/health/ready` healthcheck lived in that file and is currently
-  **unset** — `railway environment edit --service-config` returns "No changes to apply" for every
-  path on CLI 5.41.2, service name or ID alike, so it could not be moved to per-service config.
-  Until that is fixed in the dashboard, a deploy goes live when the container starts rather than
-  when the database is reachable.
-- **2026-08-20** — nginx over Railpack's static server, because the SPA fallback and the cache
-  headers both matter: `try_files $uri $uri/ /index.html` (a hard refresh on `/p/travel/form`
-  otherwise 404s at the edge), immutable caching on Vite's fingerprinted `/assets/`, and
-  `no-cache` on `index.html` and `sw.js` so a deploy does not leave clients on the old bundle.
+- **۲۹ مرداد ۱۴۰۵** — **وب بنا به درخواست از Cloudflare Workers به Railway منتقل شد** و §۱۲ در
+  MVP-PLAN را وارونه کرد. ثبت می‌شود چون استدلال برنامه هنوز سر جایش است و این معامله‌ای است که
+  پذیرفته می‌شود: در دسترس بودن لبه Cloudflare از داخل ایران *اثبات‌شده* است
+  (`insurance.zisef.ir`)، در حالی که لبه Railway **تأییدنشده** است — §۱۲ همین را بزرگ‌ترین ریسک
+  استقرار می‌نامد. حالا همه‌چیز روی یک پلتفرم سوار است که در دسترس بودنش از همان بازاری که به آن
+  می‌فروشیم تست نشده. فایل `apps/web/wrangler.jsonc` تا تأیید جابه‌جایی DNS نگه داشته می‌شود، تا
+  این حرکت با یک `wrangler deploy` برگشت‌پذیر بماند.
+- **۲۹ مرداد ۱۴۰۵** — **`railway.json` ریشه مجبور بود برود.** Railway آن را برای *هر* سرویس پروژه
+  می‌خواند، پس همان لحظه که سرویس دوم به وجود آمد، وب `apps/api/Dockerfile` را بیلد می‌کرد. حالا
+  هر سرویس فایل خودش را از راه متغیر `RAILWAY_DOCKERFILE_PATH` نام می‌برد. تلفات: بررسی سلامت
+  `/health/ready` مربوط به API در همان فایل بود و فعلاً **ست نشده** — دستور
+  `railway environment edit --service-config` روی CLI نسخه 5.41.2 برای هر مسیری، چه با نام سرویس
+  چه با شناسه، پیام «No changes to apply» می‌دهد، پس نشد به پیکربندی هر سرویس منتقلش کرد. تا وقتی
+  این در داشبورد درست شود، استقرار به‌محض بالا آمدن کانتینر زنده می‌شود نه وقتی دیتابیس در دسترس
+  است.
+- **۲۹ مرداد ۱۴۰۵** — nginx به‌جای سرور ایستای Railpack، چون هم fallback مربوط به SPA اهمیت دارد
+  هم هدرهای کش: `try_files $uri $uri/ /index.html` (وگرنه بارگذاری مستقیم `/p/travel/form` در لبه
+  ۴۰۴ می‌گیرد)، کش تغییرناپذیر روی `/assets/` که Vite اثرانگشت‌دارشان کرده، و `no-cache` روی
+  `index.html` و `sw.js` تا استقرار، کلاینت‌ها را روی باندل قدیمی جا نگذارد.
 
-- **2026-08-20** — **The purchase flow was tested end to end for all three products**, in parallel,
-  against the local stack. All three buy successfully over the API and every issued policy's line
-  items sum to the paid amount exactly. Three critical defects came out of it, written up with the
-  other 23 in [`QA-FINDINGS.md`](QA-FINDINGS.md): **motor-tpl and home-fire cannot be bought in the
-  web app at all** (`CheckoutPage` is travel-only and throws `RangeError` on an input with no
-  `endDate`); **`vehicleGroup` is never checked against the chosen vehicle model**, so a truck buys
-  TPL at the motorcycle rate — 22.8× under-collection, and it survives to an issued policy; and a
-  **paid order that fails issuance is orphaned for good** — `order-status.ts` declares
-  `ISSUE_FAILED → ISSUING` legal so support can re-drive it, but `policies.service.ts:154` guards on
-  `PAID` and `payments.service.ts:96` short-circuits a settled payment, so nothing can.
-  The first of those makes `PROJECT.md`'s "travel and motor can be bought end to end" wrong for the
-  web app; that line has been corrected rather than left to be discovered again.
+- **۲۹ مرداد ۱۴۰۵** — **مسیر خرید برای هر سه محصول سرتاسر و به‌صورت موازی در برابر پشته محلی تست
+  شد.** هر سه با موفقیت از راه API خریده می‌شوند و ردیف‌های هر بیمه‌نامه صادرشده دقیقاً به مبلغ
+  پرداختی جمع می‌خورند. سه نقص بحرانی از دلش بیرون آمد که با ۲۳ مورد دیگر در
+  [`QA-FINDINGS.md`](QA-FINDINGS.md) نوشته شده‌اند: **motor-tpl و home-fire اصلاً در اپ وب قابل
+  خرید نیستند** (`CheckoutPage` فقط مسافرتی است و روی ورودی‌ای که `endDate` ندارد `RangeError`
+  می‌دهد)؛ **`vehicleGroup` هرگز در برابر مدل خودروی انتخاب‌شده بررسی نمی‌شود**، پس یک کامیون شخص
+  ثالث را با نرخ موتورسیکلت می‌خرد — ۲۲٫۸ برابر کم‌دریافتی، و تا صدور بیمه‌نامه هم دوام می‌آورد؛ و
+  **سفارش پرداخت‌شده‌ای که صدورش شکست بخورد برای همیشه یتیم می‌ماند** — `order-status.ts` گذار
+  `ISSUE_FAILED → ISSUING` را قانونی اعلام می‌کند تا پشتیبانی بتواند دوباره براند، اما
+  `policies.service.ts:154` روی `PAID` نگهبانی می‌کند و `payments.service.ts:96` پرداخت تسویه‌شده
+  را کوتاه می‌کند، پس هیچ‌چیز نمی‌تواند.
+  اولی باعث می‌شود جمله «مسافرتی و خودرو سرتاسر قابل خریدند» در `PROJECT.md` برای اپ وب غلط باشد؛
+  آن خط اصلاح شده به‌جای اینکه بماند تا دوباره کشف شود.
 
-- **2026-08-20** — **C1 and C2 fixed; C3 still open.**
-- **`prepare` is now motor-tpl's too.** `vehicleGroup` — a factor of 24 between a motorcycle and a
-  truck — was taken on the client's word because `vehicleModelId` was never looked up. It goes
-  through `RatingLookups.vehicleModelGroup` now, and a claim that contradicts the catalog is
-  **refused rather than silently corrected**: the real wizard fills that field from the same
-  `meta.group`, so the two can only disagree if the client is stale or lying. The catch was the
-  teaser — it passed the literal id `'teaser'`, which the new lookup rejects, and `cheapestTeaser`
-  swallows throws, so the fix would have quietly emptied «از … تومان» on the home screen instead of
-  failing. `teaserInputs` now names one real catalog model per group.
-- **Checkout stopped being travel-shaped.** The per-product differences live in
-  `apps/web/src/lib/checkout.ts` as data — who the policy names, whether their birth dates come
-  from the quote or have to be asked for, whether a passport is wanted, how the period reads — and
-  `CheckoutPage` renders what it is handed. The rule that matters: **it never formats a date it has
-  not first checked is one.** Two smaller things fell out: an empty `passportNo` was being sent as
-  `''` and the server's `.min(5)` rejects that, so it is omitted now; and the screen threw away the
-  API's per-field Persian errors in favour of the generic sentence.
-- **The app had no error boundary at all**, which is the only reason a single bad read during
-  render could take the whole screen white. `RouteErrorPage` is attached to every top-level route.
-  It says the money was not taken, because at that point in the flow that is the question.
-- Verified by buying **both** previously-unbuyable products through the UI end to end:
-  `DEY-TPL-0505-000013` and `PAS-FIR-0505-000004`. Travel checkout is untouched by eye and by
-  behaviour. 352 API unit tests pass, both typechecks pass, the web production build passes.
+- **۲۹ مرداد ۱۴۰۵** — **C1 و C2 اصلاح شدند؛ C3 هنوز باز است.**
+- **`prepare` حالا مال motor-tpl هم هست.** مقدار `vehicleGroup` — ضریبی ۲۴ برابری بین موتورسیکلت
+  و کامیون — روی حرف کلاینت پذیرفته می‌شد چون `vehicleModelId` هرگز جست‌وجو نمی‌شد. حالا از راه
+  `RatingLookups.vehicleModelGroup` می‌گذرد، و ادعایی که با کاتالوگ در تضاد باشد **رد می‌شود نه
+  اینکه بی‌صدا اصلاح شود**: ویزارد واقعی همان فیلد را از `meta.group` پر می‌کند، پس این دو فقط
+  وقتی می‌توانند اختلاف داشته باشند که کلاینت کهنه یا دروغگو باشد. گیر کار تیزر بود — شناسه لفظی
+  `'teaser'` را می‌فرستاد که جست‌وجوی تازه ردش می‌کند، و `cheapestTeaser` هم throw را می‌بلعد، پس
+  این اصلاح به‌جای شکست خوردن، بی‌صدا «از … تومان» را روی صفحه اصلی خالی می‌کرد. حالا
+  `teaserInputs` برای هر گروه یک مدل واقعی از کاتالوگ نام می‌برد.
+- **تسویه‌حساب دیگر مسافرتی‌شکل نیست.** تفاوت‌های هر محصول به شکل داده در
+  `apps/web/src/lib/checkout.ts` زندگی می‌کنند — بیمه‌نامه نام چه کسی را می‌برد، تاریخ تولدشان از
+  استعلام می‌آید یا باید پرسیده شود، گذرنامه خواسته می‌شود یا نه، و دوره چطور خوانده می‌شود — و
+  `CheckoutPage` هرچه به دستش داده شود رندر می‌کند. قاعده‌ای که اهمیت دارد: **هرگز تاریخی را
+  قالب‌بندی نمی‌کند که اول مطمئن نشده باشد تاریخ است.** دو چیز کوچک‌تر هم از دلش بیرون افتاد:
+  `passportNo` خالی به شکل `''` فرستاده می‌شد که `.min(5)` سمت سرور ردش می‌کند، پس حالا حذف
+  می‌شود؛ و صفحه، خطاهای فارسی فیلدیِ API را به نفع آن جمله عمومی دور می‌ریخت.
+- **اپلیکیشن اصلاً error boundary نداشت**، و تنها دلیل اینکه یک خواندن غلط حین رندر می‌توانست کل
+  صفحه را سفید کند همین بود. `RouteErrorPage` به هر مسیر سطح بالا وصل شده است. این صفحه می‌گوید
+  پول گرفته نشده، چون در آن نقطه از مسیر، پرسش همین است.
+- با خریدن **هر دو** محصولی که قبلاً قابل خرید نبودند، سرتاسر و از دل رابط کاربری بررسی شد:
+  `DEY-TPL-0505-000013` و `PAS-FIR-0505-000004`. تسویه‌حساب مسافرتی هم از نظر ظاهر و هم از نظر
+  رفتار دست‌نخورده است. ۳۵۲ تست واحد API پاس می‌شوند، هر دو تایپ‌چک پاس می‌شوند، و بیلد عملیاتی
+  وب هم پاس می‌شود.

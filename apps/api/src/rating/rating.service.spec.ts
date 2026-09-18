@@ -3,6 +3,7 @@ import { AppException } from '../common/app.exception'
 import { PrismaService } from '../prisma/prisma.service'
 import { PremiumBuilder } from './pricing'
 import { RATING_STRATEGIES, type RatingStrategy } from './rating-strategy'
+import { PrismaRatingLookups } from './rating.lookups'
 import { RatingRegistry } from './rating.registry'
 import { RatingService } from './rating.service'
 
@@ -29,6 +30,10 @@ describe('RatingService', () => {
 
   const strategy: RatingStrategy<{ ok: true }> = {
     productType: 'TRAVEL',
+    decode: jest.fn((input: unknown) => {
+      if ((input as { bad?: boolean })?.bad) throw new AppException('VALIDATION_FAILED')
+      return { ok: true }
+    }),
     parse: jest.fn((input: unknown) => {
       if ((input as { bad?: boolean })?.bad) throw new AppException('VALIDATION_FAILED')
       return { ok: true }
@@ -59,6 +64,8 @@ describe('RatingService', () => {
             rateTable: { findMany: rateTableFindMany },
           },
         },
+        // The port itself is exercised in its own spec; here it only has to resolve.
+        { provide: PrismaRatingLookups, useValue: {} },
       ],
     })
       .setLogger({ log() {}, error() {}, warn() {}, debug() {}, verbose() {} })

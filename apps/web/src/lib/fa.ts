@@ -43,23 +43,25 @@ export const formatTomanCompact = (rial: number): string => {
  * Jalali dates come from Intl, not a date library. `fa-IR-u-ca-persian` is built into every
  * browser this app targets, returns Persian digits already, and cannot drift out of date.
  *
- * **Formatted in UTC on purpose.** Every date the API sends is date-only in meaning — a policy
- * ends at `…T23:59:59Z`, which is the *same day* everywhere. Formatting in local time rolls
- * that to the next day east of Greenwich, so the app said «تا ۲۱ مهر» while the policy document
- * (rendered server-side in UTC) said «۲۰ مهر». Same policy, two different end dates.
+ * **Formatted in Tehran on purpose**, not in the viewer's local zone and no longer in UTC.
+ * A policy period is a pair of Tehran calendar days — `startsAt` is 20:30 UTC the day before
+ * cover begins — so UTC now names the day before the one the customer picked. Date-only strings
+ * (a birth date, a chosen start date) parse to UTC midnight, which is 03:30 the same day in
+ * Tehran, so they format identically either way. Pinning the zone is what keeps the app and the
+ * server-rendered policy document from printing two different dates for one policy.
  */
 const jalaliLong = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
-  timeZone: 'UTC',
+  timeZone: 'Asia/Tehran',
 })
 
 const jalaliShort = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
   year: '2-digit',
   month: '2-digit',
   day: '2-digit',
-  timeZone: 'UTC',
+  timeZone: 'Asia/Tehran',
 })
 
 const toDate = (value: Date | string): Date => (value instanceof Date ? value : new Date(value))

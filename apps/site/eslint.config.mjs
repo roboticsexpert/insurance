@@ -1,0 +1,42 @@
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
+import nextTypescript from 'eslint-config-next/typescript'
+
+/**
+ * `eslint-config-next` نسخه ۱۶ خودش flat config می‌دهد و مستقیم import می‌شود.
+ * قالب Payload آن را از راه `FlatCompat` می‌کشید که روی ESLint 9.39 با
+ * «Converting circular structure to JSON» می‌شکند.
+ */
+const eslintConfig = [
+  ...nextCoreWebVitals,
+  ...nextTypescript,
+  {
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'warn',
+      '@typescript-eslint/no-empty-object-type': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          vars: 'all',
+          args: 'after-used',
+          ignoreRestSiblings: false,
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^(_|ignore)',
+        },
+      ],
+    },
+  },
+  {
+    // فایل‌های تولیدشده: نه دستی نوشته می‌شوند نه دستی اصلاح.
+    ignores: [
+      '.next/',
+      'src/payload-types.ts',
+      'src/migrations/',
+      'src/app/(payload)/admin/importMap.js',
+    ],
+  },
+]
+
+export default eslintConfig

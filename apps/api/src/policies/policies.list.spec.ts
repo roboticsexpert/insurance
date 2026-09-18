@@ -3,6 +3,7 @@ import { ENV } from '../config/config.module'
 import { NotificationsService } from '../notifications/notifications.service'
 import { OrdersService } from '../orders/orders.service'
 import { PrismaService } from '../prisma/prisma.service'
+import { PrismaRatingLookups } from '../rating/rating.lookups'
 import { RatingRegistry } from '../rating/rating.registry'
 import { PoliciesService, policyStatus } from './policies.service'
 
@@ -65,6 +66,7 @@ describe('PoliciesService listing', () => {
         { provide: PrismaService, useValue: { policy: { findMany, findUnique } } },
         { provide: OrdersService, useValue: {} },
         { provide: RatingRegistry, useValue: {} },
+        { provide: PrismaRatingLookups, useValue: {} },
         { provide: NotificationsService, useValue: {} },
         { provide: ENV, useValue: { WEB_URL: 'https://app.bimegold.com' } },
       ],

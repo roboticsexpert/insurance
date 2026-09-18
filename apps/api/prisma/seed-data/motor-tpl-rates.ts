@@ -101,7 +101,16 @@ const PROFILES: InsurerProfile[] = [
   },
 ]
 
-const factor = (value: number): number => Number(value.toFixed(3))
+/**
+ * Rounded to significant figures, not decimal places.
+ *
+ * `toFixed(3)` is coarser than the numbers it was rounding: a bodily rate of order 0.0085 has
+ * only one significant digit left at three decimals, so the five profiles' price indices —
+ * 0.91 through 1.06 — collapsed onto two values. Bodily is ~85% of a motor premium, so the
+ * intended spread vanished and the comparison screen showed pairs of insurers at identical
+ * headline prices.
+ */
+const factor = (value: number): number => Number(value.toPrecision(4))
 
 function buildTable(profile: InsurerProfile): MotorTplRateTable {
   return {

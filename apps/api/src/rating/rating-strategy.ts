@@ -1,5 +1,5 @@
 import type { ProductType } from '@prisma/client'
-import type { RatingResult } from './rating.types'
+import type { CoverageItem, RatingResult } from './rating.types'
 
 /**
  * The narrow slice of the database a rating strategy may depend on.
@@ -9,12 +9,17 @@ import type { RatingResult } from './rating.types'
  * choose their own price band. Strategies get this port rather than Prisma so they stay
  * ignorant of persistence, and `rate()` stays pure: everything it needs is resolved *before*
  * it runs, once per quote rather than once per insurer.
+ *
+ * The `*Name` members serve `riskSummary()` rather than pricing: a policy has to say what it
+ * covers in words a human reads, and the request only ever names a city or a vehicle by id.
  */
 export interface RatingLookups {
   /** Seismic zone 1..4 for a city, or null when the id matches nothing. */
   cityQuakeZone(cityId: string): Promise<number | null>
   /** Every city's id and zone. Small reference table; used to build teaser baskets. */
   cityQuakeZones(): Promise<{ id: string; quakeZone: number }[]>
+  /** «تهران / تهران» for the policy document, or null when the id matches nothing. */
+  cityName(cityId: string): Promise<string | null>
   /**
    * The group a vehicle model belongs to, or null when the id matches nothing.
    *
@@ -24,6 +29,8 @@ export interface RatingLookups {
   vehicleModelGroup(vehicleModelId: string): Promise<string | null>
   /** Every active model's id and group. Small reference table; used to build teaser baskets. */
   vehicleModelGroups(): Promise<{ id: string; group: string }[]>
+  /** «ایران خودرو پژو ۲۰۶» for the policy document, or null when the id matches nothing. */
+  vehicleModelName(vehicleModelId: string): Promise<string | null>
 }
 
 export interface RatingContext {
@@ -43,10 +50,19 @@ export interface RatingStrategy<TInput = unknown, TPrepared = TInput> {
   readonly productType: ProductType
 
   /**
-   * Validates raw request input and narrows it. Throws `AppException` when invalid.
+   * Narrows raw input to the product's shape. Throws `AppException` when malformed.
    *
-   * Receives the clock because some validity rules need it — "the trip cannot start in the
-   * past" is a mistake in the request, not five insurers independently refusing the customer.
+   * Takes no clock, and must not: this is the question "is this well-formed?", whose answer can
+   * never change once an order exists. Issuance calls this — and only this — to re-derive the
+   * coverage period from a stored quote. See `admission.ts` for why that separation matters.
+   */
+  decode(input: unknown): TInput
+
+  /**
+   * `decode` plus the clock-relative admission rules — "may this be bought right now?".
+   *
+   * The request path calls this. "The trip cannot start in the past" is a mistake in the
+   * request, not five insurers independently refusing the customer, so it is answered once here.
    */
   parse(input: unknown, ctx: RatingContext): TInput
 
@@ -78,6 +94,20 @@ export interface RatingStrategy<TInput = unknown, TPrepared = TInput> {
    * start date.
    */
   coveragePeriod(input: TInput): { startsAt: Date; endsAt: Date }
+
+  /**
+   * **What is insured**, as label/value rows for the issued policy.
+   *
+   * Not the same question as `coverages()`, which says what the insurer will pay for. A شخص
+   * ثالث policy that never states the plate, or a fire policy that never states the address, is
+   * not a usable document however correct its limits are — and the data was already sitting in
+   * the snapshot, undeclared and unrendered.
+   *
+   * Takes the lookups port because a request names a city or a vehicle by id, and a policy has
+   * to print a name. Resolved once, at issuance, into the snapshot — never joined at render
+   * time, so a policy still reads correctly after the catalog row it came from is gone.
+   */
+  riskSummary?(input: TInput, lookups: RatingLookups): Promise<CoverageItem[]>
 }
 
 export const RATING_STRATEGIES = Symbol('RATING_STRATEGIES')

@@ -1,13 +1,21 @@
+import { tehranDayEnd, tehranDayStart } from '../common/tehran'
 import { renderPolicyDocument, type PolicyDocumentInput } from './policy-document'
 
 const base: PolicyDocumentInput = {
   policyNumber: 'DEY-TRV-0505-000042',
-  startsAt: new Date('2026-10-02T00:00:00Z'),
-  endsAt: new Date('2026-10-12T23:59:59Z'),
+  // Tehran day boundaries, which is what issuance now stores: 2 Oct 00:00 … 12 Oct 23:59:59
+  // local. Written as the helpers produce them so the fixture cannot drift from reality.
+  startsAt: tehranDayStart('2026-10-02'),
+  endsAt: tehranDayEnd('2026-10-12'),
   issuedAt: new Date('2026-08-20T10:00:00Z'),
   verifyUrl: 'https://app.bimegold.com/policies/pol1',
   snapshot: {
     productTitleFa: 'بیمه مسافرتی',
+    productType: 'TRAVEL',
+    risk: [
+      { labelFa: 'مقصد', valueFa: 'شنگن' },
+      { labelFa: 'مدت سفر', valueFa: '۱۰ روز' },
+    ],
     insurerName: 'بیمه دی',
     insured: [
       {
@@ -36,7 +44,7 @@ describe('renderPolicyDocument', () => {
 
   it('is a Persian RTL document', () => {
     expect(html).toContain('<html lang="fa" dir="rtl">')
-    expect(html).toContain('بیمه ۲۴۷')
+    expect(html).toContain('بیمه گلد')
   })
 
   it('shows the policy number and the issuing insurer', () => {
@@ -85,9 +93,51 @@ describe('renderPolicyDocument', () => {
     ['no insured', { insured: undefined }],
     ['no coverages', { coverages: undefined }],
     ['no line items', { lineItems: undefined }],
+    ['no risk summary', { risk: undefined }],
+    ['no product type', { productType: undefined }],
     ['empty snapshot', { productTitleFa: undefined, insurerName: undefined, totalAmount: undefined }],
   ])('survives a snapshot with %s', (_label, patch) => {
     expect(() => render(patch)).not.toThrow()
+  })
+
+  /*
+   * H6. A motor policy that never states the plate, or a fire policy that never states the
+   * address, is not a usable document however correct its limits are. The data was in the
+   * snapshot all along; neither the DTO nor the renderer declared it.
+   */
+  it('states what is insured, not only what is covered', () => {
+    expect(html).toContain('مشخصات مورد بیمه')
+    expect(html).toContain('شنگن')
+    expect(html).toContain('۱۰ روز')
+  })
+
+  it('omits the risk section rather than printing an empty one', () => {
+    expect(render({ risk: [] })).not.toContain('مشخصات مورد بیمه')
+  })
+
+  /*
+   * Motor and fire name one بیمه‌گذار. Printing them under the travel table's «شماره گذرنامه»
+   * header gave every motor policy a column nobody involved had a use for.
+   */
+  describe('a single-holder product', () => {
+    const motor = render({
+      productType: 'MOTOR_TPL',
+      productTitleFa: 'بیمه شخص ثالث',
+      risk: [{ labelFa: 'شماره پلاک', valueFa: '۴۴ ص ۸۲۱ ایران ۱۱' }],
+    })
+
+    it('names the بیمه‌گذار, not a list of بیمه‌شدگان', () => {
+      expect(motor).toContain('<h2>بیمه‌گذار</h2>')
+      expect(motor).not.toContain('<h2>بیمه‌شدگان</h2>')
+    })
+
+    it('drops the passport column it has no use for', () => {
+      expect(motor).not.toContain('شماره گذرنامه')
+    })
+
+    it('states the plate — the thing the policy actually covers', () => {
+      expect(motor).toContain('۴۴ ص ۸۲۱ ایران ۱۱')
+    })
   })
 
   it('escapes text so a name cannot inject markup', () => {

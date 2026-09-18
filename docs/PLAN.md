@@ -1,120 +1,131 @@
-# Go-to-market plan — online insurance platform
+# برنامه ورود به بازار — پلتفرم آنلاین بیمه
 
-Internal working plan. Written in English to match `PROJECT.md`; the public research
-content stays Persian. Derived from the research in `src/content/topics/`, mainly
-`matris-foroosh-online-bime`, `andaze-bazar-va-forsat`, and
-`bazigaran-va-mogharrarat-foroosh-online`.
+برنامه کاری داخلی. مثل `PROJECT.md` به فارسی نوشته شده است؛ محتوای پژوهشی عمومی هم فارسی است.
+برگرفته از پژوهش‌های `src/content/topics/`، عمدتاً `matris-foroosh-online-bime`،
+`andaze-bazar-va-forsat` و `bazigaran-va-mogharrarat-foroosh-online`.
 
-## The finding, in one line
+## یافته اصلی، در یک خط
 
-Online insurance in Iran covers ~13 products (≈30% of premium, mostly third-party motor)
-fully, ~6 products semi-online (≈55% of premium: health, life, motor own-damage), and
-leaves **50+ products (≈15% of premium, ~40–50 T tomans/yr) with no digital channel at
-all** — and no marketplace competes there.
+بیمه آنلاین در ایران حدود ۱۳ محصول (تقریباً ۳۰٪ حق بیمه، عمدتاً شخص ثالث) را کامل پوشش می‌دهد،
+حدود ۶ محصول را نیمه‌آنلاین (تقریباً ۵۵٪ حق بیمه: درمان، عمر، بدنه) و
+**بیش از ۵۰ محصول (تقریباً ۱۵٪ حق بیمه، حدود ۴۰ تا ۵۰ هزار میلیارد تومان در سال) را بدون هیچ کانال
+دیجیتالی** رها می‌کند — و هیچ مارکت‌پلیسی در آن حوزه رقابت نمی‌کند.
 
-## Strategy
+## راهبرد
 
-Do **not** fight Azki / Bimeh.com / BimeBazar on the saturated 10–15 simple products.
-Enter through **Layer 3** (complex/commercial lines) with a *request → multi-insurer
-quote → track → pay → e-policy* workflow, not one-click checkout.
+روی همان ۱۰ تا ۱۵ محصول ساده و اشباع‌شده با ازکی / Bimeh.com / بیمه‌بازار **نجنگید**.
+از **لایه ۳** (رشته‌های پیچیده/تجاری) وارد شوید، با گردش‌کار *درخواست ← نرخ از چند شرکت بیمه ←
+پیگیری ← پرداخت ← بیمه‌نامه الکترونیک*، نه پرداخت یک‌کلیکی.
 
-### Beachhead: non-medical professional liability
+### سرپل: مسئولیت حرفه‌ای غیرپزشکی
 
-The research flags it explicitly as the best candidate: **standardized product, fixed-ish
-rates, low inspection need, but zero digital channel**. Targets: engineers (نظام مهندسی),
-lawyers, notaries (سردفتران), veterinarians, pharmacists, accountants.
+پژوهش صریحاً همین را بهترین گزینه می‌داند: **محصول استاندارد، نرخ‌های کمابیش ثابت، نیاز کم به
+بازدید، اما کانال دیجیتال صفر**. مخاطب‌ها: مهندسان (نظام مهندسی)، وکلا، سردفتران، دامپزشکان،
+داروسازان، حسابداران.
 
-Why this first:
-- Product is standard → can reach **level A** (truly instant online) after rate tables
-  are collected, unlike engineering/marine.
-- Buyers are **licensed professionals in registered guilds** → reachable list, no mass ad
-  spend needed. Guild/association partnerships are the acquisition channel.
-- Annual renewal → recurring commission, real LTV.
-- Compare: medical liability is already online everywhere. Everything *around* it is not.
+چرا اول این:
+- محصول استاندارد است ← بعد از جمع‌آوری جدول‌های نرخ می‌تواند به **سطح A** برسد (واقعاً آنلاینِ
+  آنی)، برخلاف مهندسی و باربری.
+- خریداران **حرفه‌ای‌های پروانه‌دارِ عضو صنف‌های ثبت‌شده‌اند** ← فهرست قابل دسترسی، بدون نیاز به
+  خرج تبلیغات انبوه. مشارکت با صنف‌ها و انجمن‌ها همان کانال جذب است.
+- تمدید سالانه ← کارمزد تکرارشونده، ارزش طول عمر واقعی.
+- مقایسه کنید: مسئولیت پزشکی همین حالا همه‌جا آنلاین است. هرچه *پیرامون* آن است، نیست.
 
-### Second wave: the contractor bundle
+### موج دوم: بسته پیمانکار
 
-Same customer (contractor / workshop / factory), three policies they already buy yearly:
-`مسئولیت کارفرما` + `CAR/EAR` + `آتش‌سوزی صنعتی`. These stay level B/C (needs
-underwriter in the loop) — the product is the **workflow and transparency**, not
-automation.
+همان مشتری (پیمانکار / کارگاه / کارخانه) و سه بیمه‌نامه‌ای که هر سال می‌خرد:
+`مسئولیت کارفرما` + `CAR/EAR` + `آتش‌سوزی صنعتی`. این‌ها در سطح B/C می‌مانند (ارزیاب باید در حلقه
+باشد) — محصول ما اینجا **گردش‌کار و شفافیت** است، نه خودکارسازی.
 
-### Later: traffic layer
+### بعدتر: لایه ترافیک
 
-Add third-party motor / travel / home fire only once the B2B engine works, purely as an
-acquisition funnel. Adding it first means a head-on price war we lose.
+شخص ثالث / مسافرتی / آتش‌سوزی منزل را فقط وقتی اضافه کنید که موتور B2B کار می‌کند، آن هم صرفاً
+به‌عنوان قیف جذب. اضافه کردنش در ابتدا یعنی جنگ قیمتی رودررویی که در آن می‌بازیم.
 
-## Phases
+## فازها
 
-### Phase 0 — validate before building (4–6 weeks, no code)
+### فاز ۰ — اعتبارسنجی پیش از ساخت (۴ تا ۶ هفته، بدون کد)
 
-Blocking unknowns, all already listed as open questions in the research:
+مجهول‌های بازدارنده، که همگی در پژوهش هم به‌عنوان پرسش باز فهرست شده‌اند:
 
-| # | Question | How to answer |
+| # | پرسش | چطور جواب بگیریم |
 |---|---|---|
-| 1 | Broker commission % per line (liability, engineering, cargo) | Talk to 2–3 licensed brokers; commission on complex lines is the whole financial model |
-| 2 | Annual policy count & premium for non-medical liability + engineering | Central Insurance / Shada statistical yearbook |
-| 3 | Will insurers quote via API or at least a shared kartabl? | Direct conversations with 3–5 mid-size insurers (Saman, Karafarin, Pasargad, Fardā) |
-| 4 | Exact capital / guarantee / documentation for an online broker licence (آیین‌نامه ۹۲/۲) | Central Insurance executive directive + درگاه ملی مجوزها |
-| 5 | Is e-signature accepted for the proposal form and health questionnaire? | Central Insurance enquiry |
-| 6 | Buy/partner with an existing licensed broker vs. apply independently | Cost comparison; partnering is the fast path |
+| ۱ | درصد کارمزد کارگزار در هر رشته (مسئولیت، مهندسی، باربری) | با ۲ تا ۳ کارگزار پروانه‌دار حرف بزنید؛ کارمزد رشته‌های پیچیده کل مدل مالی است |
+| ۲ | تعداد بیمه‌نامه و حق بیمه سالانه مسئولیت غیرپزشکی + مهندسی | سالنامه آماری بیمه مرکزی / شبکه شدا |
+| ۳ | آیا شرکت‌های بیمه از راه API یا دست‌کم یک کارتابل مشترک نرخ می‌دهند؟ | گفت‌وگوی مستقیم با ۳ تا ۵ شرکت بیمه متوسط (سامان، کارآفرین، پاسارگاد، فردا) |
+| ۴ | سرمایه / تضمین / مدارک دقیق برای پروانه کارگزاری آنلاین (آیین‌نامه ۹۲/۲) | بخشنامه اجرایی بیمه مرکزی + درگاه ملی مجوزها |
+| ۵ | آیا امضای الکترونیک برای فرم پیشنهاد و پرسشنامه سلامت پذیرفته است؟ | استعلام از بیمه مرکزی |
+| ۶ | خرید/مشارکت با یک کارگزار پروانه‌دار موجود در برابر درخواست مستقل | مقایسه هزینه؛ مشارکت مسیر سریع است |
 
-Also do **20 customer interviews** with target professionals: how they buy today, what
-they pay, what annoys them. If the pain is not "phone calls and visits", the thesis is wrong.
+**به‌روزرسانی ۱۴۰۵/۰۶/۱۲ — پاسخ‌های جزئی از جلسه بیمه تعاون**
+([یادداشت‌ها](meetings/2026-09-03-bimeh-taavon.md)، [طراحی](platform/CARRIER-INTEGRATION.md)):
 
-**Go/no-go gate:** commission on the beachhead line ≥ a level that makes ~200 policies/month
-sustainable, and at least 2 insurers willing to quote.
+- **پرسش ۳ (آیا شرکت‌ها API نرخ می‌دهند؟)** — بله، دست‌کم یکی می‌دهد. تعاون می‌گوید آنلاین صادر
+  می‌کند و دو API دارد: استعلام نرخ و درخواست صدور. هسته‌شان **فناوران/ایران‌ای‌آی‌تی** است و
+  API منیجرِ خود فناوران مسیر دوم و باارزش‌تری است (حدود ۲۵ شرکت بیمه روی یک هسته).
+- **پرسش ۶ (خرید/مشارکت در برابر درخواست مستقل)** — هنوز باز است، اما فوریتش بالا رفت: پروانه
+  کارگزاری به‌علاوه یک نماینده فروش همان چیزی است که هم سنهاب و هم دسترسی API عملیاتی را باز
+  می‌کند. بدون آن هیچ‌چیز منتشر نمی‌شود.
+- **تازه**: سرویس‌های استعلام ملی (کد پستی، اسکان، سابقه بدون خسارت از سنهاب) پیش‌نیاز صدورند نه
+  امکانات لوکس — سنهاب بیمه‌نامه‌ای با کد پستی ثبت‌نشده را رد می‌کند.
+- **تازه**: می‌گویند مستندات API فناوران وجود دارد اما قابل اتکا نیست؛ مشخصات عملی، دانش سینه‌به‌سینه
+  است. کسی را پیدا کنید که آن را پیاده کرده باشد.
 
-### Phase 1 — licence + first insurer (parallel with Phase 2)
+همچنین **۲۰ مصاحبه با مشتری** از حرفه‌های هدف انجام دهید: امروز چطور می‌خرند، چقدر می‌پردازند، چه
+چیزی آزارشان می‌دهد. اگر درد اصلی «تماس تلفنی و مراجعه حضوری» نباشد، فرضیه غلط است.
 
-Fastest route is partnership with an existing licensed broker (revenue share) while an
-independent licence application runs in the background. Note the hard requirement: the CEO
-or a board member needs **3+ years of relevant insurance experience** — if nobody on the
-team has it, this dictates the first hire or co-founder.
+**دروازه ادامه/توقف:** کارمزد رشته سرپل دست‌کم در سطحی باشد که حدود ۲۰۰ بیمه‌نامه در ماه را
+پایدار کند، و دست‌کم ۲ شرکت بیمه حاضر به نرخ‌دهی باشند.
 
-### Phase 2 — MVP (8–12 weeks)
+### فاز ۱ — پروانه + اولین شرکت بیمه (موازی با فاز ۲)
 
-Deliberately **not** a core insurance system. A broker-side workflow platform:
+سریع‌ترین مسیر، مشارکت با یک کارگزار پروانه‌دار موجود است (تقسیم درآمد) در حالی که درخواست پروانه
+مستقل در پس‌زمینه پیش می‌رود. به این الزام سخت توجه کنید: مدیرعامل یا یکی از اعضای هیئت‌مدیره باید
+**۳ سال یا بیشتر سابقه مرتبط بیمه‌ای** داشته باشد — اگر هیچ‌کس در تیم ندارد، همین اولین استخدام یا
+هم‌بنیان‌گذار را تعیین می‌کند.
 
-1. Product catalog + interactive coverage guide (what cover do I actually need?)
-2. Structured intake form per product + document upload
-3. Internal kartabl: request → sent to N insurers → quotes collected → comparison view
-4. Customer dashboard: quote comparison, accept, online payment
-5. E-policy delivery + renewal reminders (renewals are the compounding asset)
-6. Notifications: SMS + in-app
+### فاز ۲ — MVP (۸ تا ۱۲ هفته)
 
-Explicitly out of scope for MVP: own rating engine, reserving, claims, reinsurance,
-direct SANHAB integration (the partner insurer issues and registers the policy).
+عمداً یک سامانه هسته بیمه‌گری **نیست**. یک پلتفرم گردش‌کار سمت کارگزار است:
 
-**Manual is fine at the start.** If "send to insurers" is a human emailing three
-underwriters, that is still a 10× better customer experience than today. Automate only
-after volume proves the path.
+۱. کاتالوگ محصول + راهنمای تعاملی پوشش‌ها (واقعاً به چه پوششی نیاز دارم؟)
+۲. فرم دریافت اطلاعات ساخت‌یافته برای هر محصول + بارگذاری مدارک
+۳. کارتابل داخلی: درخواست ← ارسال به N شرکت بیمه ← جمع‌آوری نرخ‌ها ← نمای مقایسه
+۴. داشبورد مشتری: مقایسه نرخ‌ها، پذیرش، پرداخت آنلاین
+۵. تحویل بیمه‌نامه الکترونیک + یادآوری تمدید (تمدیدها همان دارایی مرکب‌شونده‌اند)
+۶. اعلان‌ها: پیامک + داخل اپ
 
-### Phase 3 — from level C to level A (months 6–12)
+صریحاً خارج از دامنه MVP: موتور نرخ‌دهی اختصاصی، ذخایر، خسارت، اتکایی، اتصال مستقیم به سنهاب
+(شرکت بیمه شریک، بیمه‌نامه را صادر و ثبت می‌کند).
 
-For the beachhead line, collect the rate tables from partner insurers and cache them →
-instant quote → instant issue. This is the moment the business stops being a digital
-broker and becomes a product. Only then does direct core/SANHAB integration pay off
-(see `anatomy-of-core-insurance`).
+**دستی بودن در شروع اشکالی ندارد.** اگر «ارسال به شرکت‌های بیمه» یعنی یک آدم که به سه ارزیاب ایمیل
+می‌زند، باز هم تجربه مشتری ده برابر بهتر از امروز است. فقط بعد از اینکه حجم، مسیر را ثابت کرد
+خودکارسازی کنید.
 
-## Metrics
+### فاز ۳ — از سطح C به سطح A (ماه ۶ تا ۱۲)
 
-- Phase 0: 20 interviews, 3 insurer conversations, commission table filled in
-- Phase 2: time from request to quote (target < 24h vs. days today), quote→purchase rate
-- Phase 3: share of requests quoted with zero human touch; renewal retention
+برای رشته سرپل، جدول‌های نرخ را از شرکت‌های بیمه شریک جمع و کش کنید ← نرخ آنی ← صدور آنی. همین
+لحظه است که کسب‌وکار از کارگزار دیجیتال بودن درمی‌آید و محصول می‌شود. اتصال مستقیم به هسته/سنهاب
+فقط از این نقطه به بعد صرف می‌کند (`anatomy-of-core-insurance` را ببینید).
 
-## Main risks
+## سنجه‌ها
 
-| Risk | Mitigation |
+- فاز ۰: ۲۰ مصاحبه، ۳ گفت‌وگو با شرکت بیمه، پر شدن جدول کارمزد
+- فاز ۲: زمان از درخواست تا نرخ (هدف کمتر از ۲۴ ساعت در برابر چند روزِ امروز)، نرخ تبدیل نرخ به خرید
+- فاز ۳: سهم درخواست‌هایی که بدون دخالت انسان نرخ می‌خورند؛ ماندگاری تمدید
+
+## ریسک‌های اصلی
+
+| ریسک | راه کاهش |
 |---|---|
-| No traffic without the simple products | Guild/association partnerships and direct B2B sales instead of paid search |
-| Insurers refuse to quote a newcomer | Start via an existing broker's relationships |
-| Complex lines can't be fully automated | Accept it — sell the workflow; keep an expert in the loop |
-| Licence timeline slips | Partner-first, licence in parallel |
-| A big player copies the wedge | Depth in one vertical + guild relationships is the moat, not the software |
+| بدون محصولات ساده، ترافیکی نیست | مشارکت با صنف‌ها و انجمن‌ها و فروش مستقیم B2B به‌جای تبلیغات جست‌وجو |
+| شرکت‌های بیمه به تازه‌وارد نرخ نمی‌دهند | از راه روابط یک کارگزار موجود شروع کنید |
+| رشته‌های پیچیده کاملاً خودکارشدنی نیستند | بپذیرید — گردش‌کار را بفروشید؛ کارشناس را در حلقه نگه دارید |
+| زمان‌بندی پروانه عقب می‌افتد | اول مشارکت، پروانه به‌موازات |
+| یک بازیگر بزرگ همین گوشه را کپی کند | عمق در یک عمودی + روابط صنفی خندق است، نه نرم‌افزار |
 
-## Open items feeding back into the research
+## موارد باز که به پژوهش برمی‌گردند
 
-Everything in Phase 0 should land back in `src/content/topics/` as it gets answered —
-especially the commission table and the licence requirements, which are currently the
-biggest gaps in `andaze-bazar-va-forsat` and `bazigaran-va-mogharrarat-foroosh-online`.
+هرچه در فاز ۰ هست، هر وقت جوابش پیدا شد باید به `src/content/topics/` برگردد — به‌ویژه جدول کارمزد
+و الزامات پروانه که همین حالا بزرگ‌ترین خلأهای `andaze-bazar-va-forsat` و
+`bazigaran-va-mogharrarat-foroosh-online` هستند.

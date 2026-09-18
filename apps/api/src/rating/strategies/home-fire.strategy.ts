@@ -8,9 +8,12 @@ import {
   EXTRA_PERIL_FA,
   homeFireInputSchema,
   PROPERTY_TYPE_FA,
+  type ExtraPeril,
   type HomeFireInput,
 } from '../../products/schemas/home-fire'
+import { tehranDayStart, tehranNextYear } from '../../common/tehran'
 import { ineligible, PremiumBuilder } from '../pricing'
+import { assertStartDateInWindow } from '../admission'
 import type { RatingContext, RatingLookups, RatingStrategy } from '../rating-strategy'
 import type { CoverageItem, RatingResult } from '../rating.types'
 import { homeFireRateTableSchema, type HomeFireRateTable } from './home-fire.rate-table'
@@ -28,29 +31,24 @@ const TEASER_BUILDING_VALUE = 3_000_000_000
 const TEASER_CONTENTS_VALUE = 500_000_000
 const TEASER_AREA_SQM = 70
 
-const startOfDayUtc = (date: Date): Date =>
-  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-
 @Injectable()
 export class HomeFireRatingStrategy
   implements RatingStrategy<HomeFireInput, PreparedHomeFireInput>
 {
   readonly productType: ProductType = 'HOME_FIRE'
 
-  parse(input: unknown, ctx: RatingContext): HomeFireInput {
+  decode(input: unknown): HomeFireInput {
     const result = homeFireInputSchema.safeParse(input)
     if (!result.success) {
       throw new AppException('VALIDATION_FAILED', { fields: zodErrorToFields(result.error) })
     }
-
-    const starts = new Date(`${result.data.startDate}T00:00:00Z`)
-    if (starts < startOfDayUtc(ctx.now)) {
-      throw new AppException('VALIDATION_FAILED', {
-        fields: { startDate: 'تاریخ شروع بیمه‌نامه نمی‌تواند در گذشته باشد' },
-      })
-    }
-
     return result.data
+  }
+
+  parse(input: unknown, ctx: RatingContext): HomeFireInput {
+    const decoded = this.decode(input)
+    assertStartDateInWindow(decoded.startDate, ctx, 'تاریخ شروع بیمه‌نامه نمی‌تواند در گذشته باشد')
+    return decoded
   }
 
   /**
@@ -106,6 +104,15 @@ export class HomeFireRatingStrategy
       )
     }
 
+    /*
+     * The perils actually charged for — which is not always the perils asked for. A peril whose
+     * rating basis is zero is skipped, and the coverage list is built from *this* list rather
+     * than from `input.extraPerils`, so the policy can never promise cover that carries no
+     * premium and no basis to pay a claim from. Deriving the two lists separately is what let a
+     * renter with no contents receive a policy reading «سرقت با شکست حرز: دارد» for free.
+     */
+    const chargedPerils: ExtraPeril[] = []
+
     for (const peril of input.extraPerils) {
       const config = table.perilRates[peril]
       if (!config) {
@@ -128,6 +135,7 @@ export class HomeFireRatingStrategy
           ? `${EXTRA_PERIL_FA[peril]}: پهنه لرزه‌ای ${toPersianDigits(input.quakeZone)} (ضریب ${toPersianNumber(zoneFactor)})`
           : undefined,
       )
+      chargedPerils.push(peril)
     }
 
     /*
@@ -148,7 +156,7 @@ export class HomeFireRatingStrategy
     for (const fee of table.fees) builder.fee(fee.key, fee.labelFa, fee.amount)
     builder.withTax(table.taxRate)
 
-    return builder.toResult(this.coverages(table, input))
+    return builder.toResult(this.coverages(table, input, chargedPerils))
   }
 
   /**
@@ -180,17 +188,33 @@ export class HomeFireRatingStrategy
 
   /** Annual, like motor: a year from the start date, ending the day before it recurs. */
   coveragePeriod(input: HomeFireInput): { startsAt: Date; endsAt: Date } {
-    const startsAt = new Date(`${input.startDate}T00:00:00Z`)
-    const anniversary = Date.UTC(
-      startsAt.getUTCFullYear() + 1,
-      startsAt.getUTCMonth(),
-      startsAt.getUTCDate(),
-    )
-    return { startsAt, endsAt: new Date(anniversary - 1000) }
+    // Tehran days, not UTC instants: the customer picked this date off an Iranian calendar.
+    return {
+      startsAt: tehranDayStart(input.startDate),
+      endsAt: new Date(tehranDayStart(tehranNextYear(input.startDate)).getTime() - 1000),
+    }
   }
 
-  /** The sums the customer chose, the perils always included, then the add-ons they picked. */
-  private coverages(table: HomeFireRateTable, input: PreparedHomeFireInput): CoverageItem[] {
+  /**
+   * The property, in the terms the policy is sold on. A fire policy that never says which city
+   * or what kind of building it covers cannot be checked against the risk it was priced for.
+   */
+  async riskSummary(input: HomeFireInput, lookups: RatingLookups): Promise<CoverageItem[]> {
+    const city = await lookups.cityName(input.cityId)
+
+    return [
+      { key: 'city', labelFa: 'شهر محل ملک', valueFa: city ?? '—', highlight: true },
+      { key: 'propertyType', labelFa: 'نوع ملک', valueFa: PROPERTY_TYPE_FA[input.propertyType] },
+      { key: 'area', labelFa: 'متراژ', valueFa: `${toPersianDigits(input.areaSqm)} متر مربع` },
+    ]
+  }
+
+  /** The sums the customer chose, the perils always included, then the add-ons they paid for. */
+  private coverages(
+    table: HomeFireRateTable,
+    input: PreparedHomeFireInput,
+    chargedPerils: readonly ExtraPeril[],
+  ): CoverageItem[] {
     return [
       {
         key: 'building',
@@ -205,7 +229,7 @@ export class HomeFireRatingStrategy
         highlight: true,
       },
       { key: 'included', labelFa: 'خطرهای اصلی', valueFa: INCLUDED_PERILS_FA },
-      ...input.extraPerils.map((peril) => ({
+      ...chargedPerils.map((peril) => ({
         key: `peril:${peril}`,
         labelFa: EXTRA_PERIL_FA[peril],
         valueFa: 'دارد',

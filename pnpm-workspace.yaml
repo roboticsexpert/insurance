@@ -1,2 +1,13 @@
 packages:
   - 'apps/*'
+
+# اسکریپت‌های بیلد وابستگی‌های بومی. pnpm 10 پیش‌فرض اجرایشان نمی‌کند؛ هرچه اینجا
+# نیست ساخته نمی‌شود، پس قبل از حذف یک مورد مطمئن شوید هیچ اپی لازمش ندارد.
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - argon2
+  - esbuild
+  - prisma
+  - sharp
+  - unrs-resolver

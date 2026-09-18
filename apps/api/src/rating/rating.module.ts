@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { RATING_STRATEGIES } from './rating-strategy'
+import { PrismaRatingLookups } from './rating.lookups'
 import { RatingRegistry } from './rating.registry'
 import { RatingService } from './rating.service'
 import { HomeFireRatingStrategy } from './strategies/home-fire.strategy'
@@ -13,6 +14,7 @@ import { TravelRatingStrategy } from './strategies/travel.strategy'
 @Module({
   providers: [
     RatingRegistry,
+    PrismaRatingLookups,
     RatingService,
     TravelRatingStrategy,
     MotorTplRatingStrategy,
@@ -27,6 +29,6 @@ import { TravelRatingStrategy } from './strategies/travel.strategy'
       inject: [TravelRatingStrategy, MotorTplRatingStrategy, HomeFireRatingStrategy],
     },
   ],
-  exports: [RatingService, RatingRegistry],
+  exports: [RatingService, RatingRegistry, PrismaRatingLookups],
 })
 export class RatingModule {}

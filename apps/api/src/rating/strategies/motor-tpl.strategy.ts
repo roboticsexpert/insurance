@@ -12,7 +12,10 @@ import {
   VehicleGroup,
   type MotorTplInput,
 } from '../../products/schemas/motor-tpl'
+import { tehranDayStart, tehranNextYear } from '../../common/tehran'
+import { formatPlateFa } from '../../common/validation/plate'
 import { ineligible, pickBand, PremiumBuilder } from '../pricing'
+import { assertStartDateInWindow } from '../admission'
 import type { RatingContext, RatingLookups, RatingStrategy } from '../rating-strategy'
 import type { CoverageItem, RatingResult } from '../rating.types'
 import { motorTplRateTableSchema, type MotorTplRateTable } from './motor-tpl.rate-table'
@@ -24,14 +27,13 @@ import { motorTplRateTableSchema, type MotorTplRateTable } from './motor-tpl.rat
  */
 const jalaliYearParts = new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', {
   year: 'numeric',
-  timeZone: 'UTC',
+  // Tehran, because its argument is now a Tehran day start — 20:30 UTC the day before, which
+  // formatted in UTC would name the previous Jalali day and, on 1 Farvardin, the previous year.
+  timeZone: 'Asia/Tehran',
 })
 
 export const jalaliYear = (date: Date): number =>
   Number(jalaliYearParts.formatToParts(date).find((p) => p.type === 'year')?.value ?? '0')
-
-const startOfDayUtc = (date: Date): Date =>
-  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
 
 /** A ladder is indexed by years-without-a-claim; anything past its end sits on the top rung. */
 const ladderRate = (ladder: readonly number[], years: number): number =>
@@ -45,21 +47,30 @@ const TEASER_VEHICLE_AGE_YEARS = 3
 export class MotorTplRatingStrategy implements RatingStrategy<MotorTplInput> {
   readonly productType: ProductType = 'MOTOR_TPL'
 
-  parse(input: unknown, ctx: RatingContext): MotorTplInput {
+  decode(input: unknown): MotorTplInput {
     const result = motorTplInputSchema.safeParse(input)
     if (!result.success) {
       throw new AppException('VALIDATION_FAILED', { fields: zodErrorToFields(result.error) })
     }
+    return result.data
+  }
 
-    // Backdating cover is a mistake in the request, not five insurers independently refusing.
-    const starts = new Date(`${result.data.startDate}T00:00:00Z`)
-    if (starts < startOfDayUtc(ctx.now)) {
+  parse(input: unknown, ctx: RatingContext): MotorTplInput {
+    const decoded = this.decode(input)
+    assertStartDateInWindow(decoded.startDate, ctx, 'تاریخ شروع بیمه‌نامه نمی‌تواند در گذشته باشد')
+
+    /*
+     * M5. The schema's `.max(1420)` is a constant that ages badly, and `vehicleAgeYears` clamps
+     * at zero — so a car declared as built in 1420 priced as brand new, at the best rung of the
+     * age ladder, for the next fifteen years. The real ceiling is this year.
+     */
+    if (decoded.productionYear > jalaliYear(ctx.now)) {
       throw new AppException('VALIDATION_FAILED', {
-        fields: { startDate: 'تاریخ شروع بیمه‌نامه نمی‌تواند در گذشته باشد' },
+        fields: { productionYear: 'سال ساخت نمی‌تواند در آینده باشد' },
       })
     }
 
-    return result.data
+    return decoded
   }
 
   /**
@@ -239,19 +250,16 @@ export class MotorTplRatingStrategy implements RatingStrategy<MotorTplInput> {
 
   /** Third-party cover is annual: a year from the start date, ending the day before it recurs. */
   coveragePeriod(input: MotorTplInput): { startsAt: Date; endsAt: Date } {
-    const startsAt = new Date(`${input.startDate}T00:00:00Z`)
-    const anniversary = Date.UTC(
-      startsAt.getUTCFullYear() + 1,
-      startsAt.getUTCMonth(),
-      startsAt.getUTCDate(),
-    )
-    return { startsAt, endsAt: new Date(anniversary - 1000) }
+    // Tehran days, not UTC instants: the customer picked this date off an Iranian calendar.
+    return {
+      startsAt: tehranDayStart(input.startDate),
+      endsAt: new Date(tehranDayStart(tehranNextYear(input.startDate)).getTime() - 1000),
+    }
   }
 
   /** Age at the moment cover starts, not today — a policy bought in Esfand ages in Farvardin. */
   private vehicleAgeYears(input: MotorTplInput): number {
-    const starts = new Date(`${input.startDate}T00:00:00Z`)
-    return Math.max(0, jalaliYear(starts) - input.productionYear)
+    return Math.max(0, jalaliYear(tehranDayStart(input.startDate)) - input.productionYear)
   }
 
   private percentFa(rate: number): string {
@@ -259,6 +267,22 @@ export class MotorTplRatingStrategy implements RatingStrategy<MotorTplInput> {
   }
 
   /** The two limits the customer actually chose, then whatever the table grants on top. */
+  /**
+   * The vehicle, in the words the green sheet uses. A شخص ثالث policy that never states the
+   * plate is not a usable document — the plate *is* the insured object.
+   */
+  async riskSummary(input: MotorTplInput, lookups: RatingLookups): Promise<CoverageItem[]> {
+    const model = await lookups.vehicleModelName(input.vehicleModelId)
+
+    return [
+      // LTR: the widget mimics a physical plate, read left to right. In prose it would be RTL.
+      { key: 'plate', labelFa: 'شماره پلاک', valueFa: formatPlateFa(input.plate), highlight: true },
+      { key: 'model', labelFa: 'خودرو', valueFa: model ?? VEHICLE_GROUP_FA[input.vehicleGroup] },
+      { key: 'productionYear', labelFa: 'سال ساخت', valueFa: toPersianDigits(input.productionYear) },
+      { key: 'usage', labelFa: 'کاربری', valueFa: VEHICLE_USAGE_FA[input.vehicleUsage] },
+    ]
+  }
+
   private coverages(table: MotorTplRateTable, propertyLimit: Rial): CoverageItem[] {
     return [
       {

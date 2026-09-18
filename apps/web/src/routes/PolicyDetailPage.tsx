@@ -104,7 +104,22 @@ function Body({ policy }: { policy: PolicyDetail }) {
         </p>
       </section>
 
-      <Section title="بیمه‌شدگان">
+      {/*
+        * What is insured, before what it covers. Policies issued before this existed carry no
+        * `risk`, so the section has to disappear rather than render an empty box.
+        */}
+      {policy.risk.length > 0 ? (
+        <Section title="مشخصات مورد بیمه">
+          {policy.risk.map((item) => (
+            <div key={item.key} className="flex items-start justify-between gap-4 py-2.5">
+              <span className="text-sm text-muted">{item.labelFa}</span>
+              <span className="text-sm font-medium text-strong">{item.valueFa}</span>
+            </div>
+          ))}
+        </Section>
+      ) : null}
+
+      <Section title={policy.productType === 'TRAVEL' ? 'بیمه‌شدگان' : 'بیمه‌گذار'}>
         {policy.insured.map((person, index) => (
           <div key={index} className="flex items-start justify-between gap-3 py-2.5">
             <span className="text-sm text-strong">

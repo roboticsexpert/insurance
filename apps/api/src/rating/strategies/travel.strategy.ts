@@ -11,6 +11,8 @@ import {
   type TravelInput,
 } from '../../products/schemas/travel'
 import { ineligible, pickBand, PremiumBuilder } from '../pricing'
+import { tehranDayEnd, tehranDayStart } from '../../common/tehran'
+import { assertBornInThePast, assertStartDateInWindow } from '../admission'
 import type { RatingContext, RatingStrategy } from '../rating-strategy'
 import type { CoverageItem, RatingResult } from '../rating.types'
 import { travelRateTableSchema, type TravelRateTable } from './travel.rate-table'
@@ -32,29 +34,29 @@ const DAY_MS = 86_400_000
 const TEASER_AGE = 35
 const TEASER_TRIP_DAYS = 7
 
-const startOfDayUtc = (date: Date): Date =>
-  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-
 @Injectable()
 export class TravelRatingStrategy implements RatingStrategy<TravelInput> {
   readonly productType: ProductType = 'TRAVEL'
 
-  parse(input: unknown, ctx: RatingContext): TravelInput {
+  decode(input: unknown): TravelInput {
     const result = travelInputSchema.safeParse(input)
     if (!result.success) {
       throw new AppException('VALIDATION_FAILED', { fields: zodErrorToFields(result.error) })
     }
-
-    // A trip that already started is a mistake in the request, not an insurer's refusal, so it
-    // is rejected once here rather than surfacing as five identical ineligible offers.
-    const departure = new Date(`${result.data.startDate}T00:00:00Z`)
-    if (departure < startOfDayUtc(ctx.now)) {
-      throw new AppException('VALIDATION_FAILED', {
-        fields: { startDate: 'تاریخ شروع سفر نمی‌تواند در گذشته باشد' },
-      })
-    }
-
     return result.data
+  }
+
+  parse(input: unknown, ctx: RatingContext): TravelInput {
+    const decoded = this.decode(input)
+    assertStartDateInWindow(decoded.startDate, ctx, 'تاریخ شروع سفر نمی‌تواند در گذشته باشد')
+
+    // M4: `ageOnDeparture` goes negative for a future birth date, and a negative age lands in
+    // the youngest band — so an unborn traveler was quoted at the 0.65 child factor.
+    decoded.travelers.forEach((traveler, index) =>
+      assertBornInThePast(traveler.birthDate, ctx, `travelers.${index}.birthDate`),
+    )
+
+    return decoded
   }
 
   rate(input: TravelInput, rawTable: unknown): RatingResult {
@@ -143,12 +145,33 @@ export class TravelRatingStrategy implements RatingStrategy<TravelInput> {
     }))
   }
 
-  /** Travel cover runs for the trip itself: from departure to the day of return. */
+  /**
+   * Travel cover runs for the trip itself: from departure to the end of the day of return —
+   * both read as **Tehran** days, because that is the calendar the customer picked them from.
+   * As UTC instants, cover used to begin at 03:30 local and a 06:00 flight left uninsured.
+   */
   coveragePeriod(input: TravelInput): { startsAt: Date; endsAt: Date } {
-    return {
-      startsAt: new Date(`${input.startDate}T00:00:00Z`),
-      endsAt: new Date(`${input.endDate}T23:59:59Z`),
-    }
+    return { startsAt: tehranDayStart(input.startDate), endsAt: tehranDayEnd(input.endDate) }
+  }
+
+  /**
+   * The trip. Travel is the one product whose risk the insured table already half-describes, but
+   * the destination and the dates are what an embassy or a hospital abroad actually check.
+   */
+  riskSummary(input: TravelInput): Promise<CoverageItem[]> {
+    return Promise.resolve([
+      {
+        key: 'destination',
+        labelFa: 'مقصد',
+        valueFa: TRAVEL_ZONE_FA[input.destinationZone],
+        highlight: true,
+      },
+      {
+        key: 'duration',
+        labelFa: 'مدت سفر',
+        valueFa: `${toPersianDigits(travelDurationDays(input))} روز`,
+      },
+    ])
   }
 
   /** The generic coverage list, with the customer's actual chosen limit filled in. */

@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { internalDocGroups, docPath, docSummary, docTitle } from '../../lib/internal-docs';
+
+const groups = await internalDocGroups();
+---
+
+<BaseLayout
+  title="یادداشت‌های داخلی — مستندات صنعت بیمه ایران"
+  description="یادداشت‌های کاری پروژه: برنامه، طراحی پلتفرم، پیشرفت و جلسه‌ها."
+  noindex
+>
+  <div class="wrap">
+    <section class="hero">
+      <h1>یادداشت‌های داخلی</h1>
+      <p>
+        همان فایل‌های پوشه <span class="ltr">docs/</span> مخزن، بدون تغییر. برخلاف موضوع‌های
+        پژوهشی، این‌ها یادداشت کاری‌اند: تصمیم‌ها، طراحی سامانه، پیشرفت کار و یادداشت خام جلسه‌ها.
+      </p>
+    </section>
+
+    {groups.map((group) => (
+      <>
+        <h2 class="section-title">{group.label} — {group.note}</h2>
+        <ul class="card-list">
+          {group.docs.map((doc) => (
+            <li>
+              <a class="card" href={`/internal/${doc.id}/`}>
+                <h3>{docTitle(doc)}</h3>
+                <p>{docSummary(doc)}</p>
+                <div class="meta">
+                  <span class="tag ltr">{docPath(doc)}</span>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </>
+    ))}
+  </div>
+</BaseLayout>

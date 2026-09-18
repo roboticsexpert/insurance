@@ -4,9 +4,15 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description?: string;
+  /** یادداشت‌های داخلی روی دامنه عمومی می‌نشینند اما نباید در گوگل ایندکس شوند. */
+  noindex?: boolean;
 }
 
-const { title, description = 'مستندات و یادداشت‌های پژوهشی صنعت بیمه ایران' } = Astro.props;
+const {
+  title,
+  description = 'مستندات و یادداشت‌های پژوهشی صنعت بیمه ایران',
+  noindex = false,
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -16,6 +22,7 @@ const { title, description = 'مستندات و یادداشت‌های پژوه
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="color-scheme" content="light dark" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
@@ -37,6 +44,7 @@ const { title, description = 'مستندات و یادداشت‌های پژوه
         </a>
         <nav>
           <a href="/">موضوع‌ها</a>
+          <a href="/internal/">یادداشت‌های داخلی</a>
         </nav>
       </div>
     </header>

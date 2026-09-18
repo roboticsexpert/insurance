@@ -1,200 +1,238 @@
-# QA findings — purchase flow, all three products
+# یافته‌های QA — مسیر خرید، هر سه محصول
 
-**Run date:** 2026-08-20. **Target:** local stack (`localhost:3000` API, Postgres on 5433,
-`PAYMENT_GATEWAY=mock`, `AUTH_MOCK_OTP=1234`). Nothing was run against production.
+**تاریخ اجرا:** ۲۹ مرداد ۱۴۰۵ (۲۰۲۶-۰۸-۲۰). **هدف:** پشته محلی (API روی `localhost:3000`،
+Postgres روی 5433، `PAYMENT_GATEWAY=mock`، `AUTH_MOCK_OTP=1234`). هیچ‌چیز روی محیط عملیاتی
+اجرا نشد.
 
-**Method.** The full purchase chain was driven over HTTP for each product in parallel — OTP →
-anonymous quote → order → mock bank page → settle → `/payments/verify` → policy → document →
-`/policies`. Then one agent per product attacked its own flow's edge cases (~390 requests, 9
-extra policies issued). The web findings, marked *(web)*, started as code reads plus a node repro
-of the throw; the checkout ones were later confirmed in a browser, where the fixed screens were
-also driven through to two issued policies.
+**روش.** کل زنجیره خرید برای هر محصول به‌صورت موازی روی HTTP رانده شد — کد یک‌بارمصرف ← استعلام
+ناشناس ← سفارش ← صفحه بانک ماک ← تسویه ← `/payments/verify` ← بیمه‌نامه ← سند ← `/policies`.
+سپس برای هر محصول یک عامل جداگانه به حالت‌های مرزی همان مسیر حمله کرد (حدود ۳۹۰ درخواست، ۹
+بیمه‌نامه اضافه صادر شد). یافته‌های وب که با *(web)* علامت خورده‌اند از خواندن کد و یک بازتولید
+در node شروع شدند؛ موارد مربوط به تسویه‌حساب بعداً در مرورگر تأیید شدند، جایی که صفحه‌های
+اصلاح‌شده هم تا صدور دو بیمه‌نامه پیش برده شدند.
 
-## What works
+## چه چیزی کار می‌کند
 
-The happy path is sound for all three products. Verified per product:
+مسیر خوشبینانه برای هر سه محصول سالم است. آنچه برای هر محصول تأیید شد:
 
 | | travel | motor-tpl | home-fire |
 |---|---|---|---|
-| offers / eligible | 5 / 5 | 5 / 5 | 3 / 3 (intended) |
-| paid (Rial) | 6,319,700 | 127,784,400 | 8,836,500 |
-| policy | `DEY-TRV-0505-000008` | `DEY-TPL-0505-000009` | `PAS-FIR-0505-000001` |
+| پیشنهادها / واجد شرایط | ۵ / ۵ | ۵ / ۵ | ۳ / ۳ (طبق طراحی) |
+| پرداخت‌شده (ریال) | ۶٬۳۱۹٬۷۰۰ | ۱۲۷٬۷۸۴٬۴۰۰ | ۸٬۸۳۶٬۵۰۰ |
+| بیمه‌نامه | `DEY-TRV-0505-000008` | `DEY-TPL-0505-000009` | `PAS-FIR-0505-000001` |
 
-- The quoted price is frozen on the order and reaches the policy unchanged.
-- **Line items sum to the paid amount exactly**, on every issued policy and every offer in the
-  fuzz runs — including discounts, fees, the fund levy and the home-fire premium floor.
-- Idempotent `POST /orders` returns the original order; `POST /payments/verify` is idempotent.
-- Unauthenticated reads of `/orders/:id` and `/policies/:id` are 401; another user's are 403.
-- A CANCELLED or FAILED payment issues no policy.
-- Rating direction matches the rate tables: travel zone/coverage/age bands, motor group ladder
-  and both statutory no-claims ladders, home-fire quake zones and the sum-insured linearity
-  (and the documented rule that `areaSqm` does **not** move the premium holds exactly).
+- قیمت استعلام‌شده روی سفارش قفل می‌شود و بدون تغییر به بیمه‌نامه می‌رسد.
+- **جمع ردیف‌ها دقیقاً برابر مبلغ پرداختی است**، روی هر بیمه‌نامه صادرشده و هر پیشنهاد در
+  اجراهای fuzz — شامل تخفیف‌ها، کارمزدها، عوارض صندوق و کف حق بیمه آتش‌سوزی منزل.
+- `POST /orders` idempotent است و همان سفارش اولیه را برمی‌گرداند؛ `POST /payments/verify` هم
+  idempotent است.
+- خواندن `/orders/:id` و `/policies/:id` بدون احراز هویت ۴۰۱ می‌دهد؛ خواندن مال کاربر دیگر ۴۰۳.
+- پرداخت CANCELLED یا FAILED هیچ بیمه‌نامه‌ای صادر نمی‌کند.
+- جهت نرخ‌دهی با جدول‌های نرخ می‌خواند: باندهای منطقه/پوشش/سن مسافرتی، نردبان گروه خودرو و هر دو
+  نردبان قانونی عدم خسارت، مناطق زلزله آتش‌سوزی منزل و خطی‌بودن سرمایه بیمه‌شده (و این قاعده
+  مستندشده که `areaSqm` حق بیمه را جابه‌جا **نمی‌کند** دقیقاً برقرار است).
 
-## Fixed since this run
+## آنچه پس از این اجرا اصلاح شد
 
-`C1`, `C2` and the low-severity travel-link and empty-passport items are fixed and verified —
-see the fix notes inline below. **`C3` is not fixed**; it is still the most dangerous one open.
+**۲ شهریور ۱۴۰۵ — بک‌لاگ بسته شد.** `C3`، تمام موارد `H` و `M1` تا `M9` اصلاح شدند، هر کدام با
+یک تست رگرسیون. `C1`، `C2` و موارد کم‌اهمیتِ لینک مسافرتی و گذرنامه خالی، پیش‌تر در همان اجرای
+قبلی اصلاح شده بودند. یادداشت هر اصلاح، در متن پایین با **اصلاح‌شده** علامت خورده است.
 
-### Critical
+API در طول این دو پاس ۴۰۴ تست واحد و ۳۹ تست e2e گرفت؛ هر دو مجموعه سبزند و هر دو اپلیکیشن بیلد
+می‌شوند. هر اصلاح دقیقاً چه چیزی را عوض کرد:
 
-**C1 — `vehicleGroup` is never checked against the chosen vehicle model (motor). — FIXED**
-`vehicleModelId` is only `z.string().min(1)` (`apps/api/src/products/schemas/motor-tpl.ts:63`) and
-nothing on the quote path ever loads the `VehicleModel` row, so the client's `vehicleGroup` — the
-biggest price driver — is taken on trust. A Mercedes Actros (`TRUCK`) submitted as `MOTORCYCLE`
-quotes, orders, pays and **issues**: policy `DEY-TPL-0505-000012` at 1,061,024 Toman instead of
-24,241,214 Toman, a **22.8× under-collection**. A nonexistent model id is accepted too.
-The fix already exists as a pattern: `home-fire.strategy.ts:60` uses the `prepare(input, lookups)`
-port to resolve `cityId` once per quote and throws on an unknown one. `MotorTplRatingStrategy` has
-no `prepare` at all, and `vehicles.service.ts:38` already copies the group from the model row on
-the saved-vehicle path.
-**Fix:** `RatingLookups` gained `vehicleModelGroup` / `vehicleModelGroups`, and
-`MotorTplRatingStrategy.prepare` now resolves the model through it — refusing an unknown id and
-refusing a `vehicleGroup` that contradicts the catalog, rather than silently correcting it (the
-real client fills the field from the same `meta.group`, so a disagreement is a stale or lying
-client and deserves to be heard about). `teaserInputs` had to change with it: it used to send the
-literal id `'teaser'`, which `prepare` now rejects, and `cheapestTeaser` swallows throws — so the
-home screen would have quietly lost its «از … تومان». It now picks one real catalog model per
-group. Verified live: the truck-as-motorcycle attack and a bogus model id both return 422 with a
-Persian field message, an honest truck still prices at 242,412,140 and an honest sedan still at
-127,784,400 — unchanged from before the fix — and the motor teaser is still 11,743,800.
+| | اصلاح |
+|---|---|
+| **C3** | `decode()` از `parse()` جدا شد — صدور، دوره پوشش را دوباره استخراج می‌کند بدون آنکه قواعد پذیرشِ وابسته به ساعت را دوباره اجرا کند — و `issueForOrder` حالا `ISSUE_FAILED` را هم می‌پذیرد، که یال `ISSUE_FAILED → ISSUING` ماشین حالت را صاحب فراخوان می‌کند. `verify` برای هر پرداخت تسویه‌شده‌ای که بیمه‌نامه ندارد صدور را دوباره می‌راند، پس «بررسی دوباره»ی مشتری *واقعاً* مسیر بازیابی است. |
+| **H1** | فهرست پوشش‌ها از خطرهایی ساخته می‌شود که واقعاً هزینه‌شان گرفته شده، نه از `input.extraPerils`. |
+| **H2** | `extraPerils` در همان اسکیما یکتا می‌شود. |
+| **H3** | ویزارد خودرو موقعیتش را با **شناسه** گام دنبال می‌کند، نه با اندیس روی فهرستی که طولش عوض می‌شود. |
+| **H4، H5، M3** | یک جدول `INSURED_RULES` برای هر محصول، در مالکیت API: بیمه‌نامه نام چند نفر را می‌برد، آیا گذرنامه آن‌ها را شناسایی می‌کند، و از کدام تاریخ‌های تولد قیمت‌گذاری شده — تطبیق **بر اساس موقعیت**، تا جفت‌شدن «مسافر ۱» در سند راست باشد. |
+| **H6** | `riskSummary()` روی هر استراتژی، که موقع صدور در اسنپ‌شات می‌نشیند. بیمه‌نامه خودرو پلاک، مدل، سال و کاربری را می‌گوید؛ آتش‌سوزی شهر، نوع و متراژ؛ مسافرتی مقصد و مدت. محصولات تک‌نفره دیگر ستون گذرنامه جدول مسافرتی را با خود ندارند. |
+| **M1، M4، M5** | `admission.ts` — سقف ۹۰ روزه رو به جلو برای `startDate`، ممنوعیت تاریخ تولد در آینده، و ممنوعیت سال ساخت بعد از سال جاری شمسی. |
+| **M2** | `isoDate` به‌جای فراخوانی `Date.parse` از راه `Date` رفت‌وبرگشت می‌کند، پس `2027-02-30` رد می‌شود نه اینکه به `2027-03-02` بغلتد. |
+| **M6** | seed خودرو به ارقام بامعنا گرد می‌کند، نه به سه رقم اعشار. هر پنج شرکت دوباره قیمت متمایز می‌دهند. |
+| **M7** | `common/tehran.ts` — دوره بیمه‌نامه حالا یک جفت روز تقویمی به وقت **تهران** است، نه UTC. پوشش قبلاً ساعت ۰۳:۳۰ به وقت محلی شروع می‌شد، پس پرواز صبح زود بدون بیمه انجام می‌شد؛ نگهبان تاریخ گذشته هم در ۳ ساعت و نیم اول هر روز تهران، دیروز را می‌پذیرفت. هر قالب‌بند شمسی که لحظه‌ای از بیمه‌نامه را می‌خواند، در هر دو سمت با آن به `Asia/Tehran` منتقل شد. |
+| **M8** | یک نقشه خطای سراسری فارسی برای zod (`common/zod-fa.ts`)، نصب‌شده از راه `schemas/common.ts` تا نتوان دورش زد. هیچ رشته انگلیسی‌ای به ویزاردها نمی‌رسد، حتی از فیلدهایی که بعداً اضافه شوند. |
+| **M9** | تسویه‌حساب هر خطای `insured.<i>.<field>` را روی کارت همان شخص نشان می‌دهد. |
 
-**C2 — motor-tpl and home-fire cannot be bought in the web app at all. — FIXED** *(web)*
-`CheckoutPage` is travel-only, and `app/router.tsx:50` routes every product to it.
-`CheckoutPage.tsx:119` renders `formatJalali(input.endDate)` unconditionally; neither motor nor
-home-fire has an `endDate`, so it is `formatJalali(undefined)` → `new Date(undefined)` →
-`Intl.DateTimeFormat.format` throws `RangeError: Invalid time value`. Reproduced in node against
-the real formatter from `apps/web/src/lib/fa.ts:51`. There is no ErrorBoundary in `apps/web/src`,
-so `/checkout/:quoteId/:offerId` is a white screen.
-Past that throw the page is travel-shaped three more ways: `initial` (`:39-49`) builds the insured
-list from `input.travelers` only, so `drafts` is `[]` and the pay button is permanently disabled
-(`:55-56`); `complete` (`:62`) demands a passport number for a domestic motor policy; and the
-expiry fallbacks (`:127`, `:236`) link to `/p/travel/form`. There is also no source for the
-API-required `insured[].birthDate` in either wizard — this needs product-specific checkout, not a
-null guard.
-**Fix:** the per-product differences moved out of the component into `apps/web/src/lib/checkout.ts`
-as data — how many people the policy names, whether their birth dates come from the quote (travel,
-where age set the price) or must be collected (motor and home, via `JalaliDateField`), whether a
-passport is asked for, and how the cover period reads. `CheckoutPage` renders whatever it is
-handed and never formats a date it has not checked is one. Two related bugs fell out: an empty
-`passportNo` was being sent as `''`, which the server's `.min(5)` rejects, so it is now omitted;
-and the screen printed only `messageFa`, throwing away the per-field Persian errors (that was M9).
-Verified end to end in the browser: **both a motor-tpl and a home-fire policy were bought through
-the UI** — `DEY-TPL-0505-000013` and `PAS-FIR-0505-000004` — checkout → bank page → callback
-(«بیمه‌نامه شما صادر شد») → both listed under «بیمه‌نامه‌های من». Travel checkout is unchanged:
-two insured cards, birth dates locked and shown, passport fields present.
+یک اصلاح جانبی هم انجام شد: سند بیمه‌نامه هنوز **بیمه ۲۴۷** را می‌نوشت.
 
-**C3 — a paid order can be orphaned permanently: money taken, no policy, no way back. — OPEN**
-`PoliciesService.issueForOrder` re-runs request-time validation at issuance
-(`policies.service.ts:161` calls `strategy.parse(quote.input, { now })`), and every strategy's
-`parse` rejects a start date before today. A same-day-departure order whose payment settles after
-the UTC day rolls over therefore throws inside issuance and lands in `ISSUE_FAILED`.
-`order-status.ts:11-12` explicitly says `ISSUE_FAILED` is non-terminal "because support re-drives
-issuance" and the table allows `ISSUE_FAILED → ISSUING` — but `policies.service.ts:154` guards on
-`status === PAID`, so the re-drive is blocked; `payments.service.ts:96-99` short-circuits once the
-payment is SUCCEEDED; and `payments.service.ts:140` is the only production caller. The order is
-stuck for good, while `PaymentCallbackPage.tsx:99-108` promises the customer an SMS when the
-policy is ready.
+### بحرانی
 
-### High
+**C1 — `vehicleGroup` هرگز در برابر مدل خودروی انتخاب‌شده بررسی نمی‌شود (خودرو). — اصلاح‌شده**
+`vehicleModelId` فقط `z.string().min(1)` است (`apps/api/src/products/schemas/motor-tpl.ts:63`) و
+هیچ‌جای مسیر استعلام ردیف `VehicleModel` را نمی‌خواند، پس `vehicleGroup` که کلاینت می‌فرستد —
+بزرگ‌ترین محرک قیمت — روی اعتماد پذیرفته می‌شود. یک مرسدس اکتروس (`TRUCK`) که به‌عنوان
+`MOTORCYCLE` فرستاده شود، استعلام می‌گیرد، سفارش می‌دهد، پرداخت می‌کند و **صادر هم می‌شود**:
+بیمه‌نامه `DEY-TPL-0505-000012` با ۱٬۰۶۱٬۰۲۴ تومان به‌جای ۲۴٬۲۴۱٬۲۱۴ تومان، یعنی **۲۲٫۸ برابر
+کم‌دریافتی**. شناسه مدل ناموجود هم پذیرفته می‌شود.
+الگوی راه‌حل از قبل وجود داشت: `home-fire.strategy.ts:60` از پورت `prepare(input, lookups)`
+استفاده می‌کند تا `cityId` را یک‌بار در هر استعلام resolve کند و روی شناسه ناشناس throw کند.
+`MotorTplRatingStrategy` اصلاً `prepare` نداشت، و `vehicles.service.ts:38` هم پیش‌تر در مسیر
+خودروی ذخیره‌شده، گروه را از خود ردیف مدل کپی می‌کرد.
+**اصلاح:** `RatingLookups` صاحب `vehicleModelGroup` / `vehicleModelGroups` شد و
+`MotorTplRatingStrategy.prepare` حالا مدل را از راه آن resolve می‌کند — شناسه ناشناس را رد می‌کند
+و `vehicleGroup`ی که با کاتالوگ در تضاد است را هم رد می‌کند، به‌جای اینکه بی‌صدا اصلاحش کند
+(کلاینت واقعی این فیلد را از همان `meta.group` پر می‌کند، پس اختلاف یعنی کلاینت کهنه یا دروغگو و
+باید خبردار شویم). `teaserInputs` هم ناچار عوض شد: قبلاً شناسه لفظی `'teaser'` را می‌فرستاد که
+`prepare` حالا ردش می‌کند، و `cheapestTeaser` هم throw را می‌بلعد — پس صفحه اصلی بی‌صدا «از …
+تومان» خودش را از دست می‌داد. حالا برای هر گروه یک مدل واقعی از کاتالوگ انتخاب می‌کند. تأیید
+زنده: حمله کامیون-به‌جای-موتورسیکلت و شناسه مدل جعلی هر دو ۴۲۲ با پیام فارسی روی همان فیلد
+برمی‌گردانند، کامیون صادق همچنان ۲۴۲٬۴۱۲٬۱۴۰ و سواری صادق همچنان ۱۲۷٬۷۸۴٬۴۰۰ قیمت می‌خورد —
+دست‌نخورده نسبت به قبل از اصلاح — و تیزر خودرو همچنان ۱۱٬۷۴۳٬۸۰۰ است.
 
-**H1 — a skipped peril is still promised on the issued home-fire policy.**
-`rate()` correctly skips a peril whose rating basis is zero (`home-fire.strategy.ts:117`), but
-`coverages()` maps `input.extraPerils` unconditionally (`:208-212`). Buying with
-`contentsValue: 0` + `extraPerils: ["THEFT", …]` issues a policy whose document reads
-«سرقت با شکست حرز: دارد» with no theft premium charged and no basis to pay a claim from
-(reproduced: `PAS-FIR-0505-000003`). Reachable from the wizard, which offers THEFT regardless of
-contents value and whose hint actively encourages renters to leave the building side empty.
-`home-fire.strategy.spec.ts:118` asserts the line item is gone but never checks the coverage row.
+**C2 — motor-tpl و home-fire اصلاً در اپ وب قابل خرید نیستند. — اصلاح‌شده** *(web)*
+`CheckoutPage` فقط برای مسافرتی نوشته شده، و `app/router.tsx:50` همه محصولات را به آن مسیردهی
+می‌کند. `CheckoutPage.tsx:119` بدون شرط `formatJalali(input.endDate)` را رندر می‌کند؛ نه خودرو
+`endDate` دارد نه آتش‌سوزی منزل، پس می‌شود `formatJalali(undefined)` ← `new Date(undefined)` ←
+`Intl.DateTimeFormat.format` که `RangeError: Invalid time value` می‌دهد. در node و در برابر
+قالب‌بند واقعی `apps/web/src/lib/fa.ts:51` بازتولید شد. در `apps/web/src` هیچ ErrorBoundary وجود
+ندارد، پس `/checkout/:quoteId/:offerId` یک صفحه سفید است.
+فراتر از آن throw، صفحه از سه راه دیگر هم مسافرتی‌شکل است: `initial` (`:39-49`) فهرست بیمه‌شدگان
+را فقط از `input.travelers` می‌سازد، پس `drafts` برابر `[]` است و دکمه پرداخت برای همیشه غیرفعال
+می‌ماند (`:55-56`)؛ `complete` (`:62`) برای یک بیمه‌نامه داخلی خودرو شماره گذرنامه می‌خواهد؛ و
+جایگزین‌های انقضا (`:127`، `:236`) به `/p/travel/form` لینک می‌دهند. برای `insured[].birthDate`
+که API لازم دارد هم در هیچ‌کدام از دو ویزارد منبعی وجود ندارد — این مسئله تسویه‌حساب مخصوص هر
+محصول می‌خواهد، نه یک نگهبان null.
+**اصلاح:** تفاوت‌های هر محصول از دل کامپوننت بیرون آمدند و به شکل داده در
+`apps/web/src/lib/checkout.ts` نشستند — بیمه‌نامه نام چند نفر را می‌برد، تاریخ تولدشان از استعلام
+می‌آید (مسافرتی، جایی که سن روی قیمت اثر داشته) یا باید گرفته شود (خودرو و منزل، با
+`JalaliDateField`)، آیا گذرنامه پرسیده می‌شود، و دوره پوشش چطور خوانده می‌شود. `CheckoutPage` هرچه
+به دستش داده شود رندر می‌کند و هرگز تاریخی را که مطمئن نیست تاریخ است قالب‌بندی نمی‌کند. دو باگ
+مرتبط هم از دلش بیرون افتاد: `passportNo` خالی به شکل `''` فرستاده می‌شد که `.min(5)` سمت سرور
+ردش می‌کند، پس حالا اصلاً فرستاده نمی‌شود؛ و صفحه فقط `messageFa` را چاپ می‌کرد و خطاهای فارسیِ
+هر فیلد را دور می‌ریخت (همان M9). تأیید سرتاسری در مرورگر: **هم یک بیمه‌نامه motor-tpl و هم یک
+home-fire از دل رابط کاربری خریده شدند** — `DEY-TPL-0505-000013` و `PAS-FIR-0505-000004` —
+تسویه‌حساب ← صفحه بانک ← بازگشت («بیمه‌نامه شما صادر شد») ← هر دو زیر «بیمه‌نامه‌های من» فهرست
+شدند. تسویه‌حساب مسافرتی دست‌نخورده است: دو کارت بیمه‌شده، تاریخ تولد قفل و نمایش‌داده‌شده، و
+فیلدهای گذرنامه سر جایشان.
 
-**H2 — duplicate perils are charged N times (home-fire).** `extraPerils` is a plain
-`z.array` with no dedupe (`schemas/home-fire.ts:39`) and `rate()` loops the raw array. Sending
-`["THEFT","THEFT","THEFT"]` produces three identical premium lines and three identical coverage
-rows. Totals stay internally consistent, so nothing downstream catches it.
+**C3 — یک سفارش پرداخت‌شده می‌تواند برای همیشه یتیم بماند: پول گرفته شده، بیمه‌نامه‌ای نیست، راه
+بازگشتی هم نیست. — اصلاح‌شده**
+`PoliciesService.issueForOrder` اعتبارسنجی زمان درخواست را موقع صدور دوباره اجرا می‌کند
+(`policies.service.ts:161` که `strategy.parse(quote.input, { now })` را صدا می‌زند)، و `parse`
+هر استراتژی، تاریخ شروع قبل از امروز را رد می‌کند. بنابراین سفارشی با حرکت همان‌روز که پرداختش
+بعد از تغییر روز UTC تسویه می‌شود، داخل صدور throw می‌کند و در `ISSUE_FAILED` می‌نشیند.
+`order-status.ts:11-12` صریحاً می‌گوید `ISSUE_FAILED` پایانی نیست «چون پشتیبانی صدور را دوباره
+می‌راند» و جدول هم یال `ISSUE_FAILED → ISSUING` را مجاز می‌داند — اما `policies.service.ts:154`
+روی `status === PAID` نگهبانی می‌کند، پس این راندنِ دوباره مسدود است؛ `payments.service.ts:96-99`
+به‌محض SUCCEEDED شدن پرداخت مسیر را کوتاه می‌کند؛ و `payments.service.ts:140` تنها فراخوان
+عملیاتی است. سفارش برای همیشه گیر می‌کند، در حالی که `PaymentCallbackPage.tsx:99-108` به مشتری
+قول پیامک هنگام آماده شدن بیمه‌نامه را می‌دهد.
 
-**H3 — a saved motorcycle silently loses its no-claims discount (motor).** *(web)*
-`MotorWizardPage.tsx:76` computes the target step from `steps`, which is the closure value from
-the render before `modelId` changed. Applying a saved motorcycle jumps to index 3 of the 6-step
-list, but the next render collapses `steps` to the 5-step motorcycle list where index 3 is
-`'tier'` — the history screen is skipped, `hasPrevious` stays `null`, and the quote submits
-`hasPreviousPolicy: false`. A returning motorcycle owner is quoted the no-discount price, up to
-**70% bodily / 60% property** over the top, without ever being asked.
+### زیاد
 
-**H4 — a travel policy can be issued with no passport number.**
-`passportNo` is `.optional()` (`schemas/common.ts:37`); only `CheckoutPage.tsx:62` enforces it,
-client-side. A direct `POST /orders` without it issues a policy whose document shows `—` in the
-passport column — the identifier the insurer and the embassy actually use.
+**H1 — خطری که رد شده، هنوز روی بیمه‌نامه صادرشده آتش‌سوزی منزل وعده داده می‌شود. — اصلاح‌شده**
+`rate()` درست عمل می‌کند و خطری که مبنای نرخش صفر است را رد می‌کند (`home-fire.strategy.ts:117`)،
+اما `coverages()` بدون شرط روی `input.extraPerils` نگاشت می‌زند (`:208-212`). خرید با
+`contentsValue: 0` به‌علاوه `extraPerils: ["THEFT", …]` بیمه‌نامه‌ای صادر می‌کند که سندش
+«سرقت با شکست حرز: دارد» می‌نویسد، بی‌آنکه حق بیمه سرقتی گرفته شده باشد یا مبنایی برای پرداخت
+خسارت وجود داشته باشد (بازتولید شد: `PAS-FIR-0505-000003`). از خود ویزارد هم قابل دسترسی است،
+چون THEFT را بدون توجه به ارزش اثاثیه پیشنهاد می‌دهد و راهنمایش فعالانه مستأجرها را تشویق می‌کند
+سمت ساختمان را خالی بگذارند. `home-fire.strategy.spec.ts:118` نبودِ ردیف حق بیمه را assert
+می‌کند اما ردیف پوشش را هرگز بررسی نمی‌کند.
 
-**H5 — the travel policy document pairs the wrong premium with the wrong person.**
-`assertInsuredMatchesQuote` sorts both lists before comparing
-(`orders.service.ts:131-139`), so travelers may be submitted in any order, but the document pairs
-the insured table with the position-labelled premium lines («حق بیمه — مسافر ۱») by index. The
-total is right; the per-person breakdown on the customer's own policy contradicts itself.
+**H2 — خطرهای تکراری N بار هزینه می‌خورند (آتش‌سوزی منزل). — اصلاح‌شده** `extraPerils` یک
+`z.array` ساده بدون یکتاسازی است (`schemas/home-fire.ts:39`) و `rate()` روی همان آرایه خام حلقه
+می‌زند. فرستادن `["THEFT","THEFT","THEFT"]` سه ردیف حق بیمه یکسان و سه ردیف پوشش یکسان می‌سازد.
+جمع‌ها از درون سازگار می‌مانند، پس هیچ‌چیزِ پایین‌دستی این را نمی‌گیرد.
 
-**H6 — issued policies do not identify the risk.** A motor TPL policy never states the plate,
-model or year, and a fire policy never states the city, property type or area — the data is in
-`dataSnapshot` but neither `PolicyDetailDto` (`policies.dto.ts:33-46`) nor
-`policy-document.ts:22-31` declares or renders it. Both documents still carry the travel-shaped
-«تاریخ تولد» / «شماره گذرنامه» columns instead. A شخص ثالث policy without a plate is not a usable
-document.
+**H3 — موتورسیکلت ذخیره‌شده بی‌صدا تخفیف عدم خسارتش را از دست می‌دهد (خودرو). — اصلاح‌شده** *(web)*
+`MotorWizardPage.tsx:76` گام مقصد را از `steps` حساب می‌کند، که مقدار closure از رندر قبل از
+تغییر `modelId` است. اعمال یک موتورسیکلت ذخیره‌شده به اندیس ۳ از فهرست ۶ گامی می‌پرد، اما رندر
+بعدی `steps` را به فهرست ۵ گامی موتورسیکلت جمع می‌کند که در آن اندیس ۳ همان `'tier'` است — صفحه
+سابقه رد می‌شود، `hasPrevious` روی `null` می‌ماند و استعلام با `hasPreviousPolicy: false`
+ثبت می‌شود. صاحب موتورسیکلتی که برمی‌گردد، بدون آنکه اصلاً از او پرسیده شود، قیمت بدون تخفیف
+می‌گیرد؛ تا **۷۰٪ جانی / ۶۰٪ مالی** بالاتر از حداقل ممکن.
 
-### Medium
+**H4 — بیمه‌نامه مسافرتی می‌تواند بدون شماره گذرنامه صادر شود. — اصلاح‌شده**
+`passportNo` به شکل `.optional()` تعریف شده (`schemas/common.ts:37`)؛ فقط
+`CheckoutPage.tsx:62` آن را الزام می‌کند، آن هم سمت کلاینت. یک `POST /orders` مستقیم و بدون آن،
+بیمه‌نامه‌ای صادر می‌کند که در ستون گذرنامه سندش `—` نوشته شده — همان شناسه‌ای که شرکت بیمه و
+سفارت واقعاً از آن استفاده می‌کنند.
 
-- **M1 — no upper bound on `startDate`** (all products). `startDate: "9999-12-31"` quotes and
-  orders normally; a motor policy can be sold to start in 2030 at today's دیه, which the rate
-  table's own comment says resets annually. Only the past is guarded.
-- **M2 — nonexistent calendar dates roll forward silently** (all products). `isoDate`
-  (`schemas/common.ts:9-12`) regex-matches then `Date.parse`s, and V8 rolls `2027-02-30` to
-  `2027-03-02`. The quote echoes the impossible date back, the policy is issued from the rolled
-  one — the customer sees one start date and is covered from another.
-- **M3 — `assertInsuredMatchesQuote` is a no-op for motor and home-fire**
-  (`orders.service.ts:121-123` returns early when the input has no `travelers`). Ten insured
-  people all born `2050-01-01` are accepted on a motor order.
-- **M4 — future birth dates are priced as children** (travel). No past-date constraint on
-  `travelers[].birthDate`; `ageOnDeparture` goes negative and `pickBand` falls into the `max: 12`
-  band, so a traveler born in 2028 gets the 0.65 child factor.
-- **M5 — future production years priced as brand new** (motor). `vehicleAgeYears` clamps at 0 and
-  `.max(1420)` is a hardcoded constant rather than relative to `ctx.now`.
-- **M6 — seed rounding collapses five insurers onto two bodily rates** (motor).
-  `prisma/seed-data/motor-tpl-rates.ts:104` does `Number(value.toFixed(3))` on
-  `0.0085 × priceIndex`, so dey/saman both land on 0.008 and pasargad/alborz/karafarin on 0.009.
-  Bodily is ~85% of the premium, so the intended 4% spread vanishes and the comparison screen
-  shows pairs of insurers at identical headline prices.
-- **M7 — coverage periods are computed in UTC** although dates are chosen in the Tehran calendar
-  (`travel.strategy.ts:147-152`). Cover starts 03:30 local on the departure day, so an early
-  flight is uncovered; the same assumption makes the past-date guard accept yesterday between
-  00:00 and 03:30 Tehran.
-- **M8 — English zod messages reach the Persian UI** (all three). `errors.ts:43-45` states the API
-  owns every Persian string, but fields without an explicit `message` return e.g.
-  «Number must be less than or equal to 2000», «Invalid enum value. Expected 'APARTMENT' |
-  'VILLA'…», and all three wizards render `Object.values(error.fields)` verbatim.
-- **M9 — `CheckoutPage` discards `fields`** (`:206` prints only `messageFa`), so a national code
-  that passes the client's length check but fails the mod-11 checksum yields a generic error with
-  no indication of which traveler or which field. The wizards already do this correctly.
+**H5 — سند بیمه‌نامه مسافرتی حق بیمه اشتباه را به شخص اشتباه می‌چسباند. — اصلاح‌شده**
+`assertInsuredMatchesQuote` پیش از مقایسه هر دو فهرست را مرتب می‌کند
+(`orders.service.ts:131-139`)، پس مسافرها را می‌شود به هر ترتیبی فرستاد، اما سند، جدول بیمه‌شدگان
+را با ردیف‌های حق بیمه که برچسب موقعیتی دارند («حق بیمه — مسافر ۱») بر اساس اندیس جفت می‌کند.
+جمع کل درست است؛ اما تفکیک نفر به نفر روی بیمه‌نامه خود مشتری با خودش در تناقض است.
 
-### Low
+**H6 — بیمه‌نامه‌های صادرشده موضوع خطر را معرفی نمی‌کنند. — اصلاح‌شده** بیمه‌نامه شخص ثالث هرگز
+پلاک، مدل یا سال را نمی‌گوید و بیمه‌نامه آتش‌سوزی هرگز شهر، نوع ملک یا متراژ را — داده‌اش در
+`dataSnapshot` هست اما نه `PolicyDetailDto` (`policies.dto.ts:33-46`) آن را اعلام می‌کند و نه
+`policy-document.ts:22-31` رندرش می‌کند. هر دو سند هنوز ستون‌های مسافرتی‌شکلِ «تاریخ تولد» /
+«شماره گذرنامه» را با خود دارند. بیمه‌نامه شخص ثالث بدون پلاک، سند قابل استفاده‌ای نیست.
 
-Dead-end «استعلام دوباره» links hardcoded to `/p/travel/form` for every product — **fixed**: they
-follow the quote's own `productSlug` now, and the two fallbacks that render *because* there is no
-quote to read a slug from go to the product list instead of guessing; the same national code accepted twice on
-one policy; zero-value premium and coverage rows rendered for a sum of 0 or 1;
-`hasPreviousPolicy` refinement always blaming `bodilyDiscountYears` regardless of which field was
-wrong (`schemas/motor-tpl.ts:79`); Persian-digit plates rejected by `plateSchema`'s raw regex
-before the `isValidPlate` refine that was written to normalise them; the home-fire teaser basket
-pricing below every insurer's floor in every zone, so the advertised «از ۱۵۰٬۵۰۰ تومان» is the
-minimum premium and the per-zone teaser machinery is inert (and no seeded city has
-`quakeZone: 4`, making that factor dead data).
+### متوسط
 
-## Remaining work, in order
+**همه اصلاح شدند** — برای اینکه هر اصلاح چه چیزی را عوض کرد، جدول بخش *آنچه پس از این اجرا اصلاح
+شد* را ببینید.
 
-1. **C3** — the only defect left that takes money and gives nothing back. Two parts: stop
-   re-running request-time validation at issuance, and give the `ISSUE_FAILED → ISSUING`
-   transition the state machine already allows an actual caller.
-2. **H1, H2, H4, H5, H6** — all of them put a wrong or unusable document in the customer's hands.
-3. **M1, M2, M3** — one shared root each (a forward cap, a real calendar check, a per-product
-   insured rule); cheap to fix together.
-4. **M8** — Persian messages on the schema fields that lack them; mechanical, and all three
-   wizards render these strings verbatim.
+- **M1 — هیچ کران بالایی روی `startDate` نیست** (همه محصولات). `startDate: "9999-12-31"` عادی
+  استعلام و سفارش می‌گیرد؛ می‌شود بیمه‌نامه خودرویی فروخت که در ۲۰۳۰ شروع شود، با دیه امروز، در
+  حالی که کامنت خود جدول نرخ می‌گوید دیه سالانه بازنشانی می‌شود. فقط گذشته نگهبانی دارد.
+- **M2 — تاریخ‌های تقویمی ناموجود بی‌صدا به جلو می‌غلتند** (همه محصولات). `isoDate`
+  (`schemas/common.ts:9-12`) اول با regex تطبیق می‌دهد و بعد `Date.parse` می‌کند، و V8
+  `2027-02-30` را به `2027-03-02` می‌غلتاند. استعلام همان تاریخ ناممکن را بازتاب می‌دهد و
+  بیمه‌نامه از تاریخ غلتیده صادر می‌شود — مشتری یک تاریخ شروع می‌بیند و از تاریخ دیگری پوشش دارد.
+- **M3 — `assertInsuredMatchesQuote` برای خودرو و آتش‌سوزی منزل بی‌اثر است**
+  (`orders.service.ts:121-123` وقتی ورودی `travelers` ندارد زود برمی‌گردد). ده بیمه‌شده که همه
+  متولد `2050-01-01` باشند، روی یک سفارش خودرو پذیرفته می‌شوند.
+- **M4 — تاریخ تولد در آینده مثل کودک قیمت می‌خورد** (مسافرتی). هیچ محدودیت گذشته‌بودن روی
+  `travelers[].birthDate` نیست؛ `ageOnDeparture` منفی می‌شود و `pickBand` در باند `max: 12`
+  می‌افتد، پس مسافری متولد ۲۰۲۸ ضریب کودک ۰٫۶۵ می‌گیرد.
+- **M5 — سال ساخت آینده مثل صفرکیلومتر قیمت می‌خورد** (خودرو). `vehicleAgeYears` روی ۰ کلمپ
+  می‌شود و `.max(1420)` یک ثابت هاردکد است نه چیزی نسبت به `ctx.now`.
+- **M6 — گرد کردن در seed، پنج شرکت را روی دو نرخ جانی جمع می‌کند** (خودرو).
+  `prisma/seed-data/motor-tpl-rates.ts:104` روی `0.0085 × priceIndex` دستور
+  `Number(value.toFixed(3))` را می‌زند، پس دی و سامان هر دو روی ۰٫۰۰۸ می‌نشینند و پاسارگاد،
+  البرز و کارآفرین روی ۰٫۰۰۹. جانی حدود ۸۵٪ حق بیمه است، پس آن اختلاف ۴ درصدیِ موردنظر محو
+  می‌شود و صفحه مقایسه، شرکت‌ها را جفت‌جفت با قیمت یکسان نشان می‌دهد.
+- **M7 — دوره‌های پوشش در UTC حساب می‌شوند** در حالی که تاریخ‌ها در تقویم تهران انتخاب شده‌اند
+  (`travel.strategy.ts:147-152`). پوشش ساعت ۰۳:۳۰ محلی روز حرکت شروع می‌شود، پس پرواز صبح زود
+  بی‌پوشش است؛ همین فرض باعث می‌شود نگهبان تاریخ گذشته، بین ۰۰:۰۰ تا ۰۳:۳۰ به وقت تهران، دیروز
+  را بپذیرد.
+- **M8 — پیام‌های انگلیسی zod به رابط کاربری فارسی می‌رسند** (هر سه محصول). `errors.ts:43-45`
+  می‌گوید هر رشته فارسی در مالکیت API است، اما فیلدهایی که `message` صریح ندارند مثلاً
+  «Number must be less than or equal to 2000» یا «Invalid enum value. Expected 'APARTMENT' |
+  'VILLA'…» برمی‌گردانند، و هر سه ویزارد `Object.values(error.fields)` را عیناً رندر می‌کنند.
+- **M9 — `CheckoutPage` مقدار `fields` را دور می‌ریزد** (`:206` فقط `messageFa` را چاپ می‌کند)،
+  پس کد ملی‌ای که از بررسی طولِ کلاینت رد می‌شود اما checksum مبنای ۱۱ را رد می‌کند، خطای کلی
+  می‌دهد بدون اینکه معلوم شود کدام مسافر و کدام فیلد. ویزاردها همین را از قبل درست انجام می‌دهند.
 
-Also landed alongside C2, unasked but cheap: **the app now has a route-level error boundary**
-(`apps/web/src/routes/RouteErrorPage.tsx`). There was none anywhere, which is why a single bad
-read during render took the whole screen white with no message and no way back.
+### کم
+
+لینک‌های بن‌بست «استعلام دوباره» که برای هر محصول روی `/p/travel/form` هاردکد شده بودند —
+**اصلاح‌شده**: حالا `productSlug` خود استعلام را دنبال می‌کنند، و آن دو جایگزینی که اساساً *چون*
+استعلامی برای خواندن slug وجود ندارد رندر می‌شوند، به‌جای حدس زدن به فهرست محصولات می‌روند؛
+پذیرفته شدن یک کد ملی دو بار روی یک بیمه‌نامه؛ رندر شدن ردیف‌های حق بیمه و پوشش با مقدار صفر برای
+جمع ۰ یا ۱؛ refinement مربوط به `hasPreviousPolicy` که همیشه `bodilyDiscountYears` را مقصر
+می‌دانست فارغ از اینکه کدام فیلد غلط بوده (`schemas/motor-tpl.ts:79`)؛ رد شدن پلاک با ارقام فارسی
+توسط regex خام `plateSchema` پیش از رسیدن به refine `isValidPlate` که اصلاً برای نرمال‌سازی آن‌ها
+نوشته شده بود؛ و قیمت‌خوردن سبد تیزر آتش‌سوزی منزل زیر کف هر شرکت در هر منطقه، طوری که «از
+۱۵۰٬۵۰۰ تومان» تبلیغ‌شده همان حداقل حق بیمه است و کل ماشین تیزرِ منطقه‌به‌منطقه بی‌اثر است (و هیچ
+شهر seed شده‌ای `quakeZone: 4` ندارد، که آن ضریب را به داده مرده تبدیل می‌کند).
+
+## کارهای باقی‌مانده
+
+از این اجرا هیچ. فهرست کم‌اهمیت بالا تنها چیزی است که مانده، و هر قلمش ظاهری یا یک تعویق عمدی
+است، نه نقصی که به مشتری برسد.
+
+هنگام بستن بک‌لاگ دو تصمیم گرفته شد که دانستنشان می‌ارزد، چون هر دو رفتار را عوض کردند نه اینکه
+صرفاً چیزی را اصلاح کنند:
+
+- **بیمه‌شدگان بر اساس موقعیت تطبیق داده می‌شوند.** فرستادن همان مسافرها با ترتیبی متفاوت از
+  ترتیب استعلام، حالا رد می‌شود نه پذیرفته. همان مرتب‌کردنِ پیش از مقایسه بود که اجازه می‌داد سند،
+  حق بیمه «مسافر ۱» را به نام «مسافر ۲» بچسباند. کلاینت وب از قبل به ترتیب استعلام می‌فرستد، پس
+  هیچ‌چیزی در اپلیکیشن لازم نبود عوض شود.
+- **پوشش نمی‌تواند بیش از ۹۰ روز بعد شروع شود.** اصلاً سقفی وجود نداشت، و هر جدول نرخ اینجا
+  سالانه است. نود روز پنجره تمدید متعارف است؛ اگر محصول واقعی‌ای بازه بلندتری خواست، ثابتش
+  `MAX_START_DAYS_AHEAD` در `rating/admission.ts` است.
+
+پیش از انتشار بعدی یک اجرای QA تازه می‌ارزد: این پاس به شکل دوره هر بیمه‌نامه دست زده، پس مقادیر
+جدول *چه چیزی کار می‌کند* در بالا دیگر همان عددهایی نیستند که کد تولید می‌کند.
+
+یک چیز دیگر هم کنار C2 نشست، نخواسته اما ارزان: **اپلیکیشن حالا یک error boundary در سطح مسیر
+دارد** (`apps/web/src/routes/RouteErrorPage.tsx`). هیچ‌جا چنین چیزی نبود، و دقیقاً برای همین یک
+خواندن غلط حین رندر، کل صفحه را سفید می‌کرد؛ بی‌پیام و بی‌راه بازگشت.

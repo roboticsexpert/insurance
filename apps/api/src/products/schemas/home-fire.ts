@@ -36,7 +36,16 @@ export const homeFireInputSchema = z.object({
   buildingValue: z.number().int().min(0),
   /** Value of belongings, in Rial. */
   contentsValue: z.number().int().min(0),
-  extraPerils: z.array(z.nativeEnum(ExtraPeril)).default([]),
+  /*
+   * Deduplicated, because a peril is something the policy either covers or does not — asking
+   * for it twice is not asking for twice as much of it. Without this, `["THEFT","THEFT"]`
+   * charged the customer for theft cover twice and printed the row twice on their policy, with
+   * every total internally consistent so nothing downstream noticed.
+   */
+  extraPerils: z
+    .array(z.nativeEnum(ExtraPeril))
+    .default([])
+    .transform((perils) => [...new Set(perils)]),
   durationMonths: z.literal(12),
   startDate: isoDate,
 })

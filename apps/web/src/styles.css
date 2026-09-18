@@ -1,5 +1,17 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/vazirmatn';
+
+/*
+ * Peyda Pro — the house typeface. One variable file (weights 100–950), self-hosted: no CDN, so it
+ * works offline and from inside Iran. Imported by relative URL so Vite hashes it into /assets/,
+ * which is what the service worker caches for the offline shell.
+ */
+@font-face {
+  font-family: 'PeydaWebVF';
+  src: url('./assets/fonts/PeydaWebVF.woff2') format('woff2-variations');
+  font-weight: 100 950;
+  font-style: normal;
+  font-display: swap;
+}
 
 /*
  * Design tokens. The brand colour is Bime Gold — see brand/bime-gold/README.md.
@@ -8,7 +20,7 @@
  * 4.87:1, brand-600 as text on the page is 4.55:1 — pure #D4AF37 would be 2.1:1).
  */
 @theme {
-  --font-sans: 'Vazirmatn Variable', system-ui, sans-serif;
+  --font-sans: 'PeydaWebVF', system-ui, sans-serif;
 
   --color-brand-50: oklch(0.97 0.022 90);
   --color-brand-100: oklch(0.94 0.045 90);
@@ -65,7 +77,7 @@
 
 @layer base {
   html {
-    /* Persian numerals everywhere they are not already formatted by hand. */
+    /* Peyda's ss02 draws Latin digits as Persian ones — everywhere they are not already formatted by hand. */
     font-feature-settings: 'ss02';
     -webkit-text-size-adjust: 100%;
   }

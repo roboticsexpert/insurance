@@ -119,11 +119,11 @@ T = {
         "The wordmark is built on <strong>Plus Jakarta Sans Bold</strong>. The Latin text you "
         "are reading is set in it.",
     ),
-    "type_vazir": (
-        "برای متن فارسی محصولات از <strong>Vazirmatn Variable</strong> استفاده می‌شود، "
-        "خودمیزبان و بدون CDN — باید از داخل ایران کار کند.",
-        "Persian running text uses <strong>Vazirmatn Variable</strong>, self-hosted with no "
-        "CDN — it has to work from inside Iran.",
+    "type_peyda": (
+        "برای متن فارسی محصولات از <strong>Peyda Pro</strong> (وب‌فونت متغیر، وزن ۱۰۰ تا ۹۵۰) "
+        "استفاده می‌شود، خودمیزبان و بدون CDN — باید از داخل ایران کار کند. همین متن با آن چیده شده.",
+        "Persian running text uses <strong>Peyda Pro</strong> (variable webfont, weights 100–950), "
+        "self-hosted with no CDN — it has to work from inside Iran.",
     ),
 
     # --- icons

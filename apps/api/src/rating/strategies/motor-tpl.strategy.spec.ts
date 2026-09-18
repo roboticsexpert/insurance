@@ -263,6 +263,20 @@ describe('MotorTplRatingStrategy.parse', () => {
     expect(strategy.parse(input({ startDate: '2026-08-20' }), ctx).startDate).toBe('2026-08-20')
   })
 
+  /*
+   * M5. `vehicleAgeYears` clamps at zero and the schema's ceiling was a hardcoded 1420, so a car
+   * declared as built in 1420 priced as brand new — the best rung of the age ladder — for the
+   * next fifteen years. The real ceiling is the current Jalali year.
+   */
+  it('refuses a production year that has not happened yet', () => {
+    // NOW is 2026-08-20, i.e. 1405.
+    expect(() => strategy.parse(input({ productionYear: 1406 }), ctx)).toThrow(AppException)
+  })
+
+  it('accepts a car built this year', () => {
+    expect(strategy.parse(input({ productionYear: 1405 }), ctx).productionYear).toBe(1405)
+  })
+
   it('rejects discount years claimed without a previous policy', () => {
     expect(() => strategy.parse(input({ bodilyDiscountYears: 5 }), ctx)).toThrow(AppException)
   })
@@ -281,15 +295,21 @@ describe('MotorTplRatingStrategy.parse', () => {
 })
 
 describe('MotorTplRatingStrategy.coveragePeriod', () => {
-  it('runs for a year, ending the day before it recurs', () => {
+  /*
+   * M7. The instants are Tehran day boundaries, not UTC ones: `2026-09-01` in Tehran begins at
+   * 20:30 UTC on 31 August. Read as UTC, cover began at 03:30 local — long enough after midnight
+   * for an early flight to depart uninsured.
+   */
+  it('runs for a Tehran year, ending the day before it recurs', () => {
     const { startsAt, endsAt } = strategy.coveragePeriod(input({ startDate: '2026-09-01' }))
-    expect(startsAt.toISOString()).toBe('2026-09-01T00:00:00.000Z')
-    expect(endsAt.toISOString()).toBe('2027-08-31T23:59:59.000Z')
+    // 00:00 on 1 Sep in Tehran … 23:59:59 on 31 Aug the following year.
+    expect(startsAt.toISOString()).toBe('2026-08-31T20:30:00.000Z')
+    expect(endsAt.toISOString()).toBe('2027-08-31T20:29:59.000Z')
   })
 
   it('handles a leap day without landing on the wrong date', () => {
     const { endsAt } = strategy.coveragePeriod(input({ startDate: '2028-02-29' }))
-    expect(endsAt.toISOString()).toBe('2029-02-28T23:59:59.000Z')
+    expect(endsAt.toISOString()).toBe('2029-02-28T20:29:59.000Z')
   })
 })
 
@@ -298,6 +318,8 @@ describe('MotorTplRatingStrategy.teaserInputs', () => {
   const teaserLookups = (): RatingLookups => ({
     cityQuakeZone: jest.fn().mockResolvedValue(null),
     cityQuakeZones: jest.fn().mockResolvedValue([]),
+    cityName: jest.fn().mockResolvedValue(null),
+    vehicleModelName: jest.fn().mockResolvedValue('ایران خودرو پژو ۲۰۶'),
     vehicleModelGroup: jest.fn().mockResolvedValue(null),
     vehicleModelGroups: jest.fn().mockResolvedValue([
       { id: 'm-sedan', group: 'SEDAN' },
@@ -356,6 +378,8 @@ describe('MotorTplRatingStrategy.prepare', () => {
   const withGroup = (group: string | null): RatingLookups => ({
     cityQuakeZone: jest.fn().mockResolvedValue(null),
     cityQuakeZones: jest.fn().mockResolvedValue([]),
+    cityName: jest.fn().mockResolvedValue(null),
+    vehicleModelName: jest.fn().mockResolvedValue('ایران خودرو پژو ۲۰۶'),
     vehicleModelGroup: jest.fn().mockResolvedValue(group),
     vehicleModelGroups: jest.fn().mockResolvedValue([]),
   })

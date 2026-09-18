@@ -57,6 +57,8 @@ const lineFor = (result: ReturnType<typeof rate>, key: string) =>
   result.lineItems.find((item) => item.key === key)
 
 const lookups = (over: Partial<RatingLookups> = {}): RatingLookups => ({
+  cityName: jest.fn().mockResolvedValue('تهران'),
+  vehicleModelName: jest.fn().mockResolvedValue(null),
   cityQuakeZone: jest.fn().mockResolvedValue(2),
   cityQuakeZones: jest.fn().mockResolvedValue([
     { id: 'tehran', quakeZone: 1 },
@@ -122,6 +124,26 @@ describe('HomeFireRatingStrategy.rate', () => {
       const result = rate({ contentsValue: 0, extraPerils: ['THEFT'] })
       expect(lineFor(result, 'peril:THEFT')).toBeUndefined()
       expect(result.eligible).toBe(true)
+    })
+
+    /*
+     * H1. Skipping the *line item* was never enough: the coverage list is what the issued policy
+     * prints, and it used to be mapped straight off the request. A renter with no contents bought
+     * a policy that read «سرقت با شکست حرز: دارد» with no premium charged and no basis to pay a
+     * claim from — the worst kind of wrong, because it looks like cover.
+     */
+    it('does not promise a peril it did not charge for', () => {
+      const result = rate({ contentsValue: 0, extraPerils: ['THEFT'] })
+      expect(result.coverages.map((c) => c.key)).not.toContain('peril:THEFT')
+    })
+
+    it('promises exactly the perils it charged for', () => {
+      const result = rate({ contentsValue: 0, extraPerils: ['THEFT', 'EARTHQUAKE'] })
+
+      // Earthquake rates on the building, which is insured; theft rates on contents, which is not.
+      expect(lineFor(result, 'peril:EARTHQUAKE')).toBeDefined()
+      expect(result.coverages.map((c) => c.key)).toContain('peril:EARTHQUAKE')
+      expect(result.coverages.map((c) => c.key)).not.toContain('peril:THEFT')
     })
 
     it('adds every chosen peril as its own line', () => {
@@ -233,6 +255,27 @@ describe('HomeFireRatingStrategy.prepare', () => {
 })
 
 describe('HomeFireRatingStrategy.parse', () => {
+  /*
+   * H2. A peril is covered or it is not; asking twice is not asking for twice as much. Three
+   * `THEFT`s used to produce three premium lines and three coverage rows, with every total
+   * internally consistent — so nothing downstream could catch it.
+   */
+  it('collapses a repeated peril to one', () => {
+    const parsed = strategy.parse(input({ extraPerils: ['THEFT', 'THEFT', 'THEFT'] }), ctx)
+    expect(parsed.extraPerils).toEqual(['THEFT'])
+  })
+
+  it('charges a repeated peril once', () => {
+    const once = rate({ extraPerils: ['THEFT'] })
+    const thrice = strategy.rate(
+      { ...strategy.parse(input({ extraPerils: ['THEFT', 'THEFT', 'THEFT'] }), ctx), quakeZone: 3 },
+      table,
+    )
+
+    expect(thrice.lineItems.filter((i) => i.key === 'peril:THEFT')).toHaveLength(1)
+    expect(thrice.netPremium).toBe(once.netPremium)
+  })
+
   it('rejects a policy backdated before today', () => {
     expect(() => strategy.parse(input({ startDate: '2026-08-19' }), ctx)).toThrow(AppException)
   })
@@ -260,9 +303,14 @@ describe('HomeFireRatingStrategy.teaserInputs', () => {
 })
 
 describe('HomeFireRatingStrategy.coveragePeriod', () => {
-  it('runs for a year, ending the day before it recurs', () => {
+  /*
+   * M7. The instants are Tehran day boundaries, not UTC ones: `2026-09-01` in Tehran begins at
+   * 20:30 UTC on 31 August. Read as UTC, cover began at 03:30 local — long enough after midnight
+   * for an early flight to depart uninsured.
+   */
+  it('runs for a Tehran year, ending the day before it recurs', () => {
     const { startsAt, endsAt } = strategy.coveragePeriod(input({ startDate: '2026-09-01' }))
-    expect(startsAt.toISOString()).toBe('2026-09-01T00:00:00.000Z')
-    expect(endsAt.toISOString()).toBe('2027-08-31T23:59:59.000Z')
+    expect(startsAt.toISOString()).toBe('2026-08-31T20:30:00.000Z')
+    expect(endsAt.toISOString()).toBe('2027-08-31T20:29:59.000Z')
   })
 })

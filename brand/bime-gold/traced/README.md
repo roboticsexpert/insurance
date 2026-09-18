@@ -1,59 +1,59 @@
-# Bime Gold — logo, traced from the reference render
+# بیمه گلد — لوگو، traceشده از رندر مرجع
 
-These files are the **artwork you approved**, cleaned up: the white background is gone,
-the empty margin is trimmed to zero, and the shapes are real vector outlines.
+این فایل‌ها همان **اثری هستند که تأیید کردید**، تمیزشده: پس‌زمینه سفید رفته، حاشیه خالی تا صفر
+بریده شده، و شکل‌ها خطوط وکتور واقعی‌اند.
 
-Source: `../reference/bime-gold-type-10-compact.png` (1536×1024, wordmark on white).
-The wordmark occupies only 1093×328 of it — everything else was blank.
+مبدأ: `../reference/bime-gold-type-10-compact.png` (۱۵۳۶×۱۰۲۴، وردمارک روی سفید).
+وردمارک فقط ۱۰۹۳×۳۲۸ از آن را اشغال می‌کند — بقیه‌اش خالی بود.
 
-Rebuild: `tools/brand-gold/build.sh` (or `trace.py` alone). Needs `potrace` + `rsvg-convert`.
+ساخت دوباره: `tools/brand-gold/build.sh` (یا فقط `trace.py`). به `potrace` و `rsvg-convert`
+نیاز دارد.
 
-## How it was made
+## چطور ساخته شد
 
-1. **De-matte** — every pixel is modelled as `pixel = α·ink + (1−α)·white`. The local ink
-   colour is estimated from deeply-interior pixels and spread outward, so α comes out
-   right even where the render shaded a letter. Result: true alpha, no white fringe.
-2. **Trim** — cropped to the alpha bounding box. No padding in the tight files.
-3. **Classify** — each connected glyph is labelled charcoal or gold by its own mean hue,
-   so the dot on the *i* stays gold and antialiased rims never split between layers.
-4. **Trace** — the mask is supersampled 4× and vectorised with potrace, one path per
-   colour. Mean difference against the source render: **2.9 %** (colour change only).
-5. **Export** — every PNG is rendered *from the SVG*, so raster and vector cannot drift.
+۱. **حذف مات** — هر پیکسل به شکل `pixel = α·ink + (1−α)·white` مدل می‌شود. رنگ مرکبِ محلی از
+   پیکسل‌های عمیقاً درونی تخمین زده و به بیرون گسترانده می‌شود، تا α حتی جایی که رندر یک حرف را
+   سایه زده هم درست دربیاید. نتیجه: آلفای واقعی، بدون حاشیه سفید.
+۲. **برش** — تا کادر مرزی آلفا بریده می‌شود. در فایل‌های فشرده هیچ حاشیه‌ای نیست.
+۳. **دسته‌بندی** — هر حرفِ همبند بر اساس میانگین رنگ‌مایه خودش زغالی یا طلایی برچسب می‌خورد، تا
+   نقطه روی *i* طلایی بماند و لبه‌های ضدپله‌ای هرگز بین لایه‌ها تقسیم نشوند.
+۴. **Trace** — ماسک چهار برابر سوپرسمپل و با potrace وکتور می‌شود، برای هر رنگ یک path.
+   میانگین اختلاف با رندر مبدأ: **۲٫۹٪** (فقط تغییر رنگ).
+۵. **خروجی** — هر PNG *از روی SVG* رندر می‌شود، تا رستر و وکتور نتوانند از هم فاصله بگیرند.
 
-## Files
+## فایل‌ها
 
-| File | Use |
+| فایل | کاربرد |
 |---|---|
-| `svg/logo.svg` | **Primary.** 1093×328, transparent, tight crop. |
-| `svg/logo-clearspace.svg` | Same lockup with the required clear space baked in. |
-| `svg/logo-on-dark.svg` | `bime` in `#F0F0F0` for dark backgrounds. Transparent. |
-| `svg/logo-mono-dark.svg` | One-colour charcoal — stamps, faxes, single-ink print. |
-| `svg/logo-mono-light.svg` | One-colour white — photos, dark solids. |
-| `png/logo-{128,256,512,1024}.png` | Transparent raster, light backgrounds. |
-| `png/logo-on-dark-*.png` | Transparent raster, dark backgrounds. |
-| `png/logo-clearspace-1024.png` | Padded raster for slide decks and social avatars. |
+| `svg/logo.svg` | **اصلی.** ۱۰۹۳×۳۲۸، شفاف، برش فشرده. |
+| `svg/logo-clearspace.svg` | همان لاک‌آپ با فضای خالی لازم که از پیش داخلش پخته شده. |
+| `svg/logo-on-dark.svg` | `bime` با `#F0F0F0` برای پس‌زمینه تیره. شفاف. |
+| `svg/logo-mono-dark.svg` | تک‌رنگ زغالی — مهر، فکس، چاپ تک‌مرکب. |
+| `svg/logo-mono-light.svg` | تک‌رنگ سفید — عکس، زمینه‌های تیره توپر. |
+| `png/logo-{128,256,512,1024}.png` | رستر شفاف، پس‌زمینه روشن. |
+| `png/logo-on-dark-*.png` | رستر شفاف، پس‌زمینه تیره. |
+| `png/logo-clearspace-1024.png` | رستر با حاشیه، برای اسلاید و آواتار شبکه‌های اجتماعی. |
 
-## Colour — flat, no gradient
+## رنگ — تخت، بدون گرادیان
 
-| Token | Hex |
+| توکن | هگز |
 |---|---|
-| charcoal (`bime`) | `#2B2B2B` |
-| charcoal on dark | `#F0F0F0` |
-| gold (dot + `gold`) | `#D4AF37` |
+| زغالی (`bime`) | `#2B2B2B` |
+| زغالی روی تیره | `#F0F0F0` |
+| طلایی (نقطه + `gold`) | `#D4AF37` |
 
-The reference render carried a faint metallic gradient. It is deliberately **not**
-reproduced — the identity is flat colour. The render's gold measures `#D8AE4B` on
-average; `#D4AF37` is the brand token and reads the same at any size.
+رندر مرجع یک گرادیان فلزی محو داشت. عمداً بازتولید **نشده** است — هویت رنگ تخت است. طلایی رندر
+به‌طور میانگین `#D8AE4B` اندازه‌گیری می‌شود؛ `#D4AF37` توکن برند است و در هر اندازه‌ای یکسان
+خوانده می‌شود.
 
-## Clear space
+## فضای خالی
 
-Keep at least 22 % of the lockup height free on every side — roughly the height of the
-gold dot. `logo-clearspace.svg` already has it.
+در هر طرف دست‌کم ۲۲٪ ارتفاع لاک‌آپ را خالی نگه دارید — تقریباً به اندازه ارتفاع نقطه طلایی.
+`logo-clearspace.svg` از قبل آن را دارد.
 
-## Relationship to `../svg/`
+## نسبتش با `../svg/`
 
-`../svg/` is a **re-typesetting** of the wordmark in Plus Jakarta Sans Bold. It is
-editable (change the text, retune the tracking) but is not letter-for-letter identical
-to the approved render. The files in this folder *are* the approved render. Use these
-for the logo; use the font-based set when you need to typeset new lockups in the same
-voice.
+پوشه `../svg/` یک **حروف‌چینی دوباره** از وردمارک با Plus Jakarta Sans Bold است. قابل ویرایش است
+(متن را عوض کنید، فاصله حروف را تنظیم کنید) اما حرف‌به‌حرف با رندر تأییدشده یکسان نیست. فایل‌های
+همین پوشه *همان* رندر تأییدشده‌اند. برای لوگو از این‌ها استفاده کنید؛ از مجموعه مبتنی بر قلم وقتی
+استفاده کنید که بخواهید لاک‌آپ تازه‌ای با همان لحن حروف‌چینی کنید.

@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common'
 import type { Insurer, Offering, Product } from '@prisma/client'
 import { AppException } from '../common/app.exception'
 import { PrismaService } from '../prisma/prisma.service'
+import { PrismaRatingLookups } from './rating.lookups'
 import { RatingRegistry } from './rating.registry'
-import type { RatingLookups } from './rating-strategy'
 import type { RatingResult } from './rating.types'
 
 export interface RatedOffer {
@@ -32,6 +32,7 @@ export class RatingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly registry: RatingRegistry,
+    private readonly lookups: PrismaRatingLookups,
   ) {}
 
   /**
@@ -189,31 +190,4 @@ export class RatingService {
     return { amount: cheapest, isSample }
   }
 
-  /**
-   * The database side of `RatingLookups`. Kept here rather than injected into each strategy so
-   * a strategy never imports Prisma — the port is the whole of its access to stored data.
-   */
-  private readonly lookups: RatingLookups = {
-    cityQuakeZone: async (cityId) => {
-      const city = await this.prisma.city.findUnique({
-        where: { id: cityId },
-        select: { quakeZone: true },
-      })
-      return city?.quakeZone ?? null
-    },
-    cityQuakeZones: () =>
-      this.prisma.city.findMany({ select: { id: true, quakeZone: true } }),
-    vehicleModelGroup: async (vehicleModelId) => {
-      const model = await this.prisma.vehicleModel.findFirst({
-        where: { id: vehicleModelId, isActive: true },
-        select: { group: true },
-      })
-      return model?.group ?? null
-    },
-    vehicleModelGroups: () =>
-      this.prisma.vehicleModel.findMany({
-        where: { isActive: true },
-        select: { id: true, group: true },
-      }),
-  }
 }

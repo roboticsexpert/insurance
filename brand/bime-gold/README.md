@@ -1,133 +1,132 @@
-# Bime Gold — brand book
+# بیمه گلد — کتاب برند
 
-The identity is typographic. There is no illustrated symbol: the lockup is the brand,
-and the gold tittle over the *i* is the only ornament. Flat colour throughout — the
-identity uses **no gradients**.
+هویت، تایپوگرافیک است. هیچ نماد تصویری‌ای وجود ندارد: لاک‌آپ خودِ برند است، و نقطه طلایی روی *i*
+تنها تزئین آن. رنگ در سرتاسر تخت است — این هویت **هیچ گرادیانی** ندارد.
 
 | | |
 |---|---|
-| Name (Latin) | **Bime Gold** — written `bimegold` in the lockup, always lowercase, no space |
-| Name (Persian) | **بیمه گلد** |
-| Domain | `bimegold.com` |
-| Source artwork | `reference/bime-gold-type-10-compact.png` |
-| Rebuild everything | `tools/brand-gold/build.sh` |
-| Published at | **https://brand.bimegold.com** — this document, as a site |
+| نام (لاتین) | **Bime Gold** — در لاک‌آپ به شکل `bimegold` نوشته می‌شود، همیشه حروف کوچک، بدون فاصله |
+| نام (فارسی) | **بیمه گلد** |
+| دامنه | `bimegold.com` |
+| اثر مبدأ | `reference/bime-gold-type-10-compact.png` |
+| ساخت دوباره همه‌چیز | `tools/brand-gold/build.sh` |
+| منتشرشده در | **https://brand.bimegold.com** — همین سند، به شکل یک سایت |
 
-## 1. Logo
+## ۱. لوگو
 
-The approved artwork, cleaned and vectorised, lives in **[`traced/`](traced/README.md)**.
-Those files are the logo. `traced/README.md` documents how they were derived from the
-render; this section is how to use them.
+اثر تأییدشده، تمیزشده و وکتورشده در **[`traced/`](traced/README.md)** زندگی می‌کند. لوگو همان
+فایل‌هاست. `traced/README.md` مستند می‌کند که چطور از دل رندر استخراج شده‌اند؛ این بخش درباره
+نحوه استفاده از آن‌هاست.
 
-| Asset | When |
+| فایل | کِی |
 |---|---|
-| `traced/svg/logo.svg` | **Primary.** Horizontal lockup, light backgrounds. |
-| `traced/svg/logo-on-dark.svg` | Dark backgrounds — `bime` lightens to `#F0F0F0`, gold is unchanged. |
-| `traced/svg/logo-clearspace.svg` | Primary with the clear space already padded in. |
-| `traced/svg/logo-stacked.svg` | `bime` over `gold`. Square slots, social avatars, tall spaces. |
-| `traced/svg/logo-mono-dark.svg` · `-mono-light.svg` | One ink. Engraving, fax, stamps, a photo background. |
-| `traced/svg/mark.svg` · `mark-on-dark.svg` | The `bi` monogram — the logo reduced. |
+| `traced/svg/logo.svg` | **اصلی.** لاک‌آپ افقی، پس‌زمینه روشن. |
+| `traced/svg/logo-on-dark.svg` | پس‌زمینه تیره — `bime` به `#F0F0F0` روشن می‌شود، طلایی دست‌نخورده می‌ماند. |
+| `traced/svg/logo-clearspace.svg` | نسخه اصلی با فضای خالی از پیش اضافه‌شده. |
+| `traced/svg/logo-stacked.svg` | `bime` روی `gold`. جاهای مربعی، آواتار شبکه‌های اجتماعی، فضاهای بلند. |
+| `traced/svg/logo-mono-dark.svg` · `-mono-light.svg` | تک‌مرکب. حکاکی، فکس، مهر، پس‌زمینه عکس. |
+| `traced/svg/mark.svg` · `mark-on-dark.svg` | مونوگرام `bi` — لوگو در کوچک‌ترین شکلش. |
 
-Ship SVG wherever the medium allows. `traced/png/` carries 128–1024 px raster fallbacks;
-every one is rendered from the SVG above it, so they cannot disagree.
+هرجا رسانه اجازه می‌دهد SVG بفرستید. پوشه `traced/png/` جایگزین‌های رستری ۱۲۸ تا ۱۰۲۴ پیکسل را
+دارد؛ هر کدام از روی SVG بالای خودش رندر شده، پس نمی‌توانند با هم اختلاف داشته باشند.
 
-### Clear space and minimum size
+### فضای خالی و کمینه اندازه
 
-Keep free space equal to **22 % of the lockup height** on all four sides — roughly the
-height of the gold tittle. Nothing else enters that band.
+در هر چهار طرف فضایی برابر **۲۲٪ ارتفاع لاک‌آپ** خالی نگه دارید — تقریباً به اندازه ارتفاع نقطه
+طلایی. هیچ‌چیز دیگری وارد آن نوار نمی‌شود.
 
-The horizontal lockup stays legible down to **16 px tall** — at that height it is still
-53 px wide, which is the space it needs. Below that, switch to the `bi` monogram.
+لاک‌آپ افقی تا ارتفاع **۱۶ پیکسل** خوانا می‌ماند — در آن ارتفاع هنوز ۵۳ پیکسل پهناست، و همین
+فضایی است که لازم دارد. پایین‌تر از آن، به مونوگرام `bi` سوئیچ کنید.
 
-Square slots are a different question, because the constraint is width, not height. In a
-square the stacked lockup holds to about **48 px**; at 32 it is soft and at 16 it is a
-smudge. So every app icon uses the full lockup and only the browser tab falls back to the
-monogram.
+جاهای مربعی داستان دیگری‌اند، چون آنجا محدودیت پهناست نه ارتفاع. در یک مربع، لاک‌آپ عمودی تا حدود
+**۴۸ پیکسل** دوام می‌آورد؛ در ۳۲ نرم می‌شود و در ۱۶ لکه است. پس هر آیکن اپلیکیشن از لاک‌آپ کامل
+استفاده می‌کند و فقط تب مرورگر به مونوگرام برمی‌گردد.
 
-### Misuse
+### استفاده نادرست
 
-Do not recolour the wordmark, add a gradient, outline it, set it in a different typeface,
-change the spacing between `bime` and `gold`, add a drop shadow, rotate it, or place the
-light-background version on a dark field. Use the file for the background you have.
+وردمارک را رنگ‌آمیزی دوباره نکنید، گرادیان اضافه نکنید، دورخط نگذارید، با قلم دیگری حروف‌چینی
+نکنید، فاصله بین `bime` و `gold` را عوض نکنید، سایه نیندازید، نچرخانیدش، و نسخه پس‌زمینه روشن را
+روی زمینه تیره نگذارید. همیشه فایلِ مخصوص همان پس‌زمینه‌ای را که دارید بردارید.
 
-## 2. The mark
+## ۲. نشانه
 
-`bi` — the first two letters of the wordmark with the gold tittle — is the reduced form.
-**Use it only where the full lockup cannot be read**, which in practice means the 16 and
-32 px browser-tab icon. Everywhere with room for the name — app icons, the app header, the
-auth screen, avatars — takes the full lockup.
+`bi` — دو حرف اول وردمارک به‌علاوه نقطه طلایی — شکل کوچک‌شده است. **فقط جایی از آن استفاده کنید
+که لاک‌آپ کامل خوانده نمی‌شود**، که در عمل یعنی آیکن ۱۶ و ۳۲ پیکسلیِ تب مرورگر. هر جایی که برای
+نام جا هست — آیکن‌های اپلیکیشن، هدر اپلیکیشن، صفحه ورود، آواتارها — لاک‌آپ کامل می‌گیرد.
 
-The letterforms take the surrounding text colour; **the tittle is always `#D4AF37`**.
+حروف، رنگ متن اطرافشان را می‌گیرند؛ **نقطه همیشه `#D4AF37` است**.
 
-In the web app both are generated React components with `currentColor` letterforms:
-`BrandLogo` (`apps/web/src/components/BrandLogo.tsx`) is the default,
-`BrandMark` is the reduced form. Size them with a height and `w-auto`. Inside a flex
-column add `self-start` — as a flex item the `<svg>` stretches to full width and
-`preserveAspectRatio` then centres the artwork inside it, which reads as a centring bug.
+در اپ وب، هر دو کامپوننت React تولیدشده‌اند با حروفی که `currentColor` می‌گیرند:
+`BrandLogo` (`apps/web/src/components/BrandLogo.tsx`) پیش‌فرض است و `BrandMark` شکل کوچک‌شده.
+اندازه‌شان را با ارتفاع و `w-auto` بدهید. داخل یک ستون flex مقدار `self-start` را اضافه کنید —
+یک `<svg>` به‌عنوان آیتم flex تا تمام پهنا کش می‌آید و بعد `preserveAspectRatio` اثر را داخلش
+وسط‌چین می‌کند، که مثل باگ وسط‌چینی خوانده می‌شود.
 
-## 3. Colour
+## ۳. رنگ
 
-| Token | Hex | Use |
+| توکن | هگز | کاربرد |
 |---|---|---|
-| charcoal | `#2B2B2B` | `bime` on light backgrounds |
-| charcoal on dark | `#F0F0F0` | `bime` on dark backgrounds |
-| **gold** | `#D4AF37` | the tittle and the word `gold`. Flat, never a gradient. |
-| navy | `#0F172A` | brand field: app icons, tiles, dark lockups |
+| زغالی | `#2B2B2B` | `bime` روی پس‌زمینه روشن |
+| زغالی روی تیره | `#F0F0F0` | `bime` روی پس‌زمینه تیره |
+| **طلایی** | `#D4AF37` | نقطه و کلمه `gold`. تخت، هرگز گرادیان. |
+| سرمه‌ای | `#0F172A` | زمینه برند: آیکن‌های اپلیکیشن، کاشی‌ها، لاک‌آپ‌های تیره |
 
-Machine-readable: [`colors.json`](colors.json).
+نسخه ماشین‌خوان: [`colors.json`](colors.json).
 
-**The gold is not a text colour.** `#D4AF37` on white is 2.1:1 and fails WCAG AA. Where
-gold has to carry text or a UI state, use a darkened step of the same hue:
+**طلایی رنگ متن نیست.** `#D4AF37` روی سفید ۲٫۱ به ۱ است و WCAG AA را رد می‌کند. هرجا طلایی باید
+متن یا وضعیت رابط کاربری را حمل کند، از پله تیره‌ترِ همان رنگ‌مایه استفاده کنید:
 
-| Surface | Token | Contrast |
+| سطح | توکن | کنتراست |
 |---|---|---|
-| Docs site links, light | `#8A6D1F` (`--accent`) | 4.9:1 on `#fbfaf8` |
-| Docs site links, dark | `#E5C158` (`--accent`) | 10.5:1 on `#14161a` |
-| App, white on solid | `--color-brand-600` `oklch(0.55 0.102 90)` | 4.87:1 |
-| App, brand text on page | `--color-brand-600` | 4.55:1 |
+| لینک‌های سایت مستندات، روشن | `#8A6D1F` (`--accent`) | ۴٫۹ به ۱ روی `#fbfaf8` |
+| لینک‌های سایت مستندات، تیره | `#E5C158` (`--accent`) | ۱۰٫۵ به ۱ روی `#14161a` |
+| اپلیکیشن، سفید روی رنگ توپر | `--color-brand-600` `oklch(0.55 0.102 90)` | ۴٫۸۷ به ۱ |
+| اپلیکیشن، متن برند روی صفحه | `--color-brand-600` | ۴٫۵۵ به ۱ |
 
-The app's full ramp is `--color-brand-50…900` in `apps/web/src/styles.css`: the logo's
-hue held constant at 90 while lightness walks, so every pairing stays legible.
-`--color-gold` in the same file is the exact logo gold, for marks only.
+نردبان کامل اپلیکیشن `--color-brand-50…900` در `apps/web/src/styles.css` است: رنگ‌مایه لوگو روی
+۹۰ ثابت نگه داشته می‌شود و روشنایی راه می‌رود، تا هر ترکیبی خوانا بماند. `--color-gold` در همان
+فایل، طلایی دقیق لوگوست و فقط برای نشانه‌هاست.
 
-## 4. Typography
+## ۴. تایپوگرافی
 
-The wordmark is drawn artwork, not live text — nothing needs the original font to render it.
+وردمارک اثری کشیده‌شده است، نه متن زنده — هیچ‌چیز برای رندر کردنش به قلم اصلی نیاز ندارد.
 
-For running text the products use **Vazirmatn Variable**, self-hosted (no CDN — it has to
-work inside Iran). `traced/` is accompanied by a re-typesetting of the wordmark in
-**Plus Jakarta Sans Bold** under `svg/` and `png/`; that set is editable and useful for
-setting new lockups in the same voice, but it is *not* letter-for-letter the approved
-artwork. Never substitute it for the logo.
+برای متن جاری، همه محصولات — اپ وب، سایت مستندات و همین کتاب برند — از **Peyda Pro** استفاده
+می‌کنند: وب‌فونت متغیر `PeydaWebVF.woff2` (وزن ۱۰۰ تا ۹۵۰) که روی خود سایت میزبانی می‌شود (بدون
+CDN — باید داخل ایران کار کند). ویژگی `ss02` آن ارقام لاتین را فارسی می‌کشد. خود فایل قلم عمداً
+در این پوشه نیست، چون این پوشه به شکل آرشیو عمومی دانلود می‌شود. کنار `traced/`، یک حروف‌چینی دوباره از وردمارک با
+**Plus Jakarta Sans Bold** زیر `svg/` و `png/` وجود دارد؛ آن مجموعه قابل ویرایش است و برای
+ساختن لاک‌آپ‌های تازه با همان لحن به کار می‌آید، اما حرف‌به‌حرف *همان* اثر تأییدشده نیست. هرگز
+جای لوگو نگذاریدش.
 
-## 5. Application
+## ۵. کاربرد
 
-Generated icon set:
+مجموعه آیکن تولیدشده:
 
-| File | Size | Artwork | Where |
+| فایل | اندازه | اثر | کجا |
 |---|---|---|---|
-| `traced/svg/favicon.svg` | 16–32 | `bi` monogram | Browser tab |
-| `traced/favicon.ico` | 16 / 32 / 48 | monogram at 16 and 32, **stacked lockup at 48** | Browser tab, bookmarks |
-| `traced/png/apple-touch-icon-180.png` | 180 | stacked lockup | iOS home screen |
-| `traced/png/icon-192.png` · `icon-512.png` | 192 / 512 | stacked lockup | PWA manifest |
-| `traced/png/icon-maskable-512.png` | 512 | stacked lockup | Android adaptive (48 % safe zone) |
+| `traced/svg/favicon.svg` | ۱۶ تا ۳۲ | مونوگرام `bi` | تب مرورگر |
+| `traced/favicon.ico` | ۱۶ / ۳۲ / ۴۸ | مونوگرام در ۱۶ و ۳۲، **لاک‌آپ عمودی در ۴۸** | تب مرورگر، نشان‌ها |
+| `traced/png/apple-touch-icon-180.png` | ۱۸۰ | لاک‌آپ عمودی | صفحه اصلی iOS |
+| `traced/png/icon-192.png` · `icon-512.png` | ۱۹۲ / ۵۱۲ | لاک‌آپ عمودی | مانیفست PWA |
+| `traced/png/icon-maskable-512.png` | ۵۱۲ | لاک‌آپ عمودی | آیکن تطبیقی اندروید (ناحیه امن ۴۸٪) |
 
-All on the navy field. The `.ico` carries different artwork per size on purpose — it is
-the one format that can, and 48 px is where the full name becomes readable.
+همه روی زمینه سرمه‌ای. فایل `.ico` عمداً برای هر اندازه اثر متفاوتی حمل می‌کند — تنها فرمتی است
+که می‌تواند، و ۴۸ پیکسل همان‌جایی است که نام کامل خوانا می‌شود.
 
-`tools/brand-gold/sync.sh` copies this package into `apps/web/public/brand/` and
-`apps/docs/public/brand/` and regenerates `BrandLogo.tsx` / `BrandMark.tsx`.
-`tools/brand-gold/site.py` builds the public brand book into `apps/brand/dist/`.
-**All three are generated — do not hand-edit them.** Change the artwork here, run
-`tools/brand-gold/build.sh`, commit.
+`tools/brand-gold/sync.sh` این بسته را در `apps/web/public/brand/` و `apps/docs/public/brand/`
+کپی می‌کند و `BrandLogo.tsx` / `BrandMark.tsx` را دوباره می‌سازد.
+`tools/brand-gold/site.py` کتاب برند عمومی را در `apps/brand/dist/` می‌سازد.
+**هر سه تولیدشده‌اند — دستی ویرایششان نکنید.** اثر را همین‌جا عوض کنید،
+`tools/brand-gold/build.sh` را اجرا کنید و commit بزنید.
 
-The published site renders its logos from this package and serves the download archive
-built from it, so it cannot show something the package does not contain. Copy for it lives
-in `tools/brand-gold/site_copy.py`, Persian and English side by side.
+سایت منتشرشده لوگوهایش را از همین بسته رندر می‌کند و آرشیو دانلود ساخته‌شده از آن را سرو می‌کند،
+پس نمی‌تواند چیزی را نشان بدهد که بسته ندارد. متن‌هایش در `tools/brand-gold/site_copy.py` است،
+فارسی و انگلیسی کنار هم.
 
-## 6. Open
+## ۶. باز
 
-- **No Persian lockup yet.** «بیمه گلد» appears as live Vazirmatn text in the products;
-  a drawn Persian wordmark to sit beside the Latin one has not been designed.
-- The old **bime247** identity — turquoise, ring-and-shield mark — is superseded.
-  Its files are still in `apps/web/public/brand/`'s git history and `tools/brand/`.
+- **هنوز لاک‌آپ فارسی نداریم.** «بیمه گلد» در محصولات به شکل متن زنده Peyda ظاهر می‌شود؛
+  وردمارک فارسیِ کشیده‌شده که کنار لاتین بنشیند هنوز طراحی نشده است.
+- هویت قدیمی **bime247** — فیروزه‌ای با نشانه حلقه و سپر — کنار گذاشته شده است.
+  فایل‌هایش هنوز در تاریخچه گیت `apps/web/public/brand/` و در `tools/brand/` هستند.

@@ -93,6 +93,22 @@ export const CheckCircleIcon: React.FC<IconProps> = (props) => (
   </Svg>
 )
 
+/** سپر با تیک — سرِ ستون «پوشش می‌دهد». */
+export const ShieldCheckIcon: React.FC<IconProps> = (props) => (
+  <Svg {...props}>
+    <path d="M12 3.2 19.5 6v6.1c0 4.3-3.2 7.6-7.5 9-4.3-1.4-7.5-4.7-7.5-9V6z" />
+    <path d="m9 12 2.2 2.2L15.2 10" />
+  </Svg>
+)
+
+/** دایره خط‌خورده — سرِ ستون «پوشش نمی‌دهد». */
+export const SlashCircleIcon: React.FC<IconProps> = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="m6 6 12 12" />
+  </Svg>
+)
+
 export const CheckIcon: React.FC<IconProps> = (props) => (
   <Svg {...props}>
     <path d="m5 12.5 4.2 4.2L19 7" />

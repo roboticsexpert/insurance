@@ -1,30 +1,11 @@
 import configPromise from '@payload-config'
-import fs from 'node:fs'
-import path from 'node:path'
 import { getPayload } from 'payload'
 import React from 'react'
 
 import type { Insurer, InsurerStripBlock as Props } from '@/payload-types'
 
 import { Media } from '@/components/Media'
-
-/**
- * نشان برند هر شرکت در `public/insurers/<slug>.svg` است — فایل ایستا، نه آپلود
- * پیشخان، چون نشان‌ها با محتوا عوض نمی‌شوند و باید در مخزن نسخه‌بندی شوند.
- * فهرست یک‌بار هنگام بالا آمدن خوانده می‌شود؛ شرکتی که فایل ندارد فقط نامش می‌آید.
- */
-const bundledMarks: ReadonlySet<string> = (() => {
-  try {
-    return new Set(
-      fs
-        .readdirSync(path.join(process.cwd(), 'public', 'insurers'))
-        .filter((file) => file.endsWith('.svg'))
-        .map((file) => file.slice(0, -'.svg'.length)),
-    )
-  } catch {
-    return new Set<string>()
-  }
-})()
+import { bundledMarks } from '@/lib/insurer-marks'
 
 const STATUS_LABEL: Partial<Record<Insurer['status'], string>> = {
   negotiating: 'در حال مذاکره',

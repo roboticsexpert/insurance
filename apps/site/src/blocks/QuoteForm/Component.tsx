@@ -65,6 +65,7 @@ export const QuoteFormBlock: React.FC<Props & { asColumn?: boolean }> = ({
   asColumn,
   heading,
   product,
+  subheading,
   submitLabel,
   note,
 }) => {
@@ -72,6 +73,13 @@ export const QuoteFormBlock: React.FC<Props & { asColumn?: boolean }> = ({
   const [selected, setSelected] = useState<ProductKey>(
     choosable ? 'motor-tpl' : ((product ?? 'motor-tpl') as ProductKey),
   )
+  /*
+   * فرم اختصاصی شخص ثالث (بوم صفحه محصول) یک پرسش بیشتر دارد: خودرو صفر یا بدون
+   * بیمه‌نامه قبلی. فرم صفحه خانه که کاربر محصولش را انتخاب می‌کند این را ندارد —
+   * بوم خانه هم ندارد و آنجا هدف کوتاه نگه‌داشتن فرم است.
+   */
+  const dedicatedMotor = product === 'motor-tpl'
+  const [noPrevious, setNoPrevious] = useState(false)
 
   const active = PRODUCTS.find((p) => p.key === selected) ?? PRODUCTS[0]!
   const thisYear = currentJalaliYear()
@@ -94,8 +102,10 @@ export const QuoteFormBlock: React.FC<Props & { asColumn?: boolean }> = ({
         <h2 className="text-xl font-bold lg:text-[1.375rem]" id="quote-title">
           {heading || 'استعلام قیمت'}
         </h2>
-        {choosable && (
-          <p className="text-sm text-muted-foreground">بیمه مورد نظرتان را انتخاب کنید.</p>
+        {(subheading || choosable) && (
+          <p className="text-sm text-muted-foreground">
+            {subheading || 'بیمه مورد نظرتان را انتخاب کنید.'}
+          </p>
         )}
       </div>
 
@@ -154,13 +164,23 @@ export const QuoteFormBlock: React.FC<Props & { asColumn?: boolean }> = ({
             </select>
           </Field>
           <Field className="col-span-2" id="quote-noclaim" label="سال‌های بدون خسارت">
-            <select className={selectClass} id="quote-noclaim" name="bodilyYears">
+            <select
+              className={selectClass}
+              disabled={noPrevious}
+              id="quote-noclaim"
+              name="bodilyYears"
+            >
               {Array.from({ length: MAX_BODILY_DISCOUNT_YEARS + 1 }, (_, i) => i).map((n) => (
                 <option key={n} value={n}>
                   {n === 0 ? 'بدون سابقه' : `${toPersianDigits(n)} سال`}
                 </option>
               ))}
             </select>
+            {dedicatedMotor && (
+              <span className="text-xs text-muted-foreground">
+                روی بیمه‌نامه قبلی‌تان نوشته شده است.
+              </span>
+            )}
           </Field>
         </div>
       ) : (
@@ -169,6 +189,27 @@ export const QuoteFormBlock: React.FC<Props & { asColumn?: boolean }> = ({
             ? 'مقصد، تاریخ سفر و مشخصات مسافران را در گام بعد وارد می‌کنید.'
             : 'نوع ملک، متراژ و ارزش بنا و اثاثیه را در گام بعد وارد می‌کنید.'}
         </p>
+      )}
+
+      {dedicatedMotor && selected === 'motor-tpl' && (
+        <>
+          {/*
+           * خودِ چک‌باکس نامی ندارد و فقط وضعیت را نگه می‌دارد؛ آنچه فرستاده می‌شود
+           * این فیلد پنهان است، با همان نام پارامتر ویزارد. بدون جاوااسکریپت،
+           * چک‌باکس کاری نمی‌کند و فرم «بیمه‌نامه قبلی دارم» می‌فرستد — همان چیزی
+           * که ویزارد در گام بعد دوباره می‌پرسد.
+           */}
+          <input name="hasPreviousPolicy" type="hidden" value={noPrevious ? 'false' : 'true'} />
+          <label className="flex min-h-11 items-center gap-2.5 text-[0.9375rem]">
+            <input
+              checked={noPrevious}
+              className="size-5 accent-brand-600"
+              onChange={(e) => setNoPrevious(e.target.checked)}
+              type="checkbox"
+            />
+            خودرو صفر است یا بیمه‌نامه قبلی ندارد
+          </label>
+        </>
       )}
 
       <button

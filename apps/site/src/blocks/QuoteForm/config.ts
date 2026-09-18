@@ -12,6 +12,14 @@ export const QuoteForm: Block = {
   fields: [
     { name: 'heading', type: 'text', label: 'تیتر' },
     {
+      name: 'subheading',
+      type: 'textarea',
+      label: 'زیرتیتر',
+      admin: {
+        description: 'مثلاً «مشخصات وسیله نقلیه را وارد کنید تا قیمت شرکت‌های بیمه را ببینید».',
+      },
+    },
+    {
       name: 'product',
       type: 'select',
       label: 'محصول',

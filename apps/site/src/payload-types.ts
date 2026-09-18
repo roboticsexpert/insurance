@@ -212,6 +212,10 @@ export interface HeroBlock {
   subheading?: string | null;
   variant: 'primary' | 'product' | 'simple';
   /**
+   * فقط در وزن «محصول» دیده می‌شود.
+   */
+  iconKey?: ('car' | 'plane' | 'fire' | 'briefcase') | null;
+  /**
    * برچسب‌های کوتاه زیر زیرتیتر، مثل «صدور فوری». فقط چیزی که واقعاً تعهد می‌کنیم.
    */
   bullets?:
@@ -463,6 +467,10 @@ export interface Author {
  */
 export interface QuoteFormBlock {
   heading?: string | null;
+  /**
+   * مثلاً «مشخصات وسیله نقلیه را وارد کنید تا قیمت شرکت‌های بیمه را ببینید».
+   */
+  subheading?: string | null;
   product: 'motor-tpl' | 'travel' | 'home-fire' | 'any';
   submitLabel?: string | null;
   /**
@@ -585,13 +593,21 @@ export interface Insurer {
  */
 export interface OfferPreviewBlock {
   heading?: string | null;
+  body?: string | null;
   offers?:
     | {
-        insurer: number | Insurer;
         /**
-         * به ریال وارد کنید؛ سایت خودش به تومان نشان می‌دهد.
+         * خالی بگذارید تا جای‌نگار «[نام شرکت بیمه]» بنشیند.
          */
-        amount: number;
+        insurer?: (number | null) | Insurer;
+        state: 'normal' | 'cheapest' | 'unavailable';
+        /**
+         * به ریال وارد کنید؛ سایت خودش به تومان نشان می‌دهد. خالی = «[مبلغ]».
+         */
+        amount?: number | null;
+        /**
+         * مثلاً «تعهد مالی … تومان»، و در ردیف بدون پیشنهاد دلیلش: «برای این مدل پیشنهاد نمی‌دهد».
+         */
         note?: string | null;
         id?: string | null;
       }[]
@@ -607,10 +623,14 @@ export interface OfferPreviewBlock {
  */
 export interface CoverageListBlock {
   heading?: string | null;
+  intro?: string | null;
   items?:
     | {
         title: string;
         description?: string | null;
+        /**
+         * «پوشش دارد» و «اختیاری» در کارت راست می‌نشینند، «پوشش ندارد» در کارت چپ.
+         */
         included: 'included' | 'optional' | 'excluded';
         id?: string | null;
       }[]
@@ -1349,6 +1369,7 @@ export interface HeroBlockSelect<T extends boolean = true> {
   heading?: T;
   subheading?: T;
   variant?: T;
+  iconKey?: T;
   bullets?:
     | T
     | {
@@ -1380,6 +1401,7 @@ export interface HeroBlockSelect<T extends boolean = true> {
  */
 export interface QuoteFormBlockSelect<T extends boolean = true> {
   heading?: T;
+  subheading?: T;
   product?: T;
   submitLabel?: T;
   note?: T;
@@ -1458,10 +1480,12 @@ export interface InsurerStripBlockSelect<T extends boolean = true> {
  */
 export interface OfferPreviewBlockSelect<T extends boolean = true> {
   heading?: T;
+  body?: T;
   offers?:
     | T
     | {
         insurer?: T;
+        state?: T;
         amount?: T;
         note?: T;
         id?: T;
@@ -1476,6 +1500,7 @@ export interface OfferPreviewBlockSelect<T extends boolean = true> {
  */
 export interface CoverageListBlockSelect<T extends boolean = true> {
   heading?: T;
+  intro?: T;
   items?:
     | T
     | {

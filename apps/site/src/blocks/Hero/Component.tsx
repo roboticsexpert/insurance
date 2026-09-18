@@ -2,43 +2,59 @@ import React from 'react'
 
 import type { HeroBlock as Props } from '@/payload-types'
 
-import { CheckCircleIcon } from '@/components/icons'
+import { CheckCircleIcon, PRODUCT_ICONS } from '@/components/icons'
 import { CMSLink } from '@/components/Link'
 import { Media } from '@/components/Media'
 import { cn } from '@/utilities/ui'
 
 /**
- * هیروی صفحه، از روی بوم خانه.
+ * هیروی صفحه، از روی بوم خانه و بوم «صفحه محصول — شخص ثالث».
  *
  * `asColumn` را فقط `RenderBlocks` می‌دهد، وقتی بلافاصله بعد از این هیرو یک بلوک
  * «فرم استعلام» آمده باشد: آن‌وقت این دو با هم یک نوار دو ستونی می‌شوند، همان‌طور
- * که در طرح است. تنها جای صفحه است که چیدمان به بلوک بعدی نگاه می‌کند.
+ * که در هر دو طرح است. تنها جای صفحه است که چیدمان به بلوک بعدی نگاه می‌کند.
+ *
+ * وزن «محصول» دو چیز را جور دیگری می‌کشد: بالای تیتر به‌جای نقطه طلایی یک کاشی
+ * آیکن محصول می‌نشیند (همان `iconKey` کارت محصول)، و تعهدها به‌جای برچسب‌های
+ * کنار هم یک فهرست عمودی با تیک می‌شوند — چون روی صفحه محصول جمله‌اند نه برچسب.
  */
 export const HeroBlock: React.FC<Props & { asColumn?: boolean }> = ({
   asColumn,
   bullets,
   eyebrow,
   heading,
+  iconKey,
   subheading,
   variant,
   media,
   links,
 }) => {
   const isPrimary = variant === 'primary'
+  const isProduct = variant === 'product'
+  const Icon = isProduct && iconKey ? PRODUCT_ICONS[iconKey] : undefined
 
   const body = (
     <div className="flex flex-col gap-4 lg:gap-6">
-      {eyebrow && (
-        <span className="flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-[0.8125rem] font-medium text-accent-foreground lg:px-3.5 lg:text-sm">
-          <span aria-hidden="true" className="size-1.5 rounded-full bg-gold" />
-          {eyebrow}
-        </span>
+      {(eyebrow || Icon) && (
+        <div className="flex items-center gap-3">
+          {Icon && (
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-card bg-accent text-accent-foreground lg:size-14">
+              <Icon size={30} />
+            </span>
+          )}
+          {eyebrow && (
+            <span className="flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-[0.8125rem] font-medium text-accent-foreground lg:px-3.5 lg:text-sm">
+              {!isProduct && <span aria-hidden="true" className="size-1.5 rounded-full bg-gold" />}
+              {eyebrow}
+            </span>
+          )}
+        </div>
       )}
 
       <h1
         className={cn(
           'font-extrabold',
-          isPrimary
+          isPrimary || isProduct
             ? 'text-[1.875rem] leading-[1.6] lg:text-[3.25rem] lg:leading-[1.45]'
             : 'text-[1.75rem] leading-[1.6] font-bold lg:text-[2.75rem] lg:leading-[1.45]',
         )}
@@ -53,17 +69,28 @@ export const HeroBlock: React.FC<Props & { asColumn?: boolean }> = ({
       )}
 
       {bullets?.length ? (
-        <ul aria-label="تعهدهای بیمه گلد" className="mt-2 flex flex-wrap gap-2">
-          {bullets.map((bullet, i) => (
-            <li
-              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs lg:px-3.5 lg:text-sm"
-              key={bullet.id ?? i}
-            >
-              <CheckCircleIcon className="shrink-0 text-brand-600" size={18} />
-              {bullet.label}
-            </li>
-          ))}
-        </ul>
+        isProduct ? (
+          <ul className="flex flex-col gap-3 text-[0.9375rem] lg:text-[1.0625rem]">
+            {bullets.map((bullet, i) => (
+              <li className="flex items-center gap-2.5" key={bullet.id ?? i}>
+                <CheckCircleIcon className="shrink-0 text-brand-600" size={22} />
+                {bullet.label}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul aria-label="تعهدهای بیمه گلد" className="mt-2 flex flex-wrap gap-2">
+            {bullets.map((bullet, i) => (
+              <li
+                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs lg:px-3.5 lg:text-sm"
+                key={bullet.id ?? i}
+              >
+                <CheckCircleIcon className="shrink-0 text-brand-600" size={18} />
+                {bullet.label}
+              </li>
+            ))}
+          </ul>
+        )
       ) : null}
 
       {links?.length ? (
@@ -97,7 +124,10 @@ export const HeroBlock: React.FC<Props & { asColumn?: boolean }> = ({
 
   return (
     <section
-      className={cn('shell', isPrimary ? 'pt-8 pb-0 lg:pt-18 lg:pb-24' : 'py-10 lg:py-16')}
+      className={cn(
+        'shell',
+        isPrimary || isProduct ? 'pt-8 pb-0 lg:pt-18 lg:pb-24' : 'py-10 lg:py-16',
+      )}
       data-variant={variant}
     >
       {body}

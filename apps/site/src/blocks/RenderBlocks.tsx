@@ -17,6 +17,7 @@ import { PriceFactorsBlock } from '@/blocks/PriceFactors/Component'
 import { ProductGridBlock } from '@/blocks/ProductGrid/Component'
 import { QuoteFormBlock } from '@/blocks/QuoteForm/Component'
 import { StepsBlock } from '@/blocks/Steps/Component'
+import { cn } from '@/utilities/ui'
 
 const blockComponents = {
   content: ContentBlock,
@@ -39,14 +40,17 @@ const blockComponents = {
 type Block = Page['layout'][0]
 
 /**
- * در طرح خانه، هیرو و فرم استعلام یک نوار دو ستونی‌اند نه دو بخش پشت سر هم.
- * دو بلوک جدا ماندند (تصمیم `docs/website/LANDING-PAGES.md`: لندینگ کمپین باید
- * بتواند بدون هیرو یا با دو هیرو ساخته شود)، پس جفت‌شدن اینجا اتفاق می‌افتد:
- * هیروی «اصلی» که بلافاصله بعدش فرم استعلام آمده باشد، با آن یک نوار می‌شود.
- * هر ترتیب دیگری همان دو بخش جدا می‌ماند.
+ * در طرح خانه و طرح صفحه محصول، هیرو و فرم استعلام یک نوار دو ستونی‌اند نه دو بخش
+ * پشت سر هم. دو بلوک جدا ماندند (تصمیم `docs/website/LANDING-PAGES.md`: لندینگ
+ * کمپین باید بتواند بدون هیرو یا با دو هیرو ساخته شود)، پس جفت‌شدن اینجا اتفاق
+ * می‌افتد: هیروی «اصلی» یا «محصول» که بلافاصله بعدش فرم استعلام آمده باشد، با آن
+ * یک نوار می‌شود. هر ترتیب دیگری همان دو بخش جدا می‌ماند.
  *
- * روی موبایل فرم زیر هیرو نمی‌آید — طرح موبایل مستقیم از هیرو به فهرست محصول‌ها
- * می‌رود و استعلام از دکمه کارت محصول شروع می‌شود.
+ * روی موبایلِ صفحه خانه فرم زیر هیرو نمی‌آید — طرح موبایل مستقیم از هیرو به فهرست
+ * محصول‌ها می‌رود و استعلام از دکمه کارت محصول شروع می‌شود. روی صفحه محصول ولی
+ * می‌آید: آنجا کارت محصولی در کار نیست و برداشتن فرم یعنی صفحه‌ای که روی موبایل
+ * هیچ راهی به استعلام ندارد. (بوم موبایلِ صفحه محصول هنوز کشیده نشده؛ همان ستون
+ * دسکتاپ زیر هیرو می‌نشیند.)
  */
 export const RenderBlocks: React.FC<{
   blocks: Block[]
@@ -65,16 +69,22 @@ export const RenderBlocks: React.FC<{
 
     if (
       block.blockType === 'hero' &&
-      block.variant === 'primary' &&
+      (block.variant === 'primary' || block.variant === 'product') &&
       next?.blockType === 'quoteForm'
     ) {
+      const onProductPage = block.variant === 'product'
+
       rendered.push(
         <section
-          className="shell grid items-center gap-8 pt-8 pb-0 lg:grid-cols-2 lg:gap-18 lg:pt-18 lg:pb-24"
+          className={cn(
+            'shell grid gap-8 pb-0 lg:grid-cols-2 lg:items-start lg:gap-18 lg:pb-24',
+            // بالای هیروی محصول نان‌ریزه نشسته، پس فاصله بالایش کمتر از صفحه خانه است.
+            onProductPage ? 'pt-6 lg:pt-10' : 'items-center pt-8 lg:pt-18',
+          )}
           key={index}
         >
           <HeroBlock {...block} asColumn />
-          <div className="hidden lg:block">
+          <div className={onProductPage ? '' : 'hidden lg:block'}>
             <QuoteFormBlock {...next} asColumn />
           </div>
         </section>,

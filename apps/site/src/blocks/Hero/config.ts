@@ -28,6 +28,26 @@ export const Hero: Block = {
       required: true,
     },
     {
+      /*
+       * کاشی آیکن بالای تیتر صفحه محصول، از روی بوم «صفحه محصول — شخص ثالث».
+       * همان کلیدهای `PRODUCT_ICONS` است که کارت محصول هم با آن آیکنش را انتخاب
+       * می‌کند، تا یک محصول در هر دو جا یک آیکن داشته باشد.
+       */
+      name: 'iconKey',
+      type: 'select',
+      label: 'آیکن محصول',
+      options: [
+        { label: 'خودرو — شخص ثالث و بدنه', value: 'car' },
+        { label: 'هواپیما — مسافرتی', value: 'plane' },
+        { label: 'شعله — آتش‌سوزی', value: 'fire' },
+        { label: 'کیف — مسئولیت حرفه‌ای', value: 'briefcase' },
+      ],
+      admin: {
+        condition: (_, s) => s?.variant === 'product',
+        description: 'فقط در وزن «محصول» دیده می‌شود.',
+      },
+    },
+    {
       name: 'bullets',
       type: 'array',
       label: 'تعهدها',

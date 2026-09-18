@@ -7,6 +7,7 @@ import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
+import { Breadcrumb } from '@/components/Breadcrumb'
 import { generateMeta } from '@/utilities/generateMeta'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
@@ -46,6 +47,9 @@ export default async function Page({ params: paramsPromise }: Args) {
       <PayloadRedirects disableNotFound url={url} />
 
       {draft && <LivePreviewListener />}
+
+      {/* خانه سرِ مسیر است و نان‌ریزه‌ای که فقط خودش را نشان بدهد چیزی اضافه نمی‌کند. */}
+      {decodedSlug !== 'home' && <Breadcrumb title={page.title} />}
 
       <RenderBlocks blocks={layout} />
     </article>

@@ -6,6 +6,7 @@ export const Features: Block = {
   labels: { singular: 'ویژگی‌ها', plural: 'بخش‌های ویژگی' },
   fields: [
     { name: 'heading', type: 'text', label: 'تیتر بخش' },
+    { name: 'subheading', type: 'textarea', label: 'زیرتیتر بخش' },
     {
       name: 'columns',
       type: 'select',
@@ -27,7 +28,25 @@ export const Features: Block = {
       fields: [
         { name: 'title', type: 'text', label: 'عنوان', required: true },
         { name: 'description', type: 'textarea', label: 'توضیح' },
-        { name: 'icon', type: 'upload', label: 'آیکن', relationTo: 'media' },
+        {
+          name: 'iconKey',
+          type: 'select',
+          label: 'آیکن',
+          options: [
+            { label: 'ساعت — صدور فوری', value: 'clock' },
+            { label: 'برچسب قیمت — نرخ مصوب', value: 'tag' },
+            { label: 'قفل — امنیت پرداخت', value: 'lock' },
+            { label: 'تیک — تأیید', value: 'check' },
+            { label: 'خودرو', value: 'car' },
+            { label: 'هواپیما', value: 'plane' },
+            { label: 'شعله', value: 'fire' },
+            { label: 'کیف — مسئولیت حرفه‌ای', value: 'briefcase' },
+          ],
+          admin: {
+            description: 'آیکن خطی سایت. اگر تصویر اختصاصی بارگذاری کنید، آن جایش را می‌گیرد.',
+          },
+        },
+        { name: 'icon', type: 'upload', label: 'آیکن اختصاصی', relationTo: 'media' },
       ],
     },
   ],

@@ -57,9 +57,46 @@
   --breakpoint-2xl: 86rem;
   --font-sans: 'PeydaWebVF', system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /*
+   * نردبان برند — عیناً همان مقدارهای `apps/web/src/styles.css`. رنگ دقیق لوگو
+   * (`--color-gold`) برای متن روی زمینه روشن ۲٫۱:۱ است و هرگز متن نمی‌شود؛ نردبان
+   * همان فام را نگه می‌دارد و روشنایی را جابه‌جا می‌کند تا جفت‌ها خوانا بمانند
+   * (سفید روی brand-600 برابر ۴٫۸۷:۱).
+   */
+  --color-brand-50: oklch(0.97 0.022 90);
+  --color-brand-100: oklch(0.94 0.045 90);
+  --color-brand-200: oklch(0.88 0.078 90);
+  --color-brand-300: oklch(0.8 0.108 90);
+  --color-brand-400: oklch(0.72 0.128 90);
+  --color-brand-500: oklch(0.64 0.118 90);
+  --color-brand-600: oklch(0.55 0.102 90);
+  --color-brand-700: oklch(0.46 0.086 90);
+  --color-brand-800: oklch(0.38 0.07 90);
+  --color-brand-900: oklch(0.3 0.055 90);
 }
 
 @layer utilities {
+  /*
+   * نوار محتوای سایت. طرح روی بوم ۱۴۴۰ پیکسلی حاشیه ۱۲۰ پیکسلی دارد، یعنی محتوا
+   * دقیقاً ۱۲۰۰ پیکسل است؛ `--shell-gutter` بیرون از آن می‌نشیند تا این ۱۲۰۰ روی
+   * صفحه پهن دست‌نخورده بماند و روی موبایل به حاشیه ۲۰ پیکسلی طرح برسد.
+   * `.container` قالب Payload برای صفحه‌های قدیمی‌تر (مجله، جست‌وجو) سر جایش است.
+   */
+  .shell {
+    --shell-gutter: 1.25rem;
+    width: 100%;
+    max-width: calc(75rem + 2 * var(--shell-gutter));
+    margin-inline: auto;
+    padding-inline: var(--shell-gutter);
+  }
+
+  @variant md {
+    .shell {
+      --shell-gutter: 2rem;
+    }
+  }
+
   .container {
     width: 100%;
     margin-inline: auto;
@@ -98,26 +135,44 @@
   }
 }
 
+/*
+ * توکن‌های دیزاین‌سیستم Bime Gold (`brand/bime-gold/`، همان مقدارهای
+ * `apps/web/src/styles.css`). نام‌های shadcn نگه داشته شده‌اند و مقدارشان به توکن
+ * برند گره خورده، تا یک واژگان بیشتر نداشته باشیم:
+ *
+ *   surface-page  → --background   (زمینه صفحه، خاکستری روشن)
+ *   surface-card  → --card         (سفید؛ کارت‌ها و فیلدها رویش می‌نشینند)
+ *   surface-sunken→ --muted        (زمینه فرورفته: برچسب «به‌زودی»، جای‌نگارها)
+ *   surface-border→ --border/--input
+ *   text-strong   → --foreground
+ *   text-muted    → --muted-foreground
+ *   brand-600     → --primary      (رنگ عمل اصلی؛ سفید رویش ۴٫۸۷:۱)
+ *
+ * پس در کد بلوک‌ها `bg-card`، `text-muted-foreground` و `border-border` می‌نویسیم،
+ * نه نام‌های خام برند. `bg-sunken`، `text-brand-700` و `bg-navy` نام برند دارند
+ * چون معادل shadcn ندارند.
+ */
 :root {
-  --background: oklch(100% 0 0deg);
-  --foreground: oklch(14.5% 0 0deg);
-  --card: oklch(96.5% 0.005 265deg);
-  --card-foreground: oklch(14.5% 0 0deg);
-  --popover: oklch(100% 0 0deg);
-  --popover-foreground: oklch(14.5% 0 0deg);
-  --primary: oklch(20.5% 0 0deg);
-  --primary-foreground: oklch(98.5% 0 0deg);
-  --secondary: oklch(97% 0 0deg);
-  --secondary-foreground: oklch(20.5% 0 0deg);
-  --muted: oklch(97% 0 0deg);
-  --muted-foreground: oklch(55.6% 0 0deg);
-  --accent: oklch(97% 0 0deg);
-  --accent-foreground: oklch(20.5% 0 0deg);
+  --background: oklch(0.97 0.003 260);
+  --foreground: oklch(0.22 0.01 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.01 260);
+  --sunken: oklch(0.94 0.005 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.01 260);
+  --primary: oklch(0.55 0.102 90);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.94 0.005 260);
+  --secondary-foreground: oklch(0.22 0.01 260);
+  --muted: oklch(0.94 0.005 260);
+  --muted-foreground: oklch(0.52 0.012 260);
+  --accent: oklch(0.97 0.022 90);
+  --accent-foreground: oklch(0.46 0.086 90);
   --destructive: oklch(57.7% 0.245 27.325deg);
   --destructive-foreground: oklch(57.7% 0.245 27.325deg);
-  --border: oklch(92.2% 0 0deg);
-  --input: oklch(92.2% 0 0deg);
-  --ring: oklch(70.8% 0 0deg);
+  --border: oklch(0.9 0.006 260);
+  --input: oklch(0.9 0.006 260);
+  --ring: oklch(0.64 0.118 90);
   --chart-1: oklch(64.6% 0.222 41.116deg);
   --chart-2: oklch(60% 0.118 184.704deg);
   --chart-3: oklch(39.8% 0.07 227.392deg);
@@ -132,35 +187,45 @@
   --sidebar-accent-foreground: oklch(20.5% 0 0deg);
   --sidebar-border: oklch(92.2% 0 0deg);
   --sidebar-ring: oklch(70.8% 0 0deg);
-  /* جای‌نگار تا توکن دیزاین‌سیستم برسد: `navy` فقط برای نوار دعوت و دایره شماره قدم‌ها. */
-  --navy: oklch(28% 0.06 255deg);
-  --navy-foreground: oklch(98% 0 0deg);
+  /* `navy` فقط برای نوار دعوت و دایره شماره قدم‌ها؛ طلایی فقط نقطه. */
+  --navy: #0f172a;
+  --navy-foreground: #f0f0f0;
+  --navy-muted: oklch(0.8 0.01 260);
   --gold: #d4af37;
   --success: oklch(78% 0.08 200deg);
   --warning: oklch(89% 0.1 75deg);
   --error: oklch(75% 0.15 25deg);
+  --elevation-card: 0 1px 2px oklch(0 0 0 / 0.05), 0 8px 24px oklch(0 0 0 / 0.04);
+  --elevation-button: 0 6px 20px -8px oklch(0.55 0.102 90);
 }
 
+/*
+ * تم تیره سایت هنوز طراحی نشده (`docs/website/LANDING-PAGES.md`). این مقدارها
+ * از سطح‌های تیره خود دیزاین‌سیستم می‌آیند تا چیزی نشکند؛ دور طراحی تیره که رسید
+ * جایشان را می‌گیرد. برای متن روی سطح تیره brand-300 است نه brand-600 — سهم
+ * کنتراست brand-600 روی کارت تیره فقط ۳٫۵:۱ است.
+ */
 [data-theme='dark'] {
-  --background: oklch(14.5% 0 0deg);
-  --foreground: oklch(98.5% 0 0deg);
-  --card: oklch(17% 0 0deg);
-  --card-foreground: oklch(98.5% 0 0deg);
-  --popover: oklch(14.5% 0 0deg);
-  --popover-foreground: oklch(98.5% 0 0deg);
-  --primary: oklch(98.5% 0 0deg);
-  --primary-foreground: oklch(20.5% 0 0deg);
-  --secondary: oklch(26.9% 0 0deg);
-  --secondary-foreground: oklch(98.5% 0 0deg);
-  --muted: oklch(26.9% 0 0deg);
-  --muted-foreground: oklch(70.8% 0 0deg);
-  --accent: oklch(26.9% 0 0deg);
-  --accent-foreground: oklch(98.5% 0 0deg);
+  --background: oklch(0.18 0.01 260);
+  --foreground: oklch(0.96 0.004 260);
+  --card: oklch(0.23 0.012 260);
+  --card-foreground: oklch(0.96 0.004 260);
+  --sunken: oklch(0.15 0.01 260);
+  --popover: oklch(0.23 0.012 260);
+  --popover-foreground: oklch(0.96 0.004 260);
+  --primary: oklch(0.55 0.102 90);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.15 0.01 260);
+  --secondary-foreground: oklch(0.96 0.004 260);
+  --muted: oklch(0.15 0.01 260);
+  --muted-foreground: oklch(0.68 0.012 260);
+  --accent: oklch(0.3 0.055 90 / 0.4);
+  --accent-foreground: oklch(0.8 0.108 90);
   --destructive: oklch(39.6% 0.141 25.723deg);
   --destructive-foreground: oklch(63.7% 0.237 25.331deg);
-  --border: oklch(26.9% 0 0deg);
-  --input: oklch(26.9% 0 0deg);
-  --ring: oklch(43.9% 0 0deg);
+  --border: oklch(0.31 0.014 260);
+  --input: oklch(0.31 0.014 260);
+  --ring: oklch(0.64 0.118 90);
   --chart-1: oklch(48.8% 0.243 264.376deg);
   --chart-2: oklch(69.6% 0.17 162.48deg);
   --chart-3: oklch(76.9% 0.188 70.08deg);
@@ -177,6 +242,7 @@
   --success: oklch(28% 0.1 200deg);
   --warning: oklch(35% 0.08 70deg);
   --error: oklch(45% 0.1 25deg);
+  --elevation-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px oklch(0 0 0 / 0.25);
 }
 
 @theme inline {
@@ -218,7 +284,14 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-navy: var(--navy);
   --color-navy-foreground: var(--navy-foreground);
+  --color-navy-muted: var(--navy-muted);
   --color-gold: var(--gold);
+  --color-sunken: var(--sunken);
+  /* گوشه‌های دیزاین‌سیستم: کارت/دکمه/فیلد ۱۶ پیکسل، برگه و نوار دعوت ۲۴ پیکسل. */
+  --radius-card: 1rem;
+  --radius-sheet: 1.5rem;
+  --shadow-card: var(--elevation-card);
+  --shadow-button: var(--elevation-button);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
@@ -228,8 +301,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    /* ss02 قلم پیدا رقم‌های لاتین را فارسی می‌کشد — همان کاری که اپ و طرح‌ها می‌کنند. */
+    font-feature-settings: 'ss02';
+  }
   body {
     @apply bg-background text-foreground min-h-[100vh] flex flex-col;
+  }
+  /* هر هدف لمسی ۴۴ پیکسل را رد می‌کند (توکن `tap-min` دیزاین‌سیستم). */
+  button,
+  a[role='button'] {
+    min-height: 44px;
   }
 }
 

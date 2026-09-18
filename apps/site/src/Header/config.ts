@@ -30,7 +30,19 @@ export const Header: GlobalConfig = {
         },
       },
     },
-    // دکمه اصلی هدر همیشه به اپ می‌رود؛ خرید روی این دامنه انجام نمی‌شود.
+    /*
+     * طرح دو عمل در هدر دارد: «ورود» با قاب و «بیمه‌نامه‌های من» پررنگ. هر دو به اپ
+     * می‌روند؛ خرید و حساب کاربری روی این دامنه نیستند.
+     */
+    linkGroup({
+      appearances: false,
+      overrides: {
+        name: 'login',
+        label: 'دکمه ورود',
+        maxRows: 1,
+        admin: { description: 'دکمه قاب‌دار سمت چپ. خالی بگذارید تا نمایش داده نشود.' },
+      },
+    }),
     linkGroup({
       appearances: false,
       overrides: {

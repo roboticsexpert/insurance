@@ -36,8 +36,20 @@ const blockComponents = {
   steps: StepsBlock,
 }
 
+type Block = Page['layout'][0]
+
+/**
+ * در طرح خانه، هیرو و فرم استعلام یک نوار دو ستونی‌اند نه دو بخش پشت سر هم.
+ * دو بلوک جدا ماندند (تصمیم `docs/website/LANDING-PAGES.md`: لندینگ کمپین باید
+ * بتواند بدون هیرو یا با دو هیرو ساخته شود)، پس جفت‌شدن اینجا اتفاق می‌افتد:
+ * هیروی «اصلی» که بلافاصله بعدش فرم استعلام آمده باشد، با آن یک نوار می‌شود.
+ * هر ترتیب دیگری همان دو بخش جدا می‌ماند.
+ *
+ * روی موبایل فرم زیر هیرو نمی‌آید — طرح موبایل مستقیم از هیرو به فهرست محصول‌ها
+ * می‌رود و استعلام از دکمه کارت محصول شروع می‌شود.
+ */
 export const RenderBlocks: React.FC<{
-  blocks: Page['layout'][0][]
+  blocks: Block[]
 }> = (props) => {
   const { blocks } = props
 
@@ -45,21 +57,45 @@ export const RenderBlocks: React.FC<{
 
   if (!hasBlocks) return null
 
-  return (
-    <Fragment>
-      {blocks.map((block, index) => {
-        const { blockType } = block
+  const rendered: React.ReactNode[] = []
 
-        if (blockType && blockType in blockComponents) {
-          const Block = blockComponents[blockType]
+  for (let index = 0; index < blocks.length; index++) {
+    const block = blocks[index] as Block
+    const next = blocks[index + 1]
 
-          if (Block) {
-            // @ts-expect-error انواع بلوک‌ها با هم یکی نیستند و این نگاشت عمداً باز است
-            return <Block {...block} key={index} disableInnerContainer />
-          }
-        }
-        return null
-      })}
-    </Fragment>
-  )
+    if (
+      block.blockType === 'hero' &&
+      block.variant === 'primary' &&
+      next?.blockType === 'quoteForm'
+    ) {
+      rendered.push(
+        <section
+          className="shell grid items-center gap-8 pt-8 pb-0 lg:grid-cols-2 lg:gap-18 lg:pt-18 lg:pb-24"
+          key={index}
+        >
+          <HeroBlock {...block} asColumn />
+          <div className="hidden lg:block">
+            <QuoteFormBlock {...next} asColumn />
+          </div>
+        </section>,
+      )
+      index++
+      continue
+    }
+
+    const { blockType } = block
+
+    if (blockType && blockType in blockComponents) {
+      const BlockComponent = blockComponents[blockType]
+
+      if (BlockComponent) {
+        rendered.push(
+          // @ts-expect-error انواع بلوک‌ها با هم یکی نیستند و این نگاشت عمداً باز است
+          <BlockComponent {...block} disableInnerContainer key={index} />,
+        )
+      }
+    }
+  }
+
+  return <Fragment>{rendered}</Fragment>
 }

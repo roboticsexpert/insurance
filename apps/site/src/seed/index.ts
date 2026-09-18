@@ -56,6 +56,12 @@ const upsert = async (
   })
 }
 
+/**
+ * آدرس اپ خرید. سایت چیزی نمی‌فروشد؛ هر دکمه استعلام و هر لینک حساب کاربری به اینجا
+ * می‌رود. از محیط خوانده می‌شود تا روی لپ‌تاپ به `apps/web` محلی برود نه به دامنه عملیاتی.
+ */
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bimegold.com'
+
 const INSURERS = [
   { name: 'بیمه پاسارگاد', slug: 'pasargad' },
   { name: 'بیمه سامان', slug: 'saman' },
@@ -101,7 +107,19 @@ const FAQS = [
   {
     question: 'بیمه‌نامه را چطور تحویل می‌گیرم؟',
     answer:
-      'بیمه‌نامه پس از پرداخت به‌صورت الکترونیکی صادر می‌شود و در همان لحظه در حساب کاربری‌تان قابل دانلود است.',
+      'بلافاصله بعد از پرداخت، بیمه‌نامه در حساب کاربری شما صادر می‌شود و از بخش «بیمه‌نامه‌های من» قابل مشاهده و دریافت است.',
+    topic: 'payment',
+  },
+  {
+    question: 'قیمت‌ها با خرید مستقیم از شرکت بیمه فرق دارد؟',
+    answer:
+      'خیر. نرخ‌ها همان نرخ مصوب شرکت بیمه است و بابت استفاده از بیمه گلد هزینه‌ای اضافه نمی‌شود.',
+    topic: 'payment',
+  },
+  {
+    question: 'اگر پرداخت انجام شد ولی بیمه‌نامه صادر نشد چه می‌شود؟',
+    answer:
+      'مبلغ پرداختی محفوظ است و پیگیری صدور به‌صورت خودکار انجام می‌شود. در صورت انصراف، وجه تا ۷۲ ساعت به حساب شما بازمی‌گردد.',
     topic: 'payment',
   },
 ]
@@ -144,11 +162,18 @@ export const seedContent = async (payload: Payload): Promise<void> => {
   }
 
   // ── پرسش‌های پرتکرار ───────────────────────────────────────────────────────
-  const faqIDs: (number | string)[] = []
+  const faqIDs = new Map<string, number | string>()
   for (const faq of FAQS) {
     const doc = await upsert(payload, 'faqs', { question: { equals: faq.question } }, faq)
-    faqIDs.push(doc.id)
+    faqIDs.set(faq.question, doc.id)
   }
+  /** پرسش‌ها با متنشان انتخاب می‌شوند نه با جایشان در فهرست؛ `slice` با اضافه‌شدن یک پرسش می‌لغزد. */
+  const faqsByQuestion = (...questions: string[]): (number | string)[] =>
+    questions.map((question) => {
+      const id = faqIDs.get(question)
+      if (id === undefined) throw new Error(`پرسش پرتکرار پیدا نشد: ${question}`)
+      return id
+    })
 
   // ── دسته‌های مجله ──────────────────────────────────────────────────────────
   for (const title of ['راهنمای خرید', 'شخص ثالث', 'سفر', 'منزل']) {
@@ -168,53 +193,138 @@ export const seedContent = async (payload: Payload): Promise<void> => {
         {
           blockType: 'hero',
           variant: 'primary',
-          eyebrow: 'صدور آنی و آنلاین',
-          heading: 'بیمه‌نامه‌ات را آنلاین بگیر',
+          eyebrow: 'بیمه‌فروش آنلاین',
+          heading: 'بیمه‌نامه را آنلاین بخرید، با همان نرخ مصوب',
           subheading:
-            'نرخ چند شرکت را کنار هم ببین، آنلاین پرداخت کن و بیمه‌نامه را همان لحظه تحویل بگیر.',
-          links: [
-            {
-              link: {
-                type: 'custom',
-                url: 'https://app.bimegold.com',
-                label: 'استعلام قیمت',
-                appearance: 'default',
-              },
-            },
+            'قیمت شرکت‌های بیمه را کنار هم ببینید، مقایسه کنید و همین‌جا بخرید. بیمه‌نامه بلافاصله بعد از پرداخت صادر می‌شود.',
+          bullets: [
+            { label: 'صدور فوری' },
+            { label: 'همان نرخ مصوب' },
+            { label: 'پول شما محفوظ است' },
           ],
+        },
+        /*
+         * بلافاصله بعد از هیروی «اصلی» می‌آید، پس `RenderBlocks` این دو را یک نوار
+         * دو ستونی می‌کند — همان چیدمان طرح.
+         */
+        {
+          blockType: 'quoteForm',
+          heading: 'استعلام قیمت',
+          product: 'any',
+          submitLabel: 'مقایسه قیمت‌ها',
+          note: 'قیمت نهایی پیش از پرداخت نمایش داده می‌شود.',
         },
         {
           blockType: 'productGrid',
-          heading: 'چه بیمه‌ای می‌خواهید؟',
-          subheading: 'سه محصول اول ما. بقیه در راه‌اند.',
+          heading: 'چه چیزی را بیمه کنیم؟',
+          subheading: 'هر بیمه صفحه راهنمای خودش را دارد؛ پیش از خرید پوشش‌ها را بخوانید.',
+          products: ['motor-tpl', 'travel', 'home-fire'],
           showPrice: true,
+          comingSoon: [
+            {
+              title: 'بیمه مسئولیت حرفه‌ای',
+              description: 'برای صاحبان حرفه؛ قیمت‌گیری از چند شرکت بیمه و پیشنهاد اختصاصی.',
+              iconKey: 'briefcase',
+            },
+          ],
         },
         {
           blockType: 'steps',
-          heading: 'سه قدم تا بیمه‌نامه',
+          heading: 'خرید بیمه در سه قدم',
           steps: [
-            { title: 'مشخصات را وارد کنید', description: 'فرم کوتاه است و چیزی جز لازم نمی‌پرسد.' },
             {
-              title: 'نرخ‌ها را مقایسه کنید',
-              description: 'نرخ شرکت‌های مختلف را کنار هم ببینید.',
+              title: 'مشخصات را وارد کنید',
+              description: 'نوع وسیله، مقصد سفر یا ارزش خانه؛ فقط همان چیزی که برای قیمت لازم است.',
             },
-            { title: 'پرداخت و صدور', description: 'بیمه‌نامه بلافاصله پس از پرداخت صادر می‌شود.' },
+            {
+              title: 'پیشنهادها را مقایسه کنید',
+              description:
+                'قیمت و پوشش شرکت‌های بیمه کنار هم نمایش داده می‌شود و ارزان‌ترین مشخص است.',
+            },
+            {
+              title: 'پرداخت کنید، بیمه‌نامه را بگیرید',
+              description: 'بیمه‌نامه بلافاصله در حساب کاربری شما صادر می‌شود و قابل دریافت است.',
+            },
           ],
+        },
+        {
+          // متن‌ها همان پاسخ‌های پشتیبانی اپ‌اند (`apps/web/src/routes/SupportPage.tsx`).
+          blockType: 'features',
+          heading: 'چرا از بیمه گلد بخرید',
+          subheading: 'همان تعهدهایی که در پشتیبانی می‌دهیم، اینجا هم می‌دهیم.',
+          columns: '3',
+          features: [
+            {
+              title: 'صدور فوری',
+              description:
+                'بلافاصله بعد از پرداخت، بیمه‌نامه در حساب کاربری شما صادر می‌شود و از بخش «بیمه‌نامه‌های من» قابل دریافت است.',
+              iconKey: 'clock',
+            },
+            {
+              title: 'همان نرخ مصوب',
+              description:
+                'نرخ‌ها همان نرخ مصوب شرکت بیمه است و بابت استفاده از بیمه گلد هزینه‌ای اضافه نمی‌شود.',
+              iconKey: 'tag',
+            },
+            {
+              title: 'پول شما محفوظ است',
+              description:
+                'اگر پرداخت انجام شد ولی بیمه‌نامه صادر نشد، پیگیری خودکار است و در صورت انصراف وجه تا ۷۲ ساعت برمی‌گردد.',
+              iconKey: 'lock',
+            },
+          ],
+        },
+        {
+          // هیچ شرکتی `active` نیست، پس خانه‌های جای‌نگار طرح را نشان می‌دهد.
+          blockType: 'insurerStrip',
+          heading: 'بیمه‌نامه‌ها را شرکت‌های بیمه دارای مجوز صادر می‌کنند',
         },
         {
           blockType: 'faq',
           heading: 'پرسش‌های پرتکرار',
-          faqs: faqIDs.slice(0, 4),
-        },
-        {
-          blockType: 'ctaBand',
-          heading: 'همین حالا نرخ بگیرید',
-          body: 'رایگان است و شما را متعهد نمی‌کند.',
+          subheading: 'جوابتان اینجا نبود؟ کارشناس پشتیبانی پاسخ می‌دهد.',
           links: [
             {
               link: {
                 type: 'custom',
-                url: 'https://app.bimegold.com',
+                url: `${APP_URL}/support`,
+                label: 'گفت‌وگو با پشتیبانی',
+              },
+            },
+          ],
+          faqs: faqsByQuestion(
+            'بیمه‌نامه را چطور تحویل می‌گیرم؟',
+            'قیمت‌ها با خرید مستقیم از شرکت بیمه فرق دارد؟',
+            'اگر پرداخت انجام شد ولی بیمه‌نامه صادر نشد چه می‌شود؟',
+            'آیا بیمه‌نامه مسافرتی مورد قبول سفارت است؟',
+            'ارزش ساختمان را چطور تعیین کنم؟',
+          ),
+        },
+        {
+          // تا مقاله‌ای منتشر نشده این بخش چیزی نشان نمی‌دهد و خودش را برمی‌دارد.
+          blockType: 'postsList',
+          heading: 'پیش از خرید بخوانید',
+          subheading: 'راهنماهای کوتاه از مجله بیمه گلد',
+          mode: 'latest',
+          limit: 3,
+        },
+        {
+          blockType: 'ctaBand',
+          heading: 'بیمه‌نامه بعدی‌تان را آنلاین بگیرید',
+          body: 'چند دقیقه برای قیمت گرفتن، بدون مراجعه حضوری.',
+          links: [
+            {
+              link: {
+                type: 'custom',
+                url: `${APP_URL}/support`,
+                label: 'گفت‌وگو با پشتیبانی',
+                appearance: 'outline',
+              },
+            },
+            {
+              link: {
+                type: 'custom',
+                url: `${APP_URL}/p/motor-tpl/form`,
                 label: 'استعلام قیمت',
                 appearance: 'default',
               },
@@ -295,23 +405,36 @@ export const seedContent = async (payload: Payload): Promise<void> => {
         {
           blockType: 'faq',
           heading: 'پرسش‌های پرتکرار شخص ثالث',
-          faqs: faqIDs.slice(2, 4),
+          faqs: faqsByQuestion('تخفیف عدم خسارت من چقدر است؟', 'تعهد مالی چیست؟'),
         },
       ],
     },
   )
 
   // ── هدر و فوتر ─────────────────────────────────────────────────────────────
+  /*
+   * طرح، پنج آیتم منو و چهار ستون فوتر دارد. اینجا فقط چیزی می‌آید که مقصدش
+   * واقعاً وجود دارد: صفحه محصول مسافرتی و آتش‌سوزی، «درباره ما»، «تماس با ما» و
+   * صفحه‌های حقوقی هنوز ساخته نشده‌اند و لینک مرده در منوی اصلی از منوی کوتاه بدتر
+   * است. بیمه‌های بدون صفحه محصول مستقیم به ویزارد خودشان در اپ می‌روند — مقصدی
+   * که هست و همان کار را می‌کند.
+   */
   await payload.updateGlobal({
     slug: 'header',
     overrideAccess: true,
     context: NO_REVALIDATE,
     data: {
       navItems: [
-        { link: { type: 'custom', url: '/motor-tpl', label: 'شخص ثالث' } },
+        { link: { type: 'custom', url: '/motor-tpl', label: 'بیمه شخص ثالث' } },
+        { link: { type: 'custom', url: `${APP_URL}/p/travel/form`, label: 'بیمه مسافرتی' } },
+        {
+          link: { type: 'custom', url: `${APP_URL}/p/home-fire/form`, label: 'بیمه آتش‌سوزی منزل' },
+        },
         { link: { type: 'custom', url: '/posts', label: 'مجله' } },
+        { link: { type: 'custom', url: `${APP_URL}/support`, label: 'پشتیبانی' } },
       ],
-      cta: [{ link: { type: 'custom', url: 'https://app.bimegold.com', label: 'استعلام قیمت' } }],
+      login: [{ link: { type: 'custom', url: `${APP_URL}/auth`, label: 'ورود' } }],
+      cta: [{ link: { type: 'custom', url: `${APP_URL}/policies`, label: 'بیمه‌نامه‌های من' } }],
     },
   })
 
@@ -320,11 +443,33 @@ export const seedContent = async (payload: Payload): Promise<void> => {
     overrideAccess: true,
     context: NO_REVALIDATE,
     data: {
-      navItems: [
-        { link: { type: 'custom', url: '/motor-tpl', label: 'شخص ثالث' } },
-        { link: { type: 'custom', url: '/posts', label: 'مجله' } },
+      tagline: 'بیمه‌فروش آنلاین. قیمت بگیرید، مقایسه کنید، همین‌جا بخرید.',
+      columns: [
+        {
+          title: 'بیمه‌ها',
+          navItems: [
+            { link: { type: 'custom', url: '/motor-tpl', label: 'بیمه شخص ثالث' } },
+            { link: { type: 'custom', url: `${APP_URL}/p/travel/form`, label: 'بیمه مسافرتی' } },
+            {
+              link: {
+                type: 'custom',
+                url: `${APP_URL}/p/home-fire/form`,
+                label: 'بیمه آتش‌سوزی منزل',
+              },
+            },
+          ],
+        },
+        {
+          title: 'راهنما',
+          navItems: [
+            { link: { type: 'custom', url: '/posts', label: 'مجله' } },
+            { link: { type: 'custom', url: `${APP_URL}/support`, label: 'پرسش‌های پرتکرار' } },
+            { link: { type: 'custom', url: `${APP_URL}/policies`, label: 'پیگیری بیمه‌نامه' } },
+          ],
+        },
       ],
-      // شماره پروانه عمداً خالی است — هنوز صادر نشده.
+      // شماره تماس، ایمیل و شماره پروانه عمداً خالی‌اند — هنوز نداریمشان و فوتر
+      // به‌جایشان جای‌نگار نشان می‌دهد، نه نشانی ساختگی.
       legal: 'بیمه گلد کارگزار رسمی بیمه است. متن حقوقی نهایی پس از صدور پروانه اینجا می‌آید.',
     },
   })

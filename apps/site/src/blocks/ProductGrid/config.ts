@@ -24,6 +24,35 @@ export const ProductGrid: Block = {
       admin: { description: 'خالی بگذارید تا همه محصول‌های فعال نمایش داده شوند.' },
     },
     {
+      /*
+       * محصول‌هایی که هنوز در API نیستند. طرح خانه یک کارت «به‌زودی» دارد (مسئولیت
+       * حرفه‌ای) و چون `GET /catalog/products` فقط محصول فعال را برمی‌گرداند، جایش
+       * اینجاست نه در `src/lib/products.ts` — وگرنه با وصل‌شدن API ناپدید می‌شود.
+       */
+      name: 'comingSoon',
+      type: 'array',
+      label: 'محصول‌های «به‌زودی»',
+      labels: { singular: 'محصول به‌زودی', plural: 'محصول‌های به‌زودی' },
+      maxRows: 3,
+      admin: { initCollapsed: true },
+      fields: [
+        { name: 'title', type: 'text', label: 'عنوان', required: true },
+        { name: 'description', type: 'textarea', label: 'توضیح' },
+        {
+          name: 'iconKey',
+          type: 'select',
+          label: 'آیکن',
+          defaultValue: 'briefcase',
+          options: [
+            { label: 'کیف — مسئولیت حرفه‌ای', value: 'briefcase' },
+            { label: 'خودرو', value: 'car' },
+            { label: 'هواپیما', value: 'plane' },
+            { label: 'شعله', value: 'fire' },
+          ],
+        },
+      ],
+    },
+    {
       name: 'showPrice',
       type: 'checkbox',
       label: 'نمایش «از … تومان»',

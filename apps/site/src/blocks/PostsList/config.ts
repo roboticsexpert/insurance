@@ -6,6 +6,7 @@ export const PostsList: Block = {
   labels: { singular: 'فهرست مقاله', plural: 'فهرست‌های مقاله' },
   fields: [
     { name: 'heading', type: 'text', label: 'تیتر بخش' },
+    { name: 'subheading', type: 'textarea', label: 'زیرتیتر بخش' },
     {
       name: 'mode',
       type: 'select',

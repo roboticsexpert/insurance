@@ -27,6 +27,18 @@ export const Hero: Block = {
       ],
       required: true,
     },
+    {
+      name: 'bullets',
+      type: 'array',
+      label: 'تعهدها',
+      labels: { singular: 'تعهد', plural: 'تعهدها' },
+      maxRows: 4,
+      admin: {
+        description:
+          'برچسب‌های کوتاه زیر زیرتیتر، مثل «صدور فوری». فقط چیزی که واقعاً تعهد می‌کنیم.',
+      },
+      fields: [{ name: 'label', type: 'text', label: 'متن', required: true }],
+    },
     { name: 'media', type: 'upload', label: 'تصویر', relationTo: 'media' },
     linkGroup({ appearances: ['default', 'outline'], overrides: { maxRows: 2 } }),
   ],

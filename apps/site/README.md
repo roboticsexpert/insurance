@@ -10,7 +10,7 @@
 ## راه‌اندازی
 
 ```bash
-pnpm site:db                      # Postgres داکر + ساخت دیتابیس bimegold_cms
+pnpm db:up                        # Postgres داکری مشترک با apps/api
 cp apps/site/.env.example apps/site/.env
 pnpm --filter @bimegold/site seed # کاربر پیشخان، صفحه خانه، محصول شخص ثالث
 pnpm dev:site                     # http://localhost:3100
@@ -23,8 +23,9 @@ pnpm dev:site                     # http://localhost:3100
 
 ## دیتابیس
 
-همان نمونه Postgres داکری `apps/api` است (پورت ۵۴۳۳) ولی **دیتابیس جدا**: `bimegold_cms`.
-یک نمونه کمتر برای بالا نگه‌داشتن و پشتیبان‌گیری؛ اسکیمای CMS با اسکیمای Prisma قاطی نمی‌شود.
+همان نمونه Postgres داکری `apps/api` است (پورت ۵۴۳۳) و همان دیتابیس `bime247`، ولی
+**اسکیمای جدا**: جدول‌های CMS در `cms` می‌نشینند و `public` دست Prisma است، پس دو
+مهاجرت‌ساز به هم نمی‌خورند.
 
 - **در توسعه** `push: true` است و Payload اسکیما را خودش هم‌گام می‌کند.
 - **در محیط عملیاتی** `push: false` است؛ تغییر اسکیما فقط با مهاجرت:

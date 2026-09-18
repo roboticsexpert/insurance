@@ -1,5 +1,9 @@
 /**
- * داده اولیه سایت — `pnpm --filter @bimegold/site seed`.
+ * داده اولیه سایت.
+ *
+ * از دو جا صدا زده می‌شود: `pnpm --filter @bimegold/site seed` روی لپ‌تاپ
+ * (`src/seed/cli.ts`)، و مسیر موقت `POST /next/seed` روی محیط عملیاتی، جایی که
+ * دیتابیس فقط از داخل شبکه Railway در دسترس است.
  *
  * محتوای نمایشی قالب انگلیسی Payload حذف شده؛ این اسکریپت جایش را گرفته و فقط چیزی
  * می‌سازد که **راست** است: متن محصول‌ها از `apps/api/prisma/seed-data/products.ts` آمده،
@@ -8,15 +12,12 @@
  *
  * دوباره اجرا کردنش امن است: هر چیزی که با همان اسلاگ وجود داشته باشد به‌روز می‌شود.
  */
-import 'dotenv/config'
-
-import { getPayload, type Payload } from 'payload'
-
-import config from '../payload.config'
+import { type Payload } from 'payload'
 
 /**
  * هوک‌های `revalidatePage`/`revalidateHeader` به `revalidatePath` مربوط به Next وصل‌اند و
- * بیرون از یک درخواست Next خطا می‌دهند. این اسکریپت از CLI اجرا می‌شود، پس خاموششان می‌کنیم.
+ * بیرون از یک درخواست Next خطا می‌دهند. اسکریپت CLI بیرون از Next اجرا می‌شود، پس
+ * خاموششان می‌کنیم؛ داخل مسیر HTTP هم بی‌ضررند چون صفحه‌ها `force-dynamic`اند.
  */
 const NO_REVALIDATE = { disableRevalidate: true }
 
@@ -102,9 +103,7 @@ const FAQS = [
   },
 ]
 
-const seed = async () => {
-  const payload = await getPayload({ config })
-
+export const seedContent = async (payload: Payload): Promise<void> => {
   payload.logger.info('در حال ساخت داده اولیه…')
 
   // ── کاربر پیشخان ───────────────────────────────────────────────────────────
@@ -328,7 +327,4 @@ const seed = async () => {
   })
 
   payload.logger.info('داده اولیه ساخته شد.')
-  process.exit(0)
 }
-
-void seed()

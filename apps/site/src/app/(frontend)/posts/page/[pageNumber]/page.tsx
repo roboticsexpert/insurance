@@ -74,4 +74,3 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
     title: `مجله بیمه گلد — صفحه ${pageNumber || ''}`,
   }
 }
-

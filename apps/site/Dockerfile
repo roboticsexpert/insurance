@@ -19,6 +19,17 @@ RUN pnpm install --frozen-lockfile --filter @bimegold/site...
 # ----------------------------------------------------------------------- بیلد
 FROM deps AS build
 COPY apps/site apps/site
+
+# هرچه `NEXT_PUBLIC_` است در **زمان بیلد** داخل باندل پخته می‌شود، نه در زمان اجرا.
+# پس باید ARG باشد، نه یک متغیر سرویس: Railway متغیرهای سرویس را به‌عنوان build arg
+# وارد می‌کند، اما فقط وقتی Dockerfile همان نام را ARG کرده باشد. بدون این دو خط،
+# مقدار پیش‌فرض `localhost` داخل robots.txt، نقشه سایت، آدرس‌های canonical و — بدتر
+# از همه — دکمه‌های استعلام می‌نشیند. عوض‌کردن دامنه یعنی بیلد دوباره.
+ARG NEXT_PUBLIC_SERVER_URL=https://bimegold.com
+ARG NEXT_PUBLIC_APP_URL=https://app.bimegold.com
+ENV NEXT_PUBLIC_SERVER_URL=$NEXT_PUBLIC_SERVER_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+
 # در زمان بیلد به دیتابیس وصل نمی‌شویم؛ این مقدار فقط برای اینکه ماژول‌های
 # کانفیگ در حین prerender بالا بیایند لازم است.
 ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build

@@ -5,8 +5,11 @@ import { authenticated } from '../access/authenticated'
 import { slugFieldFa } from '@/fields/slugFa'
 
 /**
- * شرکت‌های بیمه‌ای که با آن‌ها کار می‌کنیم. تا وقتی قرارداد امضا نشده، `status` روی
- * «در حال مذاکره» بماند و لوگو روی سایت نرود — نوار شرکت‌ها فقط `active`ها را نشان می‌دهد.
+ * شرکت‌های بیمه‌ای که با آن‌ها کار می‌کنیم.
+ *
+ * `status` روی سایت دیده می‌شود، پس راست بودنش مهم است: نوار شرکت‌ها نام و نشان همه را
+ * می‌آورد و کنار هرکدام که `negotiating` است برچسب «در حال مذاکره» می‌گذارد. با
+ * `active` شدن، لوگوی بارگذاری‌شده جای نام و برچسب می‌نشیند.
  */
 export const Insurers: CollectionConfig = {
   slug: 'insurers',
@@ -36,7 +39,8 @@ export const Insurers: CollectionConfig = {
       defaultValue: 'negotiating',
       required: true,
       admin: {
-        description: 'فقط شرکت‌های «فعال» روی سایت دیده می‌شوند.',
+        description:
+          'وضعیت روی سایت نوشته می‌شود. «فعال» یعنی قرارداد امضا شده و لوگو جای نام می‌نشیند.',
       },
     },
     {

@@ -62,7 +62,9 @@ const upsert = async (
  */
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bimegold.com'
 
+/** ترتیب همین فهرست، ترتیب نمایش روی سایت است. نشان هر کدام در `public/insurers/<slug>.svg`. */
 const INSURERS = [
+  { name: 'بیمه تعاون', slug: 'taavon' },
   { name: 'بیمه پاسارگاد', slug: 'pasargad' },
   { name: 'بیمه سامان', slug: 'saman' },
   { name: 'بیمه کارآفرین', slug: 'karafarin' },
@@ -148,17 +150,19 @@ export const seedContent = async (payload: Payload): Promise<void> => {
   }
 
   // ── شرکت‌های بیمه ──────────────────────────────────────────────────────────
+  const insurerIDs: (number | string)[] = []
   for (const insurer of INSURERS) {
-    await upsert(
+    const doc = await upsert(
       payload,
       'insurers',
       { slug: { equals: insurer.slug } },
       {
         ...insurer,
-        // تا قرارداد امضا نشده، لوگو روی سایت ادعای همکاری است.
+        // هیچ قراردادی هنوز امضا نشده؛ برچسب «در حال مذاکره» روی سایت از همین می‌آید.
         status: 'negotiating',
       },
     )
+    insurerIDs.push(doc.id)
   }
 
   // ── پرسش‌های پرتکرار ───────────────────────────────────────────────────────
@@ -275,9 +279,11 @@ export const seedContent = async (payload: Payload): Promise<void> => {
           ],
         },
         {
-          // هیچ شرکتی `active` نیست، پس خانه‌های جای‌نگار طرح را نشان می‌دهد.
           blockType: 'insurerStrip',
-          heading: 'بیمه‌نامه‌ها را شرکت‌های بیمه دارای مجوز صادر می‌کنند',
+          heading:
+            'با شرکت‌های بیمه دارای مجوز در حال مذاکره‌ایم؛ لوگوی هر شرکت پس از امضای قرارداد جای نامش می‌نشیند.',
+          // صریح داده می‌شود تا ترتیب همان ترتیب طرح باشد، نه ترتیب ساخته‌شدن رکوردها.
+          insurers: insurerIDs,
         },
         {
           blockType: 'faq',

@@ -1,4 +1,6 @@
 import configPromise from '@payload-config'
+import fs from 'node:fs'
+import path from 'node:path'
 import { getPayload } from 'payload'
 import React from 'react'
 
@@ -6,64 +8,89 @@ import type { Insurer, InsurerStripBlock as Props } from '@/payload-types'
 
 import { Media } from '@/components/Media'
 
-/** طرح پنج خانه دارد؛ تا قرارداد امضا نشده همه‌شان جای‌نگارند. */
-const PLACEHOLDER_COUNT = 5
+/**
+ * نشان برند هر شرکت در `public/insurers/<slug>.svg` است — فایل ایستا، نه آپلود
+ * پیشخان، چون نشان‌ها با محتوا عوض نمی‌شوند و باید در مخزن نسخه‌بندی شوند.
+ * فهرست یک‌بار هنگام بالا آمدن خوانده می‌شود؛ شرکتی که فایل ندارد فقط نامش می‌آید.
+ */
+const bundledMarks: ReadonlySet<string> = (() => {
+  try {
+    return new Set(
+      fs
+        .readdirSync(path.join(process.cwd(), 'public', 'insurers'))
+        .filter((file) => file.endsWith('.svg'))
+        .map((file) => file.slice(0, -'.svg'.length)),
+    )
+  } catch {
+    return new Set<string>()
+  }
+})()
+
+const STATUS_LABEL: Partial<Record<Insurer['status'], string>> = {
+  negotiating: 'در حال مذاکره',
+}
 
 /**
- * نوار شرکت‌های بیمه، از روی بوم خانه.
+ * نوار شرکت‌های بیمه، از روی بوم خانه (نسخه به‌روزشده ۱۴۰۵/۰۶/۲۸).
  *
- * فقط شرکت‌های `active` لوگو می‌گیرند — تا قرارداد امضا نشده، لوگو روی سایت ادعای
- * همکاری است. وقتی هیچ شرکت فعالی نیست، بخش حذف نمی‌شود بلکه همان خانه‌های
- * جای‌نگار طرح را نشان می‌دهد: خانه خالی با متن «[لوگوی شرکت بیمه]» چیزی ادعا
- * نمی‌کند، و جمله بالایش («شرکت‌های بیمه دارای مجوز صادر می‌کنند») هم راست است.
+ * پیش‌تر فقط شرکت‌های `active` را نشان می‌داد و بقیه را حذف می‌کرد، چون لوگو روی
+ * سایت یعنی ادعای همکاری. طرح تازه راه بهتری را انتخاب کرده: نام و نشان هر شرکت
+ * می‌آید ولی وضعیتش هم صریح کنارش نوشته می‌شود («در حال مذاکره»)، پس چیزی ادعا
+ * نمی‌شود. بعد از امضای قرارداد، لوگوی کامل — که ویراستار در پیشخان بارگذاری
+ * می‌کند — جای نام و برچسب می‌نشیند.
  */
 export const InsurerStripBlock: React.FC<Props> = async ({ heading, insurers }) => {
   let list = (insurers ?? []).filter((i): i is Insurer => typeof i === 'object')
 
+  // ترتیب انتخاب پیشخان ترتیب نمایش است؛ خالی که باشد همه شرکت‌ها می‌آیند.
   if (!list.length) {
     const payload = await getPayload({ config: configPromise })
-    const res = await payload.find({
-      collection: 'insurers',
-      where: { status: { equals: 'active' } },
-      limit: 24,
-      depth: 1,
-    })
+    const res = await payload.find({ collection: 'insurers', limit: 24, depth: 1 })
     list = res.docs
   }
 
-  // شرکتی که قراردادش امضا نشده روی سایت نمی‌رود، حتی اگر دستی انتخاب شده باشد.
-  list = list.filter((i) => i.status === 'active')
+  if (!list.length) return null
 
   return (
     <section
       aria-label="شرکت‌های بیمه"
-      className="shell flex flex-col items-center gap-4 pt-10 pb-0 lg:gap-6 lg:pt-0 lg:pb-26"
+      className="shell flex flex-col items-center gap-4 pt-10 pb-0 lg:gap-5 lg:pt-0 lg:pb-26"
     >
       {heading && (
-        <p className="text-center text-sm text-muted-foreground lg:text-base">{heading}</p>
+        <p className="max-w-3xl text-center text-sm leading-[1.9] text-muted-foreground lg:text-base">
+          {heading}
+        </p>
       )}
-      <ul className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
-        {list.length
-          ? list.map((insurer) => (
-              <li
-                className="flex h-20 items-center justify-center rounded-card border border-border bg-card px-4 lg:h-22"
-                key={insurer.id}
-              >
-                {insurer.logo && typeof insurer.logo === 'object' ? (
-                  <Media imgClassName="h-10 w-auto" resource={insurer.logo} />
-                ) : (
-                  <span className="text-[0.8125rem]">{insurer.name}</span>
-                )}
-              </li>
-            ))
-          : Array.from({ length: PLACEHOLDER_COUNT }, (_, i) => (
-              <li
-                className="flex h-20 items-center justify-center rounded-card border border-border bg-card text-[0.8125rem] text-muted-foreground lg:h-22"
-                key={i}
-              >
-                [لوگوی شرکت بیمه]
-              </li>
-            ))}
+      <ul className="grid w-full grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {list.map((insurer) => {
+          const label = STATUS_LABEL[insurer.status]
+          const signed =
+            insurer.status === 'active' && insurer.logo && typeof insurer.logo === 'object'
+
+          return (
+            <li
+              className="flex h-37 flex-col items-center justify-center gap-2.5 rounded-card border border-border bg-card p-3 text-center"
+              key={insurer.id}
+            >
+              {signed ? (
+                <Media imgClassName="h-10 w-auto" resource={insurer.logo} />
+              ) : (
+                <>
+                  {bundledMarks.has(insurer.slug) && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img alt="" className="size-10" src={`/insurers/${insurer.slug}.svg`} />
+                  )}
+                  <span className="text-[0.9375rem] font-semibold">{insurer.name}</span>
+                  {label && (
+                    <span className="rounded-full bg-sunken px-2.5 py-[3px] text-[0.6875rem] font-medium text-muted-foreground">
+                      {label}
+                    </span>
+                  )}
+                </>
+              )}
+            </li>
+          )
+        })}
       </ul>
     </section>
   )

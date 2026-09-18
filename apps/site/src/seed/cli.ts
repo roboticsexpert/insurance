@@ -1,6 +1,6 @@
 /**
  * اجرای داده اولیه از خط فرمان — `pnpm --filter @bimegold/site seed`.
- * منطقش در `./index.ts` است تا مسیر `POST /next/seed` هم بتواند همان را صدا بزند.
+ * منطقش جدا در `./index.ts` است تا اگر روزی لازم شد از جای دیگری هم صدا زده شود.
  */
 import 'dotenv/config'
 

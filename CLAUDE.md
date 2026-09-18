@@ -19,6 +19,7 @@
 | کار | ابزار MCP |
 |---|---|
 | دیدن وضعیت سرویس و پیکربندی‌اش | `describe-service`، `get-service-config`، `get-status` |
+| عوض‌کردن تنظیمات استقرار (health check، start command، watch patterns) | `update-service` |
 | وضعیت استقرارها | `list-deployments`، `environment-status`، `get-deployment-diagnosis` |
 | لاگ بیلد و اجرا | `get-logs` |
 | متغیرهای محیطی | `list-variables`، `set-variables` |

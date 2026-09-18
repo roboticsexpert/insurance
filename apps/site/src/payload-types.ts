@@ -564,7 +564,7 @@ export interface Insurer {
   name: string;
   logo?: (number | null) | Media;
   /**
-   * فقط شرکت‌های «فعال» روی سایت دیده می‌شوند.
+   * وضعیت روی سایت نوشته می‌شود. «فعال» یعنی قرارداد امضا شده و لوگو جای نام می‌نشیند.
    */
   status: 'active' | 'negotiating';
   /**

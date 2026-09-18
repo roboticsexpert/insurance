@@ -2,19 +2,8 @@ import type { Theme } from './types'
 
 export const themeLocalStorageKey = 'bimegold-theme'
 
+/** تم سایت تا وقتی طرح تیره نرسیده همیشه همین است — `InitTheme` توضیحش را دارد. */
 export const defaultTheme = 'light'
-
-export const getImplicitPreference = (): Theme | null => {
-  const mediaQuery = '(prefers-color-scheme: dark)'
-  const mql = window.matchMedia(mediaQuery)
-  const hasImplicitPreference = typeof mql.matches === 'boolean'
-
-  if (hasImplicitPreference) {
-    return mql.matches ? 'dark' : 'light'
-  }
-
-  return null
-}
 
 /**
  * انتخاب تم در `localStorage` است، یعنی یک store بیرون از React. با

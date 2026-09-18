@@ -5,7 +5,7 @@ import React, { createContext, use, useCallback, useState } from 'react'
 import type { Theme, ThemeContextType } from './types'
 
 import canUseDOM from '@/utilities/canUseDOM'
-import { getImplicitPreference, writeThemePreference } from './shared'
+import { defaultTheme, writeThemePreference } from './shared'
 
 const initialContext: ThemeContextType = {
   setTheme: () => null,
@@ -23,10 +23,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   const setTheme = useCallback((themeToSet: Theme | null) => {
     if (themeToSet === null) {
+      // «خودکار» یعنی روشن، نه تنظیم سیستم‌عامل — دلیلش در `InitTheme`.
       writeThemePreference('auto')
-      const implicitPreference = getImplicitPreference()
-      document.documentElement.setAttribute('data-theme', implicitPreference || '')
-      if (implicitPreference) setThemeState(implicitPreference)
+      document.documentElement.setAttribute('data-theme', defaultTheme)
+      setThemeState(defaultTheme)
     } else {
       writeThemePreference(themeToSet)
       setThemeState(themeToSet)

@@ -62,7 +62,14 @@ const upsert = async (
  */
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bimegold.com'
 
-/** ترتیب همین فهرست، ترتیب نمایش روی سایت است. نشان هر کدام در `public/insurers/<slug>.svg`. */
+/**
+ * شرکت‌های بیمه بازار ایران. ترتیب همین فهرست، ترتیب نمایش روی سایت است — شش تای اول
+ * همان‌هایی‌اند که در بوم طرح آمده‌اند، بقیه بعدشان. نشان هر کدام در
+ * `apps/site/public/insurers/<slug>.svg` است.
+ *
+ * «بیمه مرکزی» عمداً اینجا نیست: نهاد ناظر است نه شرکت بیمه، و جایش در نوار شرکت‌ها
+ * نیست. فایل نشانش هست تا اگر جای‌نگار مجوز در فوتر خواستش، آماده باشد.
+ */
 const INSURERS = [
   { name: 'بیمه تعاون', slug: 'taavon' },
   { name: 'بیمه پاسارگاد', slug: 'pasargad' },
@@ -70,6 +77,19 @@ const INSURERS = [
   { name: 'بیمه کارآفرین', slug: 'karafarin' },
   { name: 'بیمه دی', slug: 'dey' },
   { name: 'بیمه البرز', slug: 'alborz' },
+  { name: 'بیمه ایران', slug: 'iran' },
+  { name: 'بیمه آسیا', slug: 'asia' },
+  { name: 'بیمه دانا', slug: 'dana' },
+  { name: 'بیمه پارسیان', slug: 'parsian' },
+  { name: 'بیمه ملت', slug: 'mellat' },
+  { name: 'بیمه نوین', slug: 'novin' },
+  { name: 'بیمه ما', slug: 'ma' },
+  { name: 'بیمه سینا', slug: 'sina' },
+  { name: 'بیمه معلم', slug: 'moalem' },
+  { name: 'بیمه کوثر', slug: 'kosar' },
+  { name: 'بیمه آرمان', slug: 'arman' },
+  { name: 'بیمه رازی', slug: 'raazi' },
+  { name: 'بیمه توسعه', slug: 'toseei' },
 ]
 
 const FAQS = [
@@ -158,7 +178,11 @@ export const seedContent = async (payload: Payload): Promise<void> => {
       { slug: { equals: insurer.slug } },
       {
         ...insurer,
-        // هیچ قراردادی هنوز امضا نشده؛ برچسب «در حال مذاکره» روی سایت از همین می‌آید.
+        /*
+         * هیچ قراردادی هنوز امضا نشده. توجه: این مقدار روی سایت برچسب «در حال مذاکره»
+         * می‌شود، یعنی یک ادعای واقعی درباره رابطه با آن شرکت. هر شرکتی که واقعاً با
+         * او صحبتی در جریان نیست باید در پیشخان درست شود.
+         */
         status: 'negotiating',
       },
     )

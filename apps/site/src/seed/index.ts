@@ -171,6 +171,7 @@ export const seedContent = async (payload: Payload): Promise<void> => {
 
   // ── شرکت‌های بیمه ──────────────────────────────────────────────────────────
   const insurerIDs: (number | string)[] = []
+  const insurerIDBySlug = new Map<string, number | string>()
   for (const insurer of INSURERS) {
     const doc = await upsert(
       payload,
@@ -187,6 +188,12 @@ export const seedContent = async (payload: Payload): Promise<void> => {
       },
     )
     insurerIDs.push(doc.id)
+    insurerIDBySlug.set(insurer.slug, doc.id)
+  }
+  const insurerBySlug = (slug: string): number | string => {
+    const id = insurerIDBySlug.get(slug)
+    if (id === undefined) throw new Error(`شرکت بیمه پیدا نشد: ${slug}`)
+    return id
   }
 
   // ── پرسش‌های پرتکرار ───────────────────────────────────────────────────────
@@ -414,19 +421,34 @@ export const seedContent = async (payload: Payload): Promise<void> => {
         },
         {
           /*
-           * ردیف‌ها عمداً بدون شرکت و بدون مبلغ‌اند و همان `[نام شرکت بیمه]` و
-           * `[مبلغ]` بوم را نشان می‌دهند: نه قراردادی امضا شده و نه نرخی در دست
-           * است، و نوشتن نام یک شرکت کنار یک عدد یعنی ادعای نرخ از طرف او.
+           * ردیف‌ها نام سه شرکت واقعی را دارند تا پنل شبیه چیزی باشد که کاربر بعد
+           * از استعلام می‌بیند. مبلغ‌ها همچنان جای‌نگارند و هیچ عددی به هیچ شرکتی
+           * نسبت داده نمی‌شود — چون نه قراردادی امضا شده و نه نرخی در دست است.
+           *
+           * ⚠️ نام شرکت کنار یک ردیف، یک ادعای ضمنی درباره آن شرکت است: دو ردیف
+           * اول یعنی «این شرکت نرخ می‌دهد» و ردیف سوم یعنی «این یکی برای این مدل
+           * نمی‌دهد». به همین دلیل متن زیر پنل صریح می‌گوید که این فقط نمونه نمایش
+           * است. اگر قرار شد ادعایی هم نشود، شرکت‌ها را از همین سه ردیف بردارید:
+           * خالی که باشد، همان `[نام شرکت بیمه]` بوم برمی‌گردد.
            */
           blockType: 'offerPreview',
           heading: 'قیمت شرکت‌های بیمه، کنار هم',
           body: 'بعد از وارد کردن مشخصات، پیشنهاد هر شرکت بیمه با قیمت نهایی و سقف تعهدش نمایش داده می‌شود. ارزان‌ترین برچسب می‌خورد؛ شرکتی که پیشنهاد نمی‌دهد با دلیلش روی صفحه می‌ماند.',
           offers: [
-            { state: 'cheapest', note: 'تعهد مالی [مبلغ] تومان' },
-            { state: 'normal', note: 'تعهد مالی [مبلغ] تومان' },
-            { state: 'unavailable', note: 'برای این مدل پیشنهاد نمی‌دهد' },
+            {
+              state: 'cheapest',
+              insurer: insurerBySlug('taavon'),
+              note: 'تعهد مالی [مبلغ] تومان',
+            },
+            { state: 'normal', insurer: insurerBySlug('iran'), note: 'تعهد مالی [مبلغ] تومان' },
+            {
+              state: 'unavailable',
+              insurer: insurerBySlug('alborz'),
+              note: 'برای این مدل پیشنهاد نمی‌دهد',
+            },
           ],
-          disclaimer: 'نرخ نمونه — نرخ قطعی پس از استعلام در اپ اعلام می‌شود.',
+          disclaimer:
+            'نمونه نمایش — مبلغ‌ها و ترتیب واقعی نیستند و نرخ قطعی پس از استعلام در اپ اعلام می‌شود.',
         },
         {
           blockType: 'coverageList',

@@ -108,10 +108,14 @@ const seed = async () => {
   payload.logger.info('در حال ساخت داده اولیه…')
 
   // ── کاربر پیشخان ───────────────────────────────────────────────────────────
+  // فقط در توسعه. رمز پیش‌فرض روی یک دامنه عمومی یعنی پیشخان باز است؛ روی محیط
+  // عملیاتی اولین کاربر را خودِ Payload در `/admin` می‌سازد.
   const email = process.env.SEED_ADMIN_EMAIL || 'admin@bimegold.com'
   const password = process.env.SEED_ADMIN_PASSWORD || 'bimegold'
+  const mayCreateUser =
+    process.env.NODE_ENV !== 'production' || Boolean(process.env.SEED_ADMIN_PASSWORD)
   const users = await payload.find({ collection: 'users', limit: 1, overrideAccess: true })
-  if (!users.docs.length) {
+  if (!users.docs.length && mayCreateUser) {
     await payload.create({
       collection: 'users',
       data: { email, password, name: 'مدیر' },
@@ -119,6 +123,8 @@ const seed = async () => {
       context: NO_REVALIDATE,
     })
     payload.logger.info(`کاربر پیشخان ساخته شد: ${email} / ${password}`)
+  } else if (!users.docs.length) {
+    payload.logger.warn('کاربر پیشخان ساخته نشد — اولین کاربر را در /admin بسازید.')
   }
 
   // ── شرکت‌های بیمه ──────────────────────────────────────────────────────────

@@ -256,6 +256,82 @@ Dockerfile فقط برای یک `docker build` ساده و بدون `--build-arg
 تغییر نام کوکی refresh به `bimegold_rt` یک‌بار همه نشست‌های موجود را خارج کرد. با کد یک‌بارمصرف
 ماک، این هزینه‌ای نداشت.
 
+---
+
+# استقرار سایت بازاریابی روی Railway
+
+`apps/site` یک اپ Payload CMS روی Next.js است که `apps/site/Dockerfile` می‌سازدش. در ۱۴۰۵/۰۶/۲۷
+اضافه شد.
+
+| | |
+|---|---|
+| سرویس | `site` — `93d5dc27-b1e1-41fd-acd0-4673756ff04a` |
+| دامنه‌ها | `bimegold.com`، `www.bimegold.com` |
+| پورت | 3000 |
+| volume | `site-media` روی `/app/apps/site/public/media` |
+
+```bash
+railway variables --service site \
+  --set 'RAILWAY_DOCKERFILE_PATH=apps/site/Dockerfile' \
+  --set 'DATABASE_URL=${{Postgres.DATABASE_URL}}' \
+  --set 'NEXT_PUBLIC_SERVER_URL=https://bimegold.com' \
+  --set 'NEXT_PUBLIC_APP_URL=https://app.bimegold.com'
+```
+به‌علاوه `PAYLOAD_SECRET`، `PREVIEW_SECRET` و `CRON_SECRET` که مقدارهایشان فقط روی Railway‌اند.
+
+## همان Postgres، اسکیمای جدا
+
+سایت هیچ دیتابیس تازه‌ای نمی‌خواهد: `DATABASE_URL` همان ارجاع به سرویس `Postgres` است و
+جدول‌های CMS در اسکیمای **`cms`** می‌نشینند (`schemaName` در `payload.config.ts`). Prisma فقط
+`public` را می‌شناسد، پس دو مهاجرت‌ساز هرگز به هم نمی‌خورند.
+
+این تصمیم از سر ناچاری هم هست: Postgres روی Railway هیچ نقطه اتصال عمومی و هیچ TCP proxy ندارد،
+پس برای ساختن یک دیتابیس تازه باید موقتاً در معرض اینترنت می‌گذاشتیمش. یک اسکیما را خودِ مهاجرت
+می‌سازد.
+
+## مهاجرت‌ها هنگام بالا آمدن اجرا می‌شوند
+
+در محیط عملیاتی `push: false` است. مهاجرت‌ها از راه `prodMigrations` در `payload.config.ts` — که
+یک import استاتیک از `src/migrations` است — داخل باندل می‌آیند و Payload خودش موقع init اجرایشان
+می‌کند. یعنی ایمیج نه به `payload` CLI نیاز دارد نه به یک نصب کامل، و خروجی standalone حدود
+۱۱۰ مگابایت می‌ماند به‌جای یک node_modules چندگیگابایتی.
+
+**`migrate:create` خود Payload اسکیما را نمی‌سازد.** اولین مهاجرت یک
+`CREATE SCHEMA IF NOT EXISTS "cms"` دستی در ابتدای `up` دارد؛ بدون آن اولین
+`CREATE TYPE "cms".…` روی یک دیتابیس خالی می‌افتد. مهاجرت‌های بعدی لازمش ندارند.
+
+## بیلد به دیتابیس دسترسی ندارد
+
+بیلد داکر نمی‌تواند به Postgres وصل شود (شبکه خصوصی، فقط هنگام اجرا). برای همین هیچ صفحه‌ای در
+زمان بیلد prerender نمی‌شود — مسیرهای وابسته به دیتابیس `force-dynamic`اند. برای یک سایت CMS
+درست‌تر هم هست: ویراستار منتشر می‌کند و صفحه عوض می‌شود، بدون بیلد دوباره. کش لبه کار Cloudflare است.
+
+## آپلودها روی volume‌اند
+
+Payload آپلودها را روی دیسک می‌نویسد و دیسک کانتینر با هر استقرار پاک می‌شود. volume به نام
+`site-media` دقیقاً روی `/app/apps/site/public/media` سوار است. بدون آن هر عکسی که ویراستار
+بالا داده با استقرار بعدی ناپدید می‌شود.
+
+## اولین کاربر پیشخان
+
+`src/seed/index.ts` در محیط عملیاتی کاربر نمی‌سازد (مگر `SEED_ADMIN_PASSWORD` صریحاً داده شود) —
+رمز پیش‌فرض روی یک دامنه عمومی یعنی پیشخان باز است. اولین کاربر را خودِ Payload در `/admin`
+می‌سازد؛ بعد از آن ثبت‌نام بسته می‌شود.
+
+## رکوردهای DNS
+
+| نوع | نام | مقدار |
+|---|---|---|
+| CNAME | `@` (bimegold.com) | `2ii3coyt.up.railway.app` |
+| CNAME | `www` | `2r1yb6wo.up.railway.app` |
+
+همان قاعده `app` و `api`: **DNS-only (ابر خاکستری)** شروع می‌شود تا Railway گواهی را صادر کند،
+بعد نارنجی می‌شود و آن‌وقت حالت SSL زون روی **Full (strict)**. CNAME روی خود apex را
+CNAME-flattening مربوط به Cloudflare حل می‌کند.
+
+**توکن OAuth مربوط به wrangler این رکوردها را نمی‌سازد** — فقط `zone:read` دارد. یا دستی وارد
+می‌شوند یا با یک توکن Cloudflare که `DNS:Edit` دارد.
+
 ## تاریخی: جابه‌جایی اولیه Cloudflare → Railway
 
 `apps/web` قبلاً روی Cloudflare Workers مستقر می‌شد؛ `apps/web/wrangler.jsonc` پیکربندی باقی‌مانده

@@ -11,7 +11,13 @@ import { cn } from '@/utilities/ui'
  * ۲٫۱:۱ است و هرگز متن نمی‌شود، ولی روی navy ۸٫۵:۱ است.
  */
 export const CtaBandBlock: React.FC<Props> = ({ heading, body, links }) => (
-  <section className="shell py-10 lg:pt-0 lg:pb-26">
+  /*
+   * فاصله بالای نوار را خودش می‌دهد، نه بخش قبلی. در طرح، بخش مجله بالای این نوار
+   * است و پدینگ پایینش این فاصله را می‌ساخت؛ ولی تا مقاله‌ای منتشر نشده آن بلوک
+   * اصلاً رندر نمی‌شود و نوار سرمه‌ای می‌چسبید به نوار پرسش‌ها. `PostsList` در عوض
+   * پدینگ پایینش را صفر کرده تا وقتی هر دو هستند فاصله دو برابر نشود.
+   */
+  <section className="shell py-10 lg:py-26">
     <div className="flex flex-col gap-3 rounded-sheet bg-navy px-6 py-7 lg:flex-row lg:items-center lg:justify-between lg:gap-12 lg:px-16 lg:py-14">
       <div className="flex flex-col gap-3">
         <div aria-hidden="true" className="flex gap-1.5">

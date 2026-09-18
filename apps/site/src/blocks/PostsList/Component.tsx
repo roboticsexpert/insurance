@@ -49,7 +49,8 @@ export const PostsListBlock: React.FC<Props> = async ({
   if (!list.length) return null
 
   return (
-    <section aria-labelledby="posts-title" className="shell pt-10 pb-0 lg:py-26">
+    /* پدینگ پایین ندارد — فاصله تا نوار دعوت را خود آن نوار می‌دهد. */
+    <section aria-labelledby="posts-title" className="shell pt-10 pb-0 lg:pt-26 lg:pb-0">
       <div className="flex items-center justify-between gap-4 lg:items-end">
         <div className="flex flex-col gap-2">
           <h2 className="text-[1.375rem] font-bold lg:text-4xl lg:leading-[1.5]" id="posts-title">

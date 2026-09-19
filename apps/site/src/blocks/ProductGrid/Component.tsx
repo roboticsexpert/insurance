@@ -1,3 +1,5 @@
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
 import React from 'react'
 
 import type { ProductGridBlock as Props } from '@/payload-types'
@@ -13,6 +15,11 @@ import { getAppURL } from '@/utilities/getURL'
  *
  * عنوان، ویژگی‌ها و «از … تومان» از API می‌آیند نه از CMS (`src/lib/products.ts`)؛
  * CMS فقط می‌گوید کدام‌ها و با چه ترتیبی.
+ *
+ * کارت به صفحه محصول می‌رود، نه مستقیم به ویزارد — زیرتیتر خود این بخش در بوم
+ * همین را قول می‌دهد: «هر بیمه صفحه راهنمای خودش را دارد؛ پیش از خرید پوشش‌ها را
+ * بخوانید». محصولی که هنوز صفحه‌ای ندارد همچنان مستقیم به ویزاردش می‌رود، چون
+ * لینک به صفحه‌ای که وجود ندارد از یک پرش زودهنگام بدتر است.
  */
 export const ProductGridBlock: React.FC<Props> = async ({
   heading,
@@ -27,6 +34,17 @@ export const ProductGridBlock: React.FC<Props> = async ({
   const picked = chosen.length
     ? chosen.map((slug) => all.find((p) => p.slug === slug)).filter((p) => p !== undefined)
     : all
+
+  const payload = await getPayload({ config: configPromise })
+  const pages = await payload.find({
+    collection: 'pages',
+    limit: picked.length || 1,
+    pagination: false,
+    depth: 0,
+    select: { slug: true },
+    where: { slug: { in: picked.map((p) => p.slug) } },
+  })
+  const hasPage = new Set(pages.docs.map((doc) => doc.slug).filter((slug) => slug !== null))
 
   return (
     <section aria-labelledby="products-title" className="shell pt-7 pb-0 lg:pt-0 lg:pb-26">
@@ -44,7 +62,11 @@ export const ProductGridBlock: React.FC<Props> = async ({
             <li className="flex" key={product.id}>
               <a
                 className="flex w-full items-center gap-3 rounded-card border border-border bg-card p-4 text-foreground shadow-card transition-shadow hover:shadow-md lg:flex-col lg:items-stretch lg:gap-4 lg:p-6"
-                href={`${getAppURL()}/p/${product.slug}/form`}
+                href={
+                  hasPage.has(product.slug)
+                    ? `/${product.slug}`
+                    : `${getAppURL()}/p/${product.slug}/form`
+                }
               >
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-card bg-accent text-accent-foreground lg:size-14">
                   <Icon size={28} />

@@ -16,6 +16,7 @@ export const Features: Block = {
         { label: 'دو ستون', value: '2' },
         { label: 'سه ستون', value: '3' },
         { label: 'چهار ستون', value: '4' },
+        { label: 'پنج ستون', value: '5' },
       ],
     },
     {

@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 import type { QuoteFormBlock as Props } from '@/payload-types'
 
 import { CarIcon, FireIcon, PlaneIcon, type IconProps } from '@/components/icons'
-import { toPersianDigits } from '@/lib/fa'
+import { toLatinDigits, toPersianDigits } from '@/lib/fa'
 import { getAppURL } from '@/utilities/getURL'
 import { cn } from '@/utilities/ui'
 
@@ -46,6 +46,47 @@ const Field: React.FC<{
 const selectClass =
   'h-13 rounded-card border border-border bg-card px-4 text-base text-foreground focus:border-brand-500 focus:outline-none'
 
+const inputClass = `${selectClass} w-full tabular-nums`
+
+/**
+ * مبلغ به **تومان** گرفته می‌شود و به **ریال** فرستاده، دقیقاً مثل `MoneyField`
+ * ویزارد (`apps/web/src/components/ui/MoneyField.tsx`): کسی در ایران عدد را به
+ * ریال نمی‌گوید، ولی API ریال می‌خواهد. رقم‌ها حین تایپ سه‌تاسه‌تا جدا می‌شوند،
+ * چون یک صفر اضافه در ارزش ساختمان تا روز خسارت معلوم نمی‌شود.
+ *
+ * فیلد دیده‌شده نامی ندارد؛ آنچه فرستاده می‌شود فیلد پنهان کنارش است. بدون
+ * جاوااسکریپت هیچ مبلغی فرستاده نمی‌شود و ویزارد خودش می‌پرسد.
+ */
+const MoneyField: React.FC<{ hint?: string; id: string; label: string; name: string }> = ({
+  hint,
+  id,
+  label,
+  name,
+}) => {
+  const [toman, setToman] = useState('')
+  const grouped = toman === '' ? '' : toPersianDigits(toman.replace(/\B(?=(\d{3})+(?!\d))/g, '٬'))
+
+  return (
+    <Field id={id} label={label}>
+      <div className="relative">
+        <input
+          className={`${inputClass} pl-16`}
+          id={id}
+          inputMode="numeric"
+          onChange={(e) => setToman(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 15))}
+          type="text"
+          value={grouped}
+        />
+        <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-muted-foreground">
+          تومان
+        </span>
+      </div>
+      <input name={name} type="hidden" value={toman === '' ? '' : Number(toman) * 10} />
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    </Field>
+  )
+}
+
 /**
  * فرم استعلام، از روی کارت کنار هیروی بوم خانه.
  *
@@ -78,6 +119,7 @@ export const QuoteFormBlock: React.FC<Props & { asColumn?: boolean }> = ({
    * بیمه‌نامه قبلی. فرم صفحه خانه که کاربر محصولش را انتخاب می‌کند این را ندارد —
    * بوم خانه هم ندارد و آنجا هدف کوتاه نگه‌داشتن فرم است.
    */
+  const dedicated = (product ?? 'any') !== 'any'
   const dedicatedMotor = product === 'motor-tpl'
   const [noPrevious, setNoPrevious] = useState(false)
 
@@ -183,10 +225,39 @@ export const QuoteFormBlock: React.FC<Props & { asColumn?: boolean }> = ({
             )}
           </Field>
         </div>
+      ) : selected === 'home-fire' && dedicated ? (
+        /*
+         * سه فیلدی که فهرست گزینه ندارند. نوع ملک، شهر و پوشش‌های اضافه از
+         * `reference`های API می‌آیند (`property-types`، `cities`، `extra-perils`)
+         * و سایت به API وصل نیست، پس همان‌ها را ویزارد می‌پرسد.
+         */
+        <div className="grid grid-cols-2 gap-4">
+          <Field className="col-span-2" id="quote-area" label="متراژ (متر مربع)">
+            <input
+              className={inputClass}
+              id="quote-area"
+              inputMode="numeric"
+              name="areaSqm"
+              type="text"
+            />
+          </Field>
+          <MoneyField
+            hint="هزینه ساخت دوباره بنا، نه قیمت خرید ملک."
+            id="quote-building"
+            label="ارزش بازسازی ساختمان"
+            name="buildingValue"
+          />
+          <MoneyField
+            hint="مستأجر معمولاً فقط همین را بیمه می‌کند."
+            id="quote-contents"
+            label="ارزش اثاثیه"
+            name="contentsValue"
+          />
+        </div>
       ) : (
         <p className="text-sm leading-[1.9] text-muted-foreground">
           {selected === 'travel'
-            ? 'مقصد، تاریخ سفر و مشخصات مسافران را در گام بعد وارد می‌کنید.'
+            ? 'مقصد، تاریخ سفر و تاریخ تولد مسافران را در گام بعد وارد می‌کنید.'
             : 'نوع ملک، متراژ و ارزش بنا و اثاثیه را در گام بعد وارد می‌کنید.'}
         </p>
       )}

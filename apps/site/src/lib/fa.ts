@@ -11,6 +11,12 @@ const PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '�
 export const toPersianDigits = (input: string | number): string =>
   String(input).replace(/[0-9]/g, (d) => PERSIAN_DIGITS[Number(d)] as string)
 
+/** ارقام فارسی و عربی را به لاتین برمی‌گرداند — برای خواندن چیزی که کاربر تایپ کرده. */
+export const toLatinDigits = (input: string): string =>
+  input
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+
 const groupDigits = (n: number): string =>
   Math.trunc(Math.abs(n))
     .toString()

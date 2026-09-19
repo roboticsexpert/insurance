@@ -532,7 +532,7 @@ export interface StepsBlock {
 export interface FeaturesBlock {
   heading?: string | null;
   subheading?: string | null;
-  columns?: ('2' | '3' | '4') | null;
+  columns?: ('2' | '3' | '4' | '5') | null;
   features?:
     | {
         title: string;
@@ -594,6 +594,7 @@ export interface Insurer {
 export interface OfferPreviewBlock {
   heading?: string | null;
   body?: string | null;
+  panelLabel?: string | null;
   offers?:
     | {
         /**
@@ -1481,6 +1482,7 @@ export interface InsurerStripBlockSelect<T extends boolean = true> {
 export interface OfferPreviewBlockSelect<T extends boolean = true> {
   heading?: T;
   body?: T;
+  panelLabel?: T;
   offers?:
     | T
     | {

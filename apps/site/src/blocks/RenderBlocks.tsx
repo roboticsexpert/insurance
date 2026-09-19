@@ -93,6 +93,16 @@ export const RenderBlocks: React.FC<{
       continue
     }
 
+    /*
+     * در بوم مسافرتی و آتش‌سوزی، بخش «ویژگی‌ها» بلافاصله بالای «چه چیزی پوشش
+     * می‌دهد» می‌نشیند و پدینگ پایین ندارد — فاصله را فقط بخش دوم می‌دهد. اینجا
+     * هم همان: وگرنه پدینگ پایین یکی و پدینگ بالای دیگری روی هم می‌نشینند.
+     */
+    if (block.blockType === 'coverageList' && blocks[index - 1]?.blockType === 'features') {
+      rendered.push(<CoverageListBlock {...block} key={index} tightTop />)
+      continue
+    }
+
     const { blockType } = block
 
     if (blockType && blockType in blockComponents) {

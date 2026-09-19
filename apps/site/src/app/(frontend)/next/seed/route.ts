@@ -1,4 +1,5 @@
 import configPromise from '@payload-config'
+import { revalidateTag } from 'next/cache'
 import { getPayload } from 'payload'
 
 import { seedContent } from '@/seed'
@@ -30,6 +31,16 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const payload = await getPayload({ config: configPromise })
     await seedContent(payload)
+
+    /*
+     * `seedContent` هوک‌های revalidate را خاموش می‌کند (بیرون از Next خطا می‌دهند)، و
+     * صفحه‌ها `force-dynamic`اند پس چیزی از دست نمی‌رود — **جز هدر و فوتر**، که
+     * `getCachedGlobal` با `unstable_cache` نگهشان می‌دارد. بدون این دو خط، منوی
+     * محیط عملیاتی بعد از seed همان منوی قبلی می‌ماند تا وقتی سرویس ری‌استارت شود.
+     */
+    revalidateTag('global_header', 'max')
+    revalidateTag('global_footer', 'max')
+
     return Response.json({ seeded: true })
   } catch (error) {
     return Response.json(

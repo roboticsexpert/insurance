@@ -19,6 +19,17 @@ export const OfferPreview: Block = {
     { name: 'heading', type: 'text', label: 'تیتر بخش' },
     { name: 'body', type: 'textarea', label: 'متن کنار پنل' },
     {
+      /*
+       * بالای پنل. بوم شخص ثالث «پیشنهادها» می‌نویسد، ولی بوم مسافرتی و آتش‌سوزی
+       * خلاصه استعلام را می‌گذارند («اروپا (شنگن) · ۷ روز · ۵۰ هزار یورو»)، چون
+       * آنجا مهم است که معلوم باشد این قیمت‌ها برای چه درخواستی‌اند.
+       */
+      name: 'panelLabel',
+      type: 'text',
+      label: 'عنوان بالای پنل',
+      defaultValue: 'پیشنهادها',
+    },
+    {
       name: 'offers',
       type: 'array',
       label: 'ردیف‌ها',

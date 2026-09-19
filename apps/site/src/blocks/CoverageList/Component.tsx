@@ -54,7 +54,18 @@ const Column: React.FC<{
   </div>
 )
 
-export const CoverageListBlock: React.FC<Props> = ({ heading, intro, items }) => {
+/**
+ * `tightTop` را فقط `RenderBlocks` می‌دهد، وقتی بلوک قبلی «ویژگی‌ها» باشد: در بوم
+ * مسافرتی و آتش‌سوزی آن بخش پدینگ پایین ندارد و همین بخش تنها ۱۰۴ پیکسل فاصله را
+ * می‌دهد. بدون این، دو پدینگ روی هم می‌نشینند و فاصله دو برابر می‌شود — همان
+ * اشتباهی که `PostsList` هم یک‌بار با صفرکردن پدینگ پایینش از آن دررفت.
+ */
+export const CoverageListBlock: React.FC<Props & { tightTop?: boolean }> = ({
+  heading,
+  intro,
+  items,
+  tightTop,
+}) => {
   const list = items ?? []
   const covered = list.filter((item) => item.included !== 'excluded')
   const excluded = list.filter((item) => item.included === 'excluded')
@@ -62,7 +73,10 @@ export const CoverageListBlock: React.FC<Props> = ({ heading, intro, items }) =>
   if (!list.length) return null
 
   return (
-    <section aria-labelledby="coverage-title" className="shell py-10 lg:py-26">
+    <section
+      aria-labelledby="coverage-title"
+      className={cn('shell py-10 lg:py-26', tightTop && 'pt-0 lg:pt-0')}
+    >
       <div className="flex flex-col gap-2">
         <h2 className="text-[1.375rem] font-bold lg:text-4xl lg:leading-[1.5]" id="coverage-title">
           {heading}

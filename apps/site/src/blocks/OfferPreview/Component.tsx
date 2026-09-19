@@ -14,7 +14,13 @@ import { cn } from '@/utilities/ui'
  * (`docs/website/LANDING-PAGES.md`) — برنداریدشان. ردیفی که شرکت یا مبلغش در
  * پیشخان خالی باشد همان جای‌نگار طرح را نشان می‌دهد.
  */
-export const OfferPreviewBlock: React.FC<Props> = ({ heading, body, offers, disclaimer }) => (
+export const OfferPreviewBlock: React.FC<Props> = ({
+  heading,
+  body,
+  offers,
+  panelLabel,
+  disclaimer,
+}) => (
   <section aria-labelledby="offers-title" className="border-y border-border bg-card">
     <div className="shell grid gap-8 py-10 lg:grid-cols-12 lg:items-center lg:gap-6 lg:py-24">
       <div className="flex flex-col gap-3 lg:col-span-5 lg:gap-4">
@@ -29,7 +35,7 @@ export const OfferPreviewBlock: React.FC<Props> = ({ heading, body, offers, disc
       <div className="flex flex-col gap-2 lg:col-span-6 lg:col-start-7">
         <div className="flex flex-col gap-3 rounded-sheet bg-background p-4 lg:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">پیشنهادها</span>
+            <span className="text-sm font-medium">{panelLabel || 'پیشنهادها'}</span>
             <span className="rounded-full bg-sunken px-2.5 py-[3px] text-xs font-medium">
               نرخ نمونه
             </span>

@@ -130,8 +130,7 @@ const FAQS = [
   },
   {
     question: 'سن بالای ۷۰ سال هم پوشش دارد؟',
-    answer:
-      'بله، اما نرخ برای گروه‌های سنی بالاتر متفاوت است و در استعلام نمایش داده می‌شود.',
+    answer: 'بله، اما نرخ برای گروه‌های سنی بالاتر متفاوت است و در استعلام نمایش داده می‌شود.',
     topic: 'travel',
   },
   {
@@ -602,6 +601,7 @@ export const seedContent = async (payload: Payload): Promise<void> => {
         {
           blockType: 'quoteForm',
           heading: 'قیمت بیمه مسافرتی',
+          subheading: 'مقصد، تاریخ سفر و تاریخ تولد مسافران را وارد کنید.',
           product: 'travel',
           submitLabel: 'مشاهده قیمت‌ها',
         },
@@ -768,7 +768,7 @@ export const seedContent = async (payload: Payload): Promise<void> => {
         {
           blockType: 'quoteForm',
           heading: 'قیمت بیمه آتش‌سوزی',
-          subheading: 'متراژ و ارزش‌ها را وارد کنید؛ نوع ملک، شهر و پوشش‌های اضافه در گام بعد.',
+          subheading: 'مشخصات ملک و ارزش‌ها را وارد کنید.',
           product: 'home-fire',
           submitLabel: 'مشاهده قیمت‌ها',
           note: 'بیمه‌نامه یک‌ساله است و بازدید کارشناس لازم ندارد.',

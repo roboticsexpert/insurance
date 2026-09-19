@@ -55,6 +55,10 @@ COPY --from=build /app/apps/site/public ./apps/site/public
 # ویراستار بالا داده با استقرار بعدی ناپدید می‌شود.
 RUN mkdir -p ./apps/site/public/media
 
+# `apps/api` در همان پروژه Railway است. این مقدار زمان اجرا خوانده می‌شود (نه بیلد)،
+# پس متغیر سرویس هر وقت لازم شد رویش را می‌گیرد — مثلاً برای رفتن از راه شبکه خصوصی.
+ENV API_URL=https://api.bimegold.com/api/v1
+
 WORKDIR /app/apps/site
 EXPOSE 3000
 ENV PORT=3000
